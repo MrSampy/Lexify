@@ -1,0 +1,6 @@
+@Lexify.API_HostAddress = http://localhost:5216
+
+GET {{Lexify.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
