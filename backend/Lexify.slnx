@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Lexify.API/Lexify.API.csproj" />
+    <Project Path="src/Lexify.Application/Lexify.Application.csproj" />
+    <Project Path="src/Lexify.Domain/Lexify.Domain.csproj" />
+    <Project Path="src/Lexify.Infrastructure/Lexify.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Lexify.API.Tests/Lexify.API.Tests.csproj" />
+    <Project Path="tests/Lexify.Application.Tests/Lexify.Application.Tests.csproj" />
+    <Project Path="tests/Lexify.Domain.Tests/Lexify.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
