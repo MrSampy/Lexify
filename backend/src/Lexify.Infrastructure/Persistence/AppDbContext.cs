@@ -13,6 +13,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<WordBlock> WordBlocks => Set<WordBlock>();
     public DbSet<BlockTag> BlockTags => Set<BlockTag>();
     public DbSet<Word> Words => Set<Word>();
+    public DbSet<Test> Tests => Set<Test>();
+    public DbSet<TestBlock> TestBlocks => Set<TestBlock>();
+    public DbSet<Question> Questions => Set<Question>();
+    public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
+    public DbSet<TestAttempt> TestAttempts => Set<TestAttempt>();
+    public DbSet<AttemptAnswer> AttemptAnswers => Set<AttemptAnswer>();
+    public DbSet<AiCallLog> AiCallLogs => Set<AiCallLog>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

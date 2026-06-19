@@ -3,6 +3,7 @@ using System;
 using Lexify.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Lexify.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619210403_AddTesting")]
+    partial class AddTesting
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,92 +24,6 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Lexify.Domain.Entities.AiCallLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("CallType")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("call_type");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("DurationMs")
-                        .HasColumnType("integer")
-                        .HasColumnName("duration_ms");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("text")
-                        .HasColumnName("error_message");
-
-                    b.Property<string>("InputHash")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("input_hash");
-
-                    b.Property<int?>("InputTokens")
-                        .HasColumnType("integer")
-                        .HasColumnName("input_tokens");
-
-                    b.Property<string>("Model")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("model");
-
-                    b.Property<int?>("OutputTokens")
-                        .HasColumnType("integer")
-                        .HasColumnName("output_tokens");
-
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("provider");
-
-                    b.Property<bool>("Success")
-                        .HasColumnType("boolean")
-                        .HasColumnName("success");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt")
-                        .IsDescending()
-                        .HasDatabaseName("idx_ai_logs_errors")
-                        .HasFilter("success = FALSE");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("idx_ai_logs_user")
-                        .HasFilter("user_id IS NOT NULL");
-
-                    b.HasIndex("CallType", "CreatedAt")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("idx_ai_logs_type");
-
-                    b.HasIndex("Provider", "Success")
-                        .HasDatabaseName("idx_ai_logs_provider");
-
-                    b.ToTable("ai_call_logs", null, t =>
-                        {
-                            t.HasCheckConstraint("chk_ai_logs_duration", "duration_ms >= 0");
-
-                            t.HasCheckConstraint("chk_ai_logs_provider", "provider IN ('ollama', 'openai')");
-
-                            t.HasCheckConstraint("chk_ai_logs_type", "call_type IN ('format_words', 'generate_test', 'suggest_title')");
-                        });
-                });
 
             modelBuilder.Entity("Lexify.Domain.Entities.AttemptAnswer", b =>
                 {
@@ -157,72 +74,6 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("chk_answers_time", "time_spent_ms IS NULL OR time_spent_ms >= 0");
                         });
-                });
-
-            modelBuilder.Entity("Lexify.Domain.Entities.AuditLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("action");
-
-                    b.Property<Guid>("AdminId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("admin_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(45)
-                        .HasColumnType("character varying(45)")
-                        .HasColumnName("ip_address");
-
-                    b.Property<string>("NewValue")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("new_value");
-
-                    b.Property<string>("OldValue")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("old_value");
-
-                    b.Property<string>("TargetId")
-                        .HasColumnType("text")
-                        .HasColumnName("target_id");
-
-                    b.Property<string>("TargetType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("target_type");
-
-                    b.Property<string>("UserAgent")
-                        .HasColumnType("text")
-                        .HasColumnName("user_agent");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AdminId")
-                        .HasDatabaseName("idx_audit_admin");
-
-                    b.HasIndex("CreatedAt")
-                        .IsDescending()
-                        .HasDatabaseName("idx_audit_created");
-
-                    b.HasIndex("Action", "CreatedAt")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("idx_audit_action");
-
-                    b.HasIndex("TargetType", "TargetId")
-                        .HasDatabaseName("idx_audit_target");
-
-                    b.ToTable("audit_logs", (string)null);
                 });
 
             modelBuilder.Entity("Lexify.Domain.Entities.BlockTag", b =>
@@ -921,15 +772,6 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Lexify.Domain.Entities.AiCallLog", b =>
-                {
-                    b.HasOne("Lexify.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_ai_logs_user");
-                });
-
             modelBuilder.Entity("Lexify.Domain.Entities.AttemptAnswer", b =>
                 {
                     b.HasOne("Lexify.Domain.Entities.TestAttempt", null)
@@ -945,16 +787,6 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_answers_question");
-                });
-
-            modelBuilder.Entity("Lexify.Domain.Entities.AuditLog", b =>
-                {
-                    b.HasOne("Lexify.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("AdminId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_audit_admin");
                 });
 
             modelBuilder.Entity("Lexify.Domain.Entities.BlockTag", b =>
