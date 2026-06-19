@@ -86,3 +86,7 @@ dotnet_naming_symbols.private_fields.applicable_kinds = field
 dotnet_naming_symbols.private_fields.applicable_accessibilities = private
 dotnet_naming_style.camel_case_underscore.required_prefix = _
 dotnet_naming_style.camel_case_underscore.capitalization = camel_case
+
+# EF Core auto-generated migration files — suppress array-allocation analyzer
+[src/**/Persistence/Migrations/**.cs]
+dotnet_diagnostic.CA1861.severity = none
