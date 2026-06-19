@@ -3,6 +3,7 @@ using System;
 using Lexify.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Lexify.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619205225_AddUsers")]
+    partial class AddUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,24 +24,6 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Lexify.Domain.Entities.BlockTag", b =>
-                {
-                    b.Property<Guid>("BlockId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("block_id");
-
-                    b.Property<int>("TagId")
-                        .HasColumnType("integer")
-                        .HasColumnName("tag_id");
-
-                    b.HasKey("BlockId", "TagId");
-
-                    b.HasIndex("TagId")
-                        .HasDatabaseName("idx_block_tags_tag");
-
-                    b.ToTable("block_tags", (string)null);
-                });
 
             modelBuilder.Entity("Lexify.Domain.Entities.Language", b =>
                 {
@@ -307,208 +292,6 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Lexify.Domain.Entities.Word", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("BlockId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("block_id");
-
-                    b.Property<bool>("ConfidenceFlag")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("confidence_flag");
-
-                    b.Property<string>("ConfidenceNote")
-                        .HasColumnType("text")
-                        .HasColumnName("confidence_note");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<double>("EaseFactor")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("double precision")
-                        .HasDefaultValue(2.5)
-                        .HasColumnName("ease_factor");
-
-                    b.Property<string>("ExampleSentence")
-                        .HasColumnType("text")
-                        .HasColumnName("example_sentence");
-
-                    b.Property<int>("IntervalDays")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1)
-                        .HasColumnName("interval_days");
-
-                    b.Property<DateTimeOffset>("NextReviewAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("next_review_at");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("text")
-                        .HasColumnName("notes");
-
-                    b.Property<int>("Repetitions")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("repetitions");
-
-                    b.Property<int>("SortOrder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("sort_order");
-
-                    b.Property<string>("Term")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("term");
-
-                    b.Property<string>("Translation")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("translation");
-
-                    b.Property<string>("WordType")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasDefaultValue("word")
-                        .HasColumnName("word_type");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BlockId")
-                        .HasDatabaseName("idx_words_confidence")
-                        .HasFilter("confidence_flag = TRUE");
-
-                    b.HasIndex("NextReviewAt")
-                        .HasDatabaseName("idx_words_due_review")
-                        .HasFilter("next_review_at <= NOW()");
-
-                    b.HasIndex("Term")
-                        .HasDatabaseName("idx_words_term_trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Term"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Term"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex("Translation")
-                        .HasDatabaseName("idx_words_translation_trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Translation"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Translation"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex("BlockId", "CreatedAt")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("idx_words_created");
-
-                    b.HasIndex("BlockId", "SortOrder")
-                        .HasDatabaseName("idx_words_sort");
-
-                    b.ToTable("words", null, t =>
-                        {
-                            t.HasCheckConstraint("chk_words_ease", "ease_factor >= 1.3");
-
-                            t.HasCheckConstraint("chk_words_interval", "interval_days >= 1");
-
-                            t.HasCheckConstraint("chk_words_reps", "repetitions >= 0");
-
-                            t.HasCheckConstraint("chk_words_term", "LENGTH(TRIM(term)) > 0");
-
-                            t.HasCheckConstraint("chk_words_trans", "LENGTH(TRIM(translation)) > 0");
-
-                            t.HasCheckConstraint("chk_words_type", "word_type IN ('word', 'phrase', 'idiom', 'expression')");
-                        });
-                });
-
-            modelBuilder.Entity("Lexify.Domain.Entities.WordBlock", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<short>("LanguageId")
-                        .HasColumnType("smallint")
-                        .HasColumnName("language_id");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("title");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<int>("WordCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("word_count");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LanguageId");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("idx_word_blocks_user_id");
-
-                    b.HasIndex("UserId", "LanguageId")
-                        .HasDatabaseName("idx_word_blocks_language");
-
-                    b.HasIndex("UserId", "UpdatedAt")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("idx_word_blocks_updated");
-
-                    b.ToTable("word_blocks", null, t =>
-                        {
-                            t.HasCheckConstraint("chk_word_blocks_count", "word_count >= 0");
-
-                            t.HasCheckConstraint("chk_word_blocks_title", "LENGTH(TRIM(title)) > 0");
-                        });
-                });
-
-            modelBuilder.Entity("Lexify.Domain.Entities.BlockTag", b =>
-                {
-                    b.HasOne("Lexify.Domain.Entities.WordBlock", null)
-                        .WithMany()
-                        .HasForeignKey("BlockId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_block_tags_block");
-
-                    b.HasOne("Lexify.Domain.Entities.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("TagId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_block_tags_tag");
-                });
-
             modelBuilder.Entity("Lexify.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("Lexify.Domain.Entities.RefreshToken", null)
@@ -542,33 +325,6 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_tags_user");
-                });
-
-            modelBuilder.Entity("Lexify.Domain.Entities.Word", b =>
-                {
-                    b.HasOne("Lexify.Domain.Entities.WordBlock", null)
-                        .WithMany()
-                        .HasForeignKey("BlockId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_words_block");
-                });
-
-            modelBuilder.Entity("Lexify.Domain.Entities.WordBlock", b =>
-                {
-                    b.HasOne("Lexify.Domain.Entities.Language", null)
-                        .WithMany()
-                        .HasForeignKey("LanguageId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_word_blocks_language");
-
-                    b.HasOne("Lexify.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_word_blocks_user");
                 });
 #pragma warning restore 612, 618
         }

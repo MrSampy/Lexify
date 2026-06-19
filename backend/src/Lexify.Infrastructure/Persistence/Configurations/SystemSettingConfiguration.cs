@@ -32,9 +32,15 @@ public sealed class SystemSettingConfiguration : IEntityTypeConfiguration<System
             .HasColumnName("updated_at")
             .IsRequired();
 
-        // FK to users.id — added via raw SQL in migration 1.3 when users table is created
         builder.Property(s => s.UpdatedBy)
             .HasColumnName("updated_by");
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(s => s.UpdatedBy)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull)
+            .HasConstraintName("fk_settings_updated_by");
 
         builder.ToTable(t => t.HasCheckConstraint(
             "chk_settings_type", "value_type IN ('string', 'bool', 'int', 'json')"));

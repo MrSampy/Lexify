@@ -28,7 +28,12 @@ public sealed class TagConfiguration : IEntityTypeConfiguration<Tag>
             .HasColumnName("created_at")
             .IsRequired();
 
-        // FK to users.id — added via raw SQL in migration 1.3 when users table is created
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_tags_user");
+
         builder.ToTable(t => t.HasCheckConstraint(
             "chk_tags_name", "name ~ '^[a-z0-9\\u0430-\\u044f\\u0451\\u0456\\u0457\\u0454_-]{1,50}$'"));
 
