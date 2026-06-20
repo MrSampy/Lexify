@@ -1,4 +1,5 @@
 using Lexify.Infrastructure;
+using Lexify.Infrastructure.Persistence.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+
+await DatabaseInitializer.InitializeAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {

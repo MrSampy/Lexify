@@ -1,4 +1,5 @@
 using Lexify.Infrastructure.Persistence;
+using Lexify.Infrastructure.Persistence.Seeders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,8 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString));
+
+        services.AddScoped<DataSeeder>();
 
         return services;
     }
