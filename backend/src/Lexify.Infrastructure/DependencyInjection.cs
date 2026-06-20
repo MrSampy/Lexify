@@ -1,8 +1,16 @@
+using System.Text;
+using Lexify.Application.Abstractions;
+using Lexify.Domain.Repositories;
 using Lexify.Infrastructure.Persistence;
+using Lexify.Infrastructure.Persistence.Repositories;
 using Lexify.Infrastructure.Persistence.Seeders;
+using Lexify.Infrastructure.Services;
+using Lexify.Infrastructure.Settings;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Lexify.Infrastructure;
 
@@ -19,6 +27,44 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
 
         services.AddScoped<DataSeeder>();
+
+        // JWT settings
+        services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
+
+        var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>()
+            ?? throw new InvalidOperationException("JWT settings not configured.");
+
+        // Authentication
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.MapInboundClaims = false;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
+
+        services.AddHttpContextAccessor();
+
+        // Services
+        services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<IPasswordHasher, PasswordHasherService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        // Repositories
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
     }

@@ -1,3 +1,7 @@
+using System.Security.Cryptography;
+using System.Text;
+using Lexify.Domain.Common;
+
 namespace Lexify.Domain.Entities;
 
 public sealed class Question
@@ -26,6 +30,31 @@ public sealed class Question
         ContentHash = contentHash;
     }
 
+    public static Question Create(
+        Guid testId,
+        Guid? wordId,
+        string questionType,
+        string questionText,
+        string correctAnswer,
+        int sortOrder)
+    {
+        if (testId == Guid.Empty) throw new DomainException("Test ID cannot be empty.");
+        if (!QuestionTypes.All.Contains(questionType)) throw new DomainException($"Invalid question type: '{questionType}'.");
+        if (string.IsNullOrWhiteSpace(questionText)) throw new DomainException("Question text cannot be empty.");
+        if (string.IsNullOrWhiteSpace(correctAnswer)) throw new DomainException("Correct answer cannot be empty.");
+
+        var contentHash = ComputeHash(questionType, questionText);
+        return new Question(testId, wordId, questionType, questionText, correctAnswer, sortOrder, contentHash);
+    }
+
+    // SHA-256(questionType|questionText)
+    private static string ComputeHash(string questionType, string questionText)
+    {
+        var input = $"{questionType}|{questionText}";
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
     public static class QuestionTypes
     {
         public const string TranslateToNative = "translate_to_native";
@@ -33,5 +62,8 @@ public sealed class Question
         public const string FillInSentence = "fill_in_sentence";
         public const string MultiSelectTheme = "multi_select_theme";
         public const string OpenAnswer = "open_answer";
+
+        public static readonly IReadOnlySet<string> All =
+            new HashSet<string> { TranslateToNative, TranslateToForeign, FillInSentence, MultiSelectTheme, OpenAnswer };
     }
 }

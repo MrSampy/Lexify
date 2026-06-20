@@ -1,7 +1,13 @@
+using Lexify.Domain.Common;
+using Lexify.Domain.Events;
+using Lexify.Domain.Services;
+
 namespace Lexify.Domain.Entities;
 
 public sealed class Word
 {
+    private readonly List<IDomainEvent> _domainEvents = [];
+
     public Guid Id { get; private set; }
     public Guid BlockId { get; private set; }
     public string Term { get; private set; } = default!;
@@ -19,6 +25,8 @@ public sealed class Word
     public int IntervalDays { get; private set; }
     public int Repetitions { get; private set; }
     public DateTimeOffset NextReviewAt { get; private set; }
+
+    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
     private Word() { }
 
@@ -41,19 +49,52 @@ public sealed class Word
         NextReviewAt = DateTimeOffset.UtcNow;
     }
 
+    public static Word Create(
+        Guid blockId,
+        string term,
+        string translation,
+        string wordType = WordTypes.Word,
+        string? notes = null,
+        string? exampleSentence = null,
+        int sortOrder = 0)
+    {
+        if (blockId == Guid.Empty) throw new DomainException("Block ID cannot be empty.");
+        if (string.IsNullOrWhiteSpace(term)) throw new DomainException("Term cannot be empty.");
+        if (string.IsNullOrWhiteSpace(translation)) throw new DomainException("Translation cannot be empty.");
+        if (!WordTypes.All.Contains(wordType)) throw new DomainException($"Invalid word type: '{wordType}'.");
+        return new Word(blockId, term, translation, wordType, notes, exampleSentence, sortOrder);
+    }
+
+    /// <summary>
+    /// Applies SM-2 spaced repetition result to this word and raises <see cref="WordReviewedEvent"/>.
+    /// Delegates computation to <see cref="SpacedRepetitionService"/>.
+    /// </summary>
+    public void ApplyReviewResult(int quality)
+    {
+        var result = SpacedRepetitionService.Calculate(EaseFactor, IntervalDays, Repetitions, quality);
+
+        EaseFactor = result.EaseFactor;
+        IntervalDays = result.IntervalDays;
+        Repetitions = result.Repetitions;
+        NextReviewAt = result.NextReviewAt;
+
+        _domainEvents.Add(new WordReviewedEvent(Id, quality, result.EaseFactor, result.IntervalDays));
+    }
+
+    public void UpdateTranslation(string translation, string? notes = null)
+    {
+        if (string.IsNullOrWhiteSpace(translation)) throw new DomainException("Translation cannot be empty.");
+        Translation = translation;
+        if (notes is not null) Notes = notes;
+    }
+
     public void SetConfidence(bool flag, string? note)
     {
         ConfidenceFlag = flag;
         ConfidenceNote = note;
     }
 
-    public void ApplySM2(double easeFactor, int intervalDays, int repetitions, DateTimeOffset nextReviewAt)
-    {
-        EaseFactor = easeFactor;
-        IntervalDays = intervalDays;
-        Repetitions = repetitions;
-        NextReviewAt = nextReviewAt;
-    }
+    public void ClearDomainEvents() => _domainEvents.Clear();
 
     public static class WordTypes
     {
@@ -61,5 +102,8 @@ public sealed class Word
         public const string Phrase = "phrase";
         public const string Idiom = "idiom";
         public const string Expression = "expression";
+
+        public static readonly IReadOnlySet<string> All =
+            new HashSet<string> { Word, Phrase, Idiom, Expression };
     }
 }

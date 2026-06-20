@@ -24,16 +24,24 @@ public sealed class User : BaseEntity
         Status = status;
     }
 
-    public void SoftDelete()
+    public static User Create(string email, string passwordHash, string? displayName = null)
     {
-        Status = Statuses.Deleted;
-        DeletedAt = DateTimeOffset.UtcNow;
-        UpdatedAt = DateTimeOffset.UtcNow;
+        if (string.IsNullOrWhiteSpace(email)) throw new DomainException("Email cannot be empty.");
+        if (string.IsNullOrWhiteSpace(passwordHash)) throw new DomainException("Password hash cannot be empty.");
+        return new User(email, passwordHash, displayName);
     }
 
     public void Suspend()
     {
+        if (Status == Statuses.Deleted) throw new DomainException("Cannot suspend a deleted user.");
         Status = Statuses.Suspended;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Delete()
+    {
+        Status = Statuses.Deleted;
+        DeletedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

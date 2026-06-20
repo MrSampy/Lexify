@@ -1,4 +1,5 @@
 using Lexify.Domain.Common;
+using Lexify.Domain.Events;
 
 namespace Lexify.Domain.Entities;
 
@@ -21,10 +22,36 @@ public sealed class WordBlock : BaseEntity
         WordCount = 0;
     }
 
+    public static WordBlock Create(Guid userId, short languageId, string title, string? description = null)
+    {
+        if (userId == Guid.Empty) throw new DomainException("User ID cannot be empty.");
+        if (string.IsNullOrWhiteSpace(title)) throw new DomainException("Block title cannot be empty.");
+        return new WordBlock(userId, languageId, title, description);
+    }
+
+    public void Rename(string newTitle, string? newDescription = null)
+    {
+        if (string.IsNullOrWhiteSpace(newTitle)) throw new DomainException("Block title cannot be empty.");
+        Title = newTitle;
+        Description = newDescription ?? Description;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public Word AddWord(
+        string term,
+        string translation,
+        string wordType = Word.WordTypes.Word,
+        string? notes = null,
+        string? exampleSentence = null,
+        int sortOrder = 0)
+    {
+        var word = Word.Create(Id, term, translation, wordType, notes, exampleSentence, sortOrder);
+        AddDomainEvent(new WordCreatedEvent(word.Id, Id));
+        return word;
+    }
+
     public void UpdateDetails(string title, string? description)
     {
-        Title = title;
-        Description = description;
-        UpdatedAt = DateTimeOffset.UtcNow;
+        Rename(title, description);
     }
 }
