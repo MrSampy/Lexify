@@ -1,5 +1,6 @@
 using Lexify.Domain.Common;
 using Lexify.Domain.Events;
+using Lexify.Domain.Services;
 
 namespace Lexify.Domain.Entities;
 
@@ -65,34 +66,19 @@ public sealed class Word
     }
 
     /// <summary>
-    /// Applies SM-2 spaced repetition algorithm. Quality: 0-2 = fail, 3-5 = success.
+    /// Applies SM-2 spaced repetition result to this word and raises <see cref="WordReviewedEvent"/>.
+    /// Delegates computation to <see cref="SpacedRepetitionService"/>.
     /// </summary>
     public void ApplyReviewResult(int quality)
     {
-        if (quality < 0 || quality > 5) throw new DomainException("Quality must be between 0 and 5.");
+        var result = SpacedRepetitionService.Calculate(EaseFactor, IntervalDays, Repetitions, quality);
 
-        // EF always changes, clamped to minimum 1.3
-        double newEaseFactor = EaseFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-        EaseFactor = Math.Max(1.3, newEaseFactor);
+        EaseFactor = result.EaseFactor;
+        IntervalDays = result.IntervalDays;
+        Repetitions = result.Repetitions;
+        NextReviewAt = result.NextReviewAt;
 
-        if (quality >= 3)
-        {
-            IntervalDays = Repetitions switch
-            {
-                0 => 1,
-                1 => 6,
-                _ => (int)Math.Round(IntervalDays * EaseFactor)
-            };
-            Repetitions++;
-        }
-        else
-        {
-            Repetitions = 0;
-            IntervalDays = 1;
-        }
-
-        NextReviewAt = DateTimeOffset.UtcNow.AddDays(IntervalDays);
-        _domainEvents.Add(new WordReviewedEvent(Id, quality, EaseFactor, IntervalDays));
+        _domainEvents.Add(new WordReviewedEvent(Id, quality, result.EaseFactor, result.IntervalDays));
     }
 
     public void UpdateTranslation(string translation, string? notes = null)
