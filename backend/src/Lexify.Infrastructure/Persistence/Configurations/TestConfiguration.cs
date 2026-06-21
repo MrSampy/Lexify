@@ -44,6 +44,12 @@ public sealed class TestConfiguration : IEntityTypeConfiguration<Test>
             .OnDelete(DeleteBehavior.Cascade)
             .HasConstraintName("fk_tests_user");
 
+        builder.HasMany(t => t.Questions)
+            .WithOne()
+            .HasForeignKey(q => q.TestId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_questions_test");
+
         builder.ToTable(t => t.HasCheckConstraint(
             "chk_tests_status", "status IN ('generating', 'ready', 'archived')"));
 

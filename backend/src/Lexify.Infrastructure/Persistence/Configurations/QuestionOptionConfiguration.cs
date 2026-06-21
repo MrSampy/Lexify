@@ -32,11 +32,7 @@ public sealed class QuestionOptionConfiguration : IEntityTypeConfiguration<Quest
             .HasDefaultValue(0)
             .IsRequired();
 
-        builder.HasOne<Question>()
-            .WithMany()
-            .HasForeignKey(o => o.QuestionId)
-            .OnDelete(DeleteBehavior.Cascade)
-            .HasConstraintName("fk_question_options_question");
+        // fk_question_options_question is configured from Question side (QuestionConfiguration.HasMany)
 
         builder.HasIndex(o => o.QuestionId)
             .HasDatabaseName("idx_question_options_question");

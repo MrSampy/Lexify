@@ -1,3 +1,4 @@
+using Hangfire;
 using Lexify.Application;
 using Lexify.Infrastructure;
 using Lexify.Infrastructure.Persistence.Seeders;
@@ -73,5 +74,6 @@ app.UseAuthentication();
 app.UseMiddleware<CurrentUserMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
+app.UseHangfireDashboard("/hangfire");
 app.MapControllers();
 app.Run();

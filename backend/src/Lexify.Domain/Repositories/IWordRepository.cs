@@ -33,6 +33,8 @@ public interface IWordRepository
     /// </summary>
     Task<IReadOnlyList<Word>> GetDueForReviewAsync(Guid userId, int limit = 20, CancellationToken ct = default);
 
+    Task<IReadOnlyList<Word>> GetByBlockIdsAsync(IEnumerable<Guid> blockIds, CancellationToken ct = default);
+
     Task AddAsync(Word word, CancellationToken ct = default);
     Task AddRangeAsync(IEnumerable<Word> words, CancellationToken ct = default);
     Task UpdateAsync(Word word, CancellationToken ct = default);

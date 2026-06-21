@@ -4,10 +4,14 @@ namespace Lexify.Domain.Entities;
 
 public sealed class Test : BaseEntity
 {
+    private readonly List<Question> _questions = [];
+
     public Guid UserId { get; private set; }
     public string Title { get; private set; } = default!;
     public string Status { get; private set; } = default!;
     public int? QuestionCount { get; private set; }
+
+    public IReadOnlyCollection<Question> Questions => _questions.AsReadOnly();
 
     private Test() { }
 

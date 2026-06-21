@@ -6,6 +6,8 @@ namespace Lexify.Domain.Entities;
 
 public sealed class Question
 {
+    private readonly List<QuestionOption> _options = [];
+
     public Guid Id { get; private set; }
     public Guid TestId { get; private set; }
     public Guid? WordId { get; private set; }
@@ -14,6 +16,8 @@ public sealed class Question
     public string CorrectAnswer { get; private set; } = default!;
     public int SortOrder { get; private set; }
     public string ContentHash { get; private set; } = default!;
+
+    public IReadOnlyCollection<QuestionOption> Options => _options.AsReadOnly();
 
     private Question() { }
 

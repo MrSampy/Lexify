@@ -44,18 +44,19 @@ public sealed class QuestionConfiguration : IEntityTypeConfiguration<Question>
             .HasMaxLength(64)
             .IsRequired();
 
-        builder.HasOne<Test>()
-            .WithMany()
-            .HasForeignKey(q => q.TestId)
-            .OnDelete(DeleteBehavior.Cascade)
-            .HasConstraintName("fk_questions_test");
-
+        // fk_questions_test is configured from the Test side (TestConfiguration.HasMany)
         builder.HasOne<Word>()
             .WithMany()
             .HasForeignKey(q => q.WordId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull)
             .HasConstraintName("fk_questions_word");
+
+        builder.HasMany(q => q.Options)
+            .WithOne()
+            .HasForeignKey(o => o.QuestionId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_question_options_question");
 
         builder.ToTable(t => t.HasCheckConstraint(
             "chk_questions_type",

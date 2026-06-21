@@ -37,12 +37,7 @@ public sealed class AttemptAnswerConfiguration : IEntityTypeConfiguration<Attemp
             .HasColumnName("answered_at")
             .IsRequired();
 
-        builder.HasOne<TestAttempt>()
-            .WithMany()
-            .HasForeignKey(a => a.AttemptId)
-            .OnDelete(DeleteBehavior.Cascade)
-            .HasConstraintName("fk_answers_attempt");
-
+        // fk_answers_attempt is configured from TestAttempt side (TestAttemptConfiguration.HasMany)
         builder.HasOne<Question>()
             .WithMany()
             .HasForeignKey(a => a.QuestionId)

@@ -7,6 +7,7 @@ namespace Lexify.Domain.Entities;
 public sealed class TestAttempt
 {
     private readonly List<IDomainEvent> _domainEvents = [];
+    private readonly List<AttemptAnswer> _answers = [];
 
     public Guid Id { get; private set; }
     public Guid TestId { get; private set; }
@@ -18,6 +19,7 @@ public sealed class TestAttempt
     public int? CorrectAnswers { get; private set; }
 
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+    public IReadOnlyCollection<AttemptAnswer> Answers => _answers.AsReadOnly();
 
     private TestAttempt() { }
 

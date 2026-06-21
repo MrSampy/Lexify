@@ -50,6 +50,12 @@ public sealed class TestAttemptConfiguration : IEntityTypeConfiguration<TestAtte
             .OnDelete(DeleteBehavior.Cascade)
             .HasConstraintName("fk_attempts_user");
 
+        builder.HasMany(a => a.Answers)
+            .WithOne()
+            .HasForeignKey(aa => aa.AttemptId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_answers_attempt");
+
         builder.ToTable(t =>
         {
             t.HasCheckConstraint("chk_attempts_score",
