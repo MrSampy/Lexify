@@ -59,12 +59,6 @@ public sealed class WordConfiguration : IEntityTypeConfiguration<Word>
             .HasColumnName("next_review_at")
             .IsRequired();
 
-        builder.HasOne<WordBlock>()
-            .WithMany()
-            .HasForeignKey(w => w.BlockId)
-            .OnDelete(DeleteBehavior.Cascade)
-            .HasConstraintName("fk_words_block");
-
         builder.ToTable(t =>
         {
             t.HasCheckConstraint("chk_words_type",
