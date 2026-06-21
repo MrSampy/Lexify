@@ -55,6 +55,18 @@ public sealed class WordRepository(AppDbContext context) : IWordRepository
             .Take(limit)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<Word>> GetByBlockIdsAsync(
+        IEnumerable<Guid> blockIds,
+        CancellationToken ct = default)
+    {
+        var ids = blockIds.ToList();
+        return await context.Words
+            .Where(w => ids.Contains(w.BlockId))
+            .OrderBy(w => w.BlockId)
+            .ThenBy(w => w.SortOrder)
+            .ToListAsync(ct);
+    }
+
     public async Task AddAsync(Word word, CancellationToken ct = default) =>
         await context.Words.AddAsync(word, ct);
 

@@ -11,5 +11,6 @@ public interface ITestRepository
 
     Task<IReadOnlyList<Test>> GetByUserIdAsync(Guid userId, CancellationToken ct = default);
     Task AddAsync(Test test, CancellationToken ct = default);
+    Task AddTestBlocksAsync(IEnumerable<TestBlock> blocks, CancellationToken ct = default);
     Task UpdateAsync(Test test, CancellationToken ct = default);
 }

@@ -1,7 +1,10 @@
 using System.Text;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Lexify.Application.Abstractions;
 using Lexify.Domain.Repositories;
 using Lexify.Infrastructure.AI;
+using Lexify.Infrastructure.Jobs;
 using Lexify.Infrastructure.Persistence;
 using Lexify.Infrastructure.Persistence.Repositories;
 using Lexify.Infrastructure.Persistence.Seeders;
@@ -70,7 +73,22 @@ public static class DependencyInjection
         services.AddScoped<IWordBlockRepository, WordBlockRepository>();
         services.AddScoped<IWordRepository, WordRepository>();
         services.AddScoped<IAiCallLogRepository, AiCallLogRepository>();
+        services.AddScoped<ITestRepository, TestRepository>();
+        services.AddScoped<IQuestionRepository, QuestionRepository>();
+        services.AddScoped<ITestAttemptRepository, TestAttemptRepository>();
+        services.AddScoped<IAttemptAnswerRepository, AttemptAnswerRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // Hangfire — background jobs (PostgreSQL storage)
+        services.AddHangfire(cfg => cfg
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UsePostgreSqlStorage(opts =>
+                opts.UseNpgsqlConnection(connectionString)));
+        services.AddHangfireServer(opts => opts.WorkerCount = 2);
+        services.AddScoped<GenerateTestJob>();
+        services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
 
         // AI settings
         services.Configure<OllamaSettings>(configuration.GetSection("Ollama"));
