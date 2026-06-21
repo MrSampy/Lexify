@@ -88,6 +88,14 @@ public sealed class Word
         if (notes is not null) Notes = notes;
     }
 
+    public void UpdateDetails(string translation, string? notes, string? exampleSentence)
+    {
+        if (string.IsNullOrWhiteSpace(translation)) throw new DomainException("Translation cannot be empty.");
+        Translation = translation;
+        Notes = notes;
+        ExampleSentence = exampleSentence;
+    }
+
     public void SetConfidence(bool flag, string? note)
     {
         ConfidenceFlag = flag;

@@ -5,11 +5,15 @@ namespace Lexify.Domain.Entities;
 
 public sealed class WordBlock : BaseEntity
 {
+    private readonly List<Word> _words = [];
+
     public Guid UserId { get; private set; }
     public short LanguageId { get; private set; }
     public string Title { get; private set; } = default!;
     public string? Description { get; private set; }
     public int WordCount { get; private set; }
+
+    public IReadOnlyCollection<Word> Words => _words.AsReadOnly();
 
     private WordBlock() { }
 

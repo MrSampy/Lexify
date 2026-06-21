@@ -58,5 +58,11 @@ public sealed class WordBlockConfiguration : IEntityTypeConfiguration<WordBlock>
         builder.HasIndex(wb => new { wb.UserId, wb.UpdatedAt })
             .IsDescending(false, true)
             .HasDatabaseName("idx_word_blocks_updated");
+
+        builder.HasMany(wb => wb.Words)
+            .WithOne()
+            .HasForeignKey(w => w.BlockId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("fk_words_block");
     }
 }
