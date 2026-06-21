@@ -128,13 +128,24 @@ public static class DependencyInjection
         services.AddScoped<OpenAIProvider>();
         services.AddScoped<IAIProvider, AIOrchestrator>();
 
-        // Redis connection (optional — used for rate limiting and caching)
+        // Redis connection and cache service (optional — falls back to no-op when not configured)
         var redisConnectionString = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrEmpty(redisConnectionString))
         {
             services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
                 StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
+            services.AddSingleton<ICacheService, RedisCacheService>();
         }
+        else
+        {
+            services.AddSingleton<ICacheService, NullCacheService>();
+        }
+
+        services.AddScoped<IAdminStatsRepository, AdminStatsRepository>();
+        services.AddScoped<IAdminUserRepository, AdminUserRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<ISystemSettingRepository, SystemSettingRepository>();
+        services.AddScoped<ILanguageRepository, LanguageRepository>();
 
         return services;
     }

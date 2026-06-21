@@ -52,6 +52,12 @@ public sealed class User : BaseEntity
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public void ChangeRole(string role)
+    {
+        Role = role;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void TouchActivity()
     {
         LastActiveAt = DateTimeOffset.UtcNow;
