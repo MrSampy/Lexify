@@ -1,6 +1,7 @@
 using System.Text;
 using Lexify.Application.Abstractions;
 using Lexify.Domain.Repositories;
+using Lexify.Infrastructure.AI;
 using Lexify.Infrastructure.Persistence;
 using Lexify.Infrastructure.Persistence.Repositories;
 using Lexify.Infrastructure.Persistence.Seeders;
@@ -11,6 +12,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Polly;
+using Polly.Extensions.Http;
 
 namespace Lexify.Infrastructure;
 
@@ -66,7 +69,54 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IWordBlockRepository, WordBlockRepository>();
         services.AddScoped<IWordRepository, WordRepository>();
+        services.AddScoped<IAiCallLogRepository, AiCallLogRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // AI settings
+        services.Configure<OllamaSettings>(configuration.GetSection("Ollama"));
+        services.Configure<OpenAISettings>(configuration.GetSection("OpenAI"));
+
+        // AI HTTP clients with Polly: 2 retries on transient errors, 120s timeout
+        var retryPolicy = HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .WaitAndRetryAsync(2, attempt => TimeSpan.FromSeconds(attempt * 2));
+
+        var ollamaTimeout = TimeSpan.FromSeconds(
+            configuration.GetSection("Ollama").GetValue<int>("TimeoutSeconds", 120));
+
+        var openAiTimeout = TimeSpan.FromSeconds(
+            configuration.GetSection("OpenAI").GetValue<int>("TimeoutSeconds", 120));
+
+        services.AddHttpClient("ollama", (sp, client) =>
+            {
+                var settings = configuration.GetSection("Ollama").Get<OllamaSettings>() ?? new OllamaSettings();
+                client.BaseAddress = new Uri(settings.BaseUrl);
+                client.Timeout = ollamaTimeout;
+            })
+            .AddPolicyHandler(retryPolicy);
+
+        services.AddHttpClient("openai", (sp, client) =>
+            {
+                var settings = configuration.GetSection("OpenAI").Get<OpenAISettings>() ?? new OpenAISettings();
+                client.BaseAddress = new Uri(settings.BaseUrl);
+                client.Timeout = openAiTimeout;
+                if (!string.IsNullOrEmpty(settings.ApiKey))
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {settings.ApiKey}");
+            })
+            .AddPolicyHandler(retryPolicy);
+
+        // AI providers
+        services.AddScoped<OllamaProvider>();
+        services.AddScoped<OpenAIProvider>();
+        services.AddScoped<IAIProvider, AIOrchestrator>();
+
+        // Redis connection (optional — used for rate limiting and caching)
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrEmpty(redisConnectionString))
+        {
+            services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
+                StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
+        }
 
         return services;
     }

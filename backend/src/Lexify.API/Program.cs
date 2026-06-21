@@ -2,6 +2,7 @@ using Lexify.Application;
 using Lexify.Infrastructure;
 using Lexify.Infrastructure.Persistence.Seeders;
 using Lexify.API.Middleware;
+using Lexify.API.RateLimit;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,12 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// Rate limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy<string, AiRateLimiterPolicy>(AiRateLimiterPolicy.PolicyName);
+});
+
 // CORS — allow the Vite dev server
 builder.Services.AddCors(options =>
 {
@@ -65,5 +72,6 @@ app.UseMiddleware<ExceptionMiddleware>();
 app.UseAuthentication();
 app.UseMiddleware<CurrentUserMiddleware>();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 app.Run();
