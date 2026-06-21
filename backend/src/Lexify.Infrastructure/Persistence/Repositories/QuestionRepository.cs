@@ -25,6 +25,11 @@ public sealed class QuestionRepository(AppDbContext context) : IQuestionReposito
         return hashes.ToHashSet();
     }
 
+    public async Task<Question?> GetByIdWithOptionsAsync(Guid id, CancellationToken ct = default) =>
+        await context.Questions
+            .Include(q => q.Options)
+            .FirstOrDefaultAsync(q => q.Id == id, ct);
+
     public async Task AddRangeAsync(IEnumerable<Question> questions, CancellationToken ct = default) =>
         await context.Questions.AddRangeAsync(questions, ct);
 
