@@ -11,6 +11,7 @@ using Lexify.Application.Admin.Queries.GetAdminUsers;
 using Lexify.Application.Admin.Queries.GetAiCallsChart;
 using Lexify.Application.Admin.Queries.GetAiLogs;
 using Lexify.Application.Admin.Queries.GetAiStats;
+using Lexify.Application.Admin.Queries.GetAiStatus;
 using Lexify.Application.Admin.Queries.GetDashboardStats;
 using Lexify.Application.Admin.Queries.GetLanguages;
 using Lexify.Application.Admin.Queries.GetRegistrationsChart;
@@ -105,6 +106,11 @@ public sealed class AdminController(ISender sender) : BaseApiController
     public async Task<IActionResult> GetAiStats(
         [FromQuery] int hours = 24, CancellationToken ct = default) =>
         ToActionResult(await sender.Send(new GetAiStatsQuery(hours), ct));
+
+    [HttpGet("ai/status")]
+    public async Task<IActionResult> GetAiStatus(
+        [FromQuery] int windowMinutes = 60, CancellationToken ct = default) =>
+        ToActionResult(await sender.Send(new GetAiStatusQuery(windowMinutes), ct));
 
     // --- Language Management ---
 
