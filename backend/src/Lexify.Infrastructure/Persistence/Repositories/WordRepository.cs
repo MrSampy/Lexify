@@ -10,14 +10,26 @@ public sealed class WordRepository(AppDbContext context) : IWordRepository
         context.Words.FirstOrDefaultAsync(w => w.Id == id, ct);
 
     public async Task<IReadOnlyList<Word>> GetByBlockIdAsync(
-        Guid blockId, int skip, int take, CancellationToken ct = default) =>
-        await context.Words
-            .Where(w => w.BlockId == blockId)
+        Guid blockId,
+        string? search = null,
+        int skip = 0,
+        int take = 50,
+        CancellationToken ct = default)
+    {
+        var query = BuildBlockQuery(blockId, search);
+        return await query
             .OrderBy(w => w.SortOrder)
             .ThenByDescending(w => w.CreatedAt)
             .Skip(skip)
             .Take(take)
             .ToListAsync(ct);
+    }
+
+    public Task<int> CountByBlockIdAsync(
+        Guid blockId,
+        string? search = null,
+        CancellationToken ct = default) =>
+        BuildBlockQuery(blockId, search).CountAsync(ct);
 
     public async Task<IReadOnlyList<Word>> GetDistractorPoolAsync(
         Guid userId,
@@ -60,5 +72,17 @@ public sealed class WordRepository(AppDbContext context) : IWordRepository
         var word = await context.Words.FindAsync([id], ct);
         if (word is not null)
             context.Words.Remove(word);
+    }
+
+    private IQueryable<Word> BuildBlockQuery(Guid blockId, string? search)
+    {
+        IQueryable<Word> query = context.Words.Where(w => w.BlockId == blockId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(w =>
+                EF.Functions.ILike(w.Term, $"%{search}%") ||
+                EF.Functions.ILike(w.Translation, $"%{search}%"));
+
+        return query;
     }
 }

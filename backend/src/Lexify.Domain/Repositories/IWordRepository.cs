@@ -5,7 +5,18 @@ namespace Lexify.Domain.Repositories;
 public interface IWordRepository
 {
     Task<Word?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<Word>> GetByBlockIdAsync(Guid blockId, int skip, int take, CancellationToken ct = default);
+
+    Task<IReadOnlyList<Word>> GetByBlockIdAsync(
+        Guid blockId,
+        string? search = null,
+        int skip = 0,
+        int take = 50,
+        CancellationToken ct = default);
+
+    Task<int> CountByBlockIdAsync(
+        Guid blockId,
+        string? search = null,
+        CancellationToken ct = default);
 
     /// <summary>
     /// Returns a random pool of words from the user's blocks for the given language,
