@@ -19,4 +19,6 @@ public sealed class Language
         IsActive = isActive;
         SortOrder = sortOrder;
     }
+
+    public void Toggle() => IsActive = !IsActive;
 }

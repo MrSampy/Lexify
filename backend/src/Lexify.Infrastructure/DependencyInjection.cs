@@ -145,6 +145,7 @@ public static class DependencyInjection
         services.AddScoped<IAdminUserRepository, AdminUserRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<ISystemSettingRepository, SystemSettingRepository>();
+        services.AddScoped<ILanguageRepository, LanguageRepository>();
 
         return services;
     }
