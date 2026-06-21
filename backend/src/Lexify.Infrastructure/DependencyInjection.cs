@@ -108,8 +108,15 @@ public static class DependencyInjection
         // AI providers
         services.AddScoped<OllamaProvider>();
         services.AddScoped<OpenAIProvider>();
-        services.AddScoped<AIResponseValidator>();
         services.AddScoped<IAIProvider, AIOrchestrator>();
+
+        // Redis connection (optional — used for rate limiting and caching)
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrEmpty(redisConnectionString))
+        {
+            services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
+                StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
+        }
 
         return services;
     }
