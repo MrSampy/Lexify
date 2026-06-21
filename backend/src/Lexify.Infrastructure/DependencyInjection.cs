@@ -142,6 +142,9 @@ public static class DependencyInjection
         }
 
         services.AddScoped<IAdminStatsRepository, AdminStatsRepository>();
+        services.AddScoped<IAdminUserRepository, AdminUserRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<ISystemSettingRepository, SystemSettingRepository>();
 
         return services;
     }

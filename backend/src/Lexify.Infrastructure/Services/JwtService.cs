@@ -35,6 +35,30 @@ public sealed class JwtService(IOptions<JwtSettings> options) : IJwtService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    public string GenerateImpersonationToken(Guid targetUserId, string targetEmail, string targetRole, Guid adminId)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.SecretKey));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        Claim[] claims =
+        [
+            new Claim(JwtRegisteredClaimNames.Sub, targetUserId.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, targetEmail),
+            new Claim(ClaimTypes.Role, targetRole),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim("impersonated_by", adminId.ToString())
+        ];
+
+        var token = new JwtSecurityToken(
+            issuer: _settings.Issuer,
+            audience: _settings.Audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(_settings.AccessTokenExpiryMinutes),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
     public DateTimeOffset GetExpiry() =>
         DateTimeOffset.UtcNow.AddMinutes(_settings.AccessTokenExpiryMinutes);
 }
