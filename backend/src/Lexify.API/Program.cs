@@ -14,11 +14,29 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger with JWT Bearer support
+// Swagger — one page per functional area, each requiring Bearer login
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Lexify API", Version = "v1" });
+    options.SwaggerDoc("auth",     new OpenApiInfo { Title = "Lexify – Auth",     Version = "v1" });
+    options.SwaggerDoc("content",  new OpenApiInfo { Title = "Lexify – Content",  Version = "v1" });
+    options.SwaggerDoc("learning", new OpenApiInfo { Title = "Lexify – Learning", Version = "v1" });
+    options.SwaggerDoc("admin",    new OpenApiInfo { Title = "Lexify – Admin",    Version = "v1" });
 
+    // Route each controller to its page
+    options.DocInclusionPredicate((docName, api) =>
+    {
+        var controller = api.ActionDescriptor.RouteValues["controller"]?.ToLowerInvariant();
+        return docName switch
+        {
+            "auth"     => controller == "auth",
+            "content"  => controller is "blocks" or "words",
+            "learning" => controller is "review" or "tests" or "attempts",
+            "admin"    => controller == "admin",
+            _          => false
+        };
+    });
+
+    // Bearer auth on every page
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -71,7 +89,13 @@ await DatabaseInitializer.InitializeAsync(app.Services);
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(ui =>
+    {
+        ui.SwaggerEndpoint("/swagger/auth/swagger.json",     "Auth");
+        ui.SwaggerEndpoint("/swagger/content/swagger.json",  "Content – Blocks & Words");
+        ui.SwaggerEndpoint("/swagger/learning/swagger.json", "Learning – Review & Tests");
+        ui.SwaggerEndpoint("/swagger/admin/swagger.json",    "Admin");
+    });
 }
 
 app.UseHttpsRedirection();
