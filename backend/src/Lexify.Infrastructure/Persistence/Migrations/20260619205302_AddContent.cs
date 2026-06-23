@@ -166,15 +166,24 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                 .Annotation("Npgsql:IndexMethod", "gin")
                 .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
 
+            // unaccent() is STABLE, not IMMUTABLE — wrap it so PostgreSQL allows it in index expressions
+            migrationBuilder.Sql("""
+                CREATE OR REPLACE FUNCTION immutable_unaccent(text)
+                RETURNS text AS $$
+                  SELECT unaccent($1)
+                $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE STRICT;
+                """);
+
             migrationBuilder.Sql(
                 "CREATE INDEX idx_words_fts ON words USING GIN " +
-                "(to_tsvector('simple', unaccent(term) || ' ' || unaccent(translation)));");
+                "(to_tsvector('simple', immutable_unaccent(term) || ' ' || immutable_unaccent(translation)));");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql("DROP INDEX IF EXISTS idx_words_fts;");
+            migrationBuilder.Sql("DROP FUNCTION IF EXISTS immutable_unaccent(text);");
 
             migrationBuilder.DropTable(
                 name: "block_tags");
