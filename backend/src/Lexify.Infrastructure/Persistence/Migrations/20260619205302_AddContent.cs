@@ -145,8 +145,7 @@ namespace Lexify.Infrastructure.Persistence.Migrations
             migrationBuilder.CreateIndex(
                 name: "idx_words_due_review",
                 table: "words",
-                column: "next_review_at",
-                filter: "next_review_at <= NOW()");
+                column: "next_review_at");
 
             migrationBuilder.CreateIndex(
                 name: "idx_words_sort",

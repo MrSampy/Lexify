@@ -79,9 +79,8 @@ public sealed class WordConfiguration : IEntityTypeConfiguration<Word>
             .IsDescending(false, true)
             .HasDatabaseName("idx_words_created");
 
-        // Partial index for SM-2: only words due for review
+        // Regular index for SM-2 review queries (NOW() is STABLE, not IMMUTABLE — can't use in partial index)
         builder.HasIndex(w => w.NextReviewAt)
-            .HasFilter("next_review_at <= NOW()")
             .HasDatabaseName("idx_words_due_review");
 
         // Partial index for confidence flag filtering

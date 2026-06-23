@@ -826,7 +826,7 @@ namespace Lexify.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("NextReviewAt")
                         .HasDatabaseName("idx_words_due_review")
-                        .HasFilter("next_review_at <= NOW()");
+                        ;
 
                     b.HasIndex("Term")
                         .HasDatabaseName("idx_words_term_trgm");
