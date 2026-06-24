@@ -24,6 +24,8 @@ export interface CreateWordInput {
   wordType: string
   notes?: string
   exampleSentence?: string
+  confidenceFlag?: boolean
+  confidenceNote?: string | null
   sortOrder: number
 }
 

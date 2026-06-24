@@ -4,6 +4,7 @@ import { LoginPage } from '@/pages/Login/ui/LoginPage'
 import { RegisterPage } from '@/pages/Register/ui/RegisterPage'
 import { BlockListPage } from '@/pages/BlockList/ui/BlockListPage'
 import { BlockDetailPage } from '@/pages/BlockDetail/ui/BlockDetailPage'
+import { WordImportPage } from '@/pages/WordImport/ui/WordImportPage'
 import { AuthGuard } from './guards/AuthGuard'
 import { AdminGuard } from './guards/AdminGuard'
 
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
       { path: ROUTES.DASHBOARD, element: <Placeholder title="Dashboard" /> },
       { path: ROUTES.BLOCKS, element: <BlockListPage /> },
       { path: '/blocks/:id', element: <BlockDetailPage /> },
+      { path: '/blocks/:id/import', element: <WordImportPage /> },
       { path: ROUTES.TESTS, element: <Placeholder title="Tests" /> },
       { path: ROUTES.REVIEW, element: <Placeholder title="Review" /> },
       {
