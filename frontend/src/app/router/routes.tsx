@@ -5,6 +5,10 @@ import { RegisterPage } from '@/pages/Register/ui/RegisterPage'
 import { BlockListPage } from '@/pages/BlockList/ui/BlockListPage'
 import { BlockDetailPage } from '@/pages/BlockDetail/ui/BlockDetailPage'
 import { WordImportPage } from '@/pages/WordImport/ui/WordImportPage'
+import { TestListPage } from '@/pages/TestList/ui/TestListPage'
+import { TestCreatePage } from '@/pages/TestCreate/ui/TestCreatePage'
+import { TestRunnerPage } from '@/pages/TestRunner/ui/TestRunnerPage'
+import { TestResultsPage } from '@/pages/TestResults/ui/TestResultsPage'
 import { AuthGuard } from './guards/AuthGuard'
 import { AdminGuard } from './guards/AdminGuard'
 
@@ -24,7 +28,10 @@ const router = createBrowserRouter([
       { path: ROUTES.BLOCKS, element: <BlockListPage /> },
       { path: '/blocks/:id', element: <BlockDetailPage /> },
       { path: '/blocks/:id/import', element: <WordImportPage /> },
-      { path: ROUTES.TESTS, element: <Placeholder title="Tests" /> },
+      { path: ROUTES.TESTS, element: <TestListPage /> },
+      { path: ROUTES.TEST_CREATE, element: <TestCreatePage /> },
+      { path: '/tests/:id/run', element: <TestRunnerPage /> },
+      { path: '/tests/:id/results', element: <TestResultsPage /> },
       { path: ROUTES.REVIEW, element: <Placeholder title="Review" /> },
       {
         element: <AdminGuard />,
