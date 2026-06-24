@@ -151,9 +151,16 @@ export function BlockDetailPage() {
               Confidence flagged only
             </label>
           </div>
-          <Button size="sm" onClick={() => setShowAddWord((v) => !v)}>
-            {showAddWord ? 'Cancel' : '+ Add word'}
-          </Button>
+          <div className="flex gap-2">
+            <Link to={ROUTES.WORD_IMPORT(block.id)}>
+              <Button variant="outline" size="sm">
+                AI Import
+              </Button>
+            </Link>
+            <Button size="sm" onClick={() => setShowAddWord((v) => !v)}>
+              {showAddWord ? 'Cancel' : '+ Add word'}
+            </Button>
+          </div>
         </div>
 
         {/* Add word form */}
