@@ -84,4 +84,5 @@ frontend/.env.production
 # Test results
 # ===========================
 TestResults/
+!frontend/src/pages/TestResults/
 lcov.info
