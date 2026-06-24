@@ -1,5 +1,5 @@
-function App() {
-  return <div className="min-h-screen bg-background text-foreground" />
-}
+import { AppRoot } from '@/app/index'
 
-export default App
+export default function App() {
+  return <AppRoot />
+}
