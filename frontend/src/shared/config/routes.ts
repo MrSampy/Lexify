@@ -15,5 +15,7 @@ export const ROUTES = {
     USERS: '/admin/users',
     AI_MONITOR: '/admin/ai',
     SETTINGS: '/admin/settings',
+    LANGUAGES: '/admin/languages',
+    AUDIT: '/admin/audit',
   },
 } as const
