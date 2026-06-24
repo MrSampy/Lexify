@@ -10,25 +10,30 @@ public sealed class GetDashboardStatsQueryHandler(IAdminStatsRepository adminSta
 {
     public async Task<Result<DashboardStatsDto>> Handle(GetDashboardStatsQuery request, CancellationToken cancellationToken)
     {
+        var since7Days = DateTimeOffset.UtcNow.AddDays(-7);
         var since30Days = DateTimeOffset.UtcNow.AddDays(-30);
         var since24Hours = DateTimeOffset.UtcNow.AddHours(-24);
 
         // Sequential queries — EF Core DbContext is not thread-safe
         var totalUsers = await adminStats.CountUsersAsync(cancellationToken);
-        var activeUsers = await adminStats.CountActiveUsersAsync(since30Days, cancellationToken);
+        var activeUsers7 = await adminStats.CountActiveUsersAsync(since7Days, cancellationToken);
+        var activeUsers30 = await adminStats.CountActiveUsersAsync(since30Days, cancellationToken);
         var totalWords = await adminStats.CountWordsAsync(cancellationToken);
         var totalBlocks = await adminStats.CountWordBlocksAsync(cancellationToken);
         var totalTests = await adminStats.CountTestsAsync(cancellationToken);
-        var aiCalls = await adminStats.CountAiCallsAsync(since24Hours, cancellationToken);
+        var aiCalls24h = await adminStats.CountAiCallsAsync(since24Hours, cancellationToken);
+        var aiCalls7d = await adminStats.CountAiCallsAsync(since7Days, cancellationToken);
         var topLanguages = await adminStats.GetTopLanguagesByBlockCountAsync(5, cancellationToken);
 
         var dto = new DashboardStatsDto(
             TotalUsers: totalUsers,
-            ActiveUsersLast30Days: activeUsers,
+            ActiveUsersLast7Days: activeUsers7,
+            ActiveUsersLast30Days: activeUsers30,
             TotalWords: totalWords,
             TotalWordBlocks: totalBlocks,
             TotalTests: totalTests,
-            AiCallsLast24Hours: aiCalls,
+            AiCallsLast24Hours: aiCalls24h,
+            AiCallsLast7Days: aiCalls7d,
             TopLanguages: topLanguages
                 .Select(l => new LanguageStatDto(l.Code, l.Name, l.BlockCount))
                 .ToList());
