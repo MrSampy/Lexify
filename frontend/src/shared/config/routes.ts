@@ -1,0 +1,19 @@
+export const ROUTES = {
+  LOGIN: '/login',
+  REGISTER: '/register',
+  DASHBOARD: '/',
+  BLOCKS: '/blocks',
+  BLOCK_DETAIL: (id: string) => `/blocks/${id}`,
+  WORD_IMPORT: (blockId: string) => `/blocks/${blockId}/import`,
+  TESTS: '/tests',
+  TEST_CREATE: '/tests/new',
+  TEST_RUNNER: (id: string) => `/tests/${id}/run`,
+  TEST_RESULTS: (id: string) => `/tests/${id}/results`,
+  REVIEW: '/review',
+  ADMIN: {
+    DASHBOARD: '/admin',
+    USERS: '/admin/users',
+    AI_MONITOR: '/admin/ai',
+    SETTINGS: '/admin/settings',
+  },
+} as const
