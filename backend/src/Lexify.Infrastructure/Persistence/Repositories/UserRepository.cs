@@ -21,4 +21,24 @@ public sealed class UserRepository(AppDbContext context) : IUserRepository
         context.Users.Update(user);
         return Task.CompletedTask;
     }
+
+    public async Task<IReadOnlyList<(string Email, int DueCount)>> GetUsersWithDueWordsAsync(
+        CancellationToken ct = default)
+    {
+        var rows = await context.Database
+            .SqlQuery<UserDueWordsRow>($"""
+                SELECT u.email AS "Email", COUNT(w.id)::int AS "DueCount"
+                FROM users u
+                JOIN word_blocks wb ON wb.user_id = u.id
+                JOIN words w ON w.block_id = wb.id AND w.next_review_at <= NOW()
+                WHERE u.status = 'active' AND u.deleted_at IS NULL
+                GROUP BY u.email
+                HAVING COUNT(w.id) > 0
+                """)
+            .ToListAsync(ct);
+
+        return rows.Select(r => (r.Email, r.DueCount)).ToList();
+    }
+
+    private sealed record UserDueWordsRow(string Email, int DueCount);
 }

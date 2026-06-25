@@ -53,6 +53,17 @@ public sealed class WordBlockRepository(AppDbContext context) : IWordBlockReposi
             context.WordBlocks.Remove(block);
     }
 
+    public async Task<(int TotalBlocks, int TotalWords)> GetUserSummaryAsync(
+        Guid userId, CancellationToken ct = default)
+    {
+        var result = await context.WordBlocks
+            .Where(wb => wb.UserId == userId)
+            .GroupBy(_ => 1)
+            .Select(g => new { TotalBlocks = g.Count(), TotalWords = g.Sum(wb => wb.WordCount) })
+            .FirstOrDefaultAsync(ct);
+        return result is null ? (0, 0) : (result.TotalBlocks, result.TotalWords);
+    }
+
     private IQueryable<WordBlock> BuildUserQuery(Guid userId, short? languageId, string? tag)
     {
         IQueryable<WordBlock> query = context.WordBlocks.Where(wb => wb.UserId == userId);

@@ -24,4 +24,6 @@ public interface IWordBlockRepository
     Task AddAsync(WordBlock block, CancellationToken ct = default);
     Task UpdateAsync(WordBlock block, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
+    /// <summary>Returns total block count and sum of word counts for a user in one query.</summary>
+    Task<(int TotalBlocks, int TotalWords)> GetUserSummaryAsync(Guid userId, CancellationToken ct = default);
 }
