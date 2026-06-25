@@ -78,4 +78,80 @@ public class FinishAttemptCommandTests
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Failure, result.Status);
     }
+
+    [Fact]
+    public async Task Handle_AttemptNotFound_ReturnsNotFound()
+    {
+        _attemptRepo.GetByIdWithAnswersAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns((TestAttempt?)null);
+
+        var result = await _handler.Handle(
+            new AppFinishAttempt.FinishAttemptCommand(Guid.NewGuid(), Guid.NewGuid()),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.NotFound, result.Status);
+    }
+
+    [Fact]
+    public async Task Handle_ForeignAttempt_ReturnsForbidden()
+    {
+        var attempt = new TestAttempt(Guid.NewGuid(), Guid.NewGuid());
+        _attemptRepo.GetByIdWithAnswersAsync(attempt.Id, Arg.Any<CancellationToken>()).Returns(attempt);
+
+        var result = await _handler.Handle(
+            new AppFinishAttempt.FinishAttemptCommand(attempt.Id, Guid.NewGuid()), // different userId
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
+    }
+
+    [Fact]
+    public async Task Handle_NoAnswers_ReturnsFailure()
+    {
+        var userId = Guid.NewGuid();
+        var attempt = new TestAttempt(Guid.NewGuid(), userId); // _answers is empty
+
+        _attemptRepo.GetByIdWithAnswersAsync(attempt.Id, Arg.Any<CancellationToken>()).Returns(attempt);
+
+        var result = await _handler.Handle(
+            new AppFinishAttempt.FinishAttemptCommand(attempt.Id, userId),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Failure, result.Status);
+    }
+
+    [Fact]
+    public async Task Handle_WrongAnswer_AppliesSm2PenaltyToLinkedWord()
+    {
+        var userId = Guid.NewGuid();
+        var testId = Guid.NewGuid();
+        var attempt = new TestAttempt(testId, userId);
+        var wordId = Guid.NewGuid();
+        var word = new Word(Guid.NewGuid(), "apple", "яблуко");
+
+        var question = new Question(
+            testId, wordId, Question.QuestionTypes.OpenAnswer,
+            "Translate apple", "яблуко", 0, "hash");
+
+        // Inject a wrong answer pointing at the question's actual Id
+        InjectAnswers(attempt, [new AttemptAnswer(attempt.Id, question.Id, "wrong", false)]);
+
+        _attemptRepo.GetByIdWithAnswersAsync(attempt.Id, Arg.Any<CancellationToken>()).Returns(attempt);
+        _questionRepo.GetByTestIdAsync(testId, Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<Question>)[question]);
+        _wordRepo.GetByIdAsync(wordId, Arg.Any<CancellationToken>()).Returns(word);
+
+        var initialEaseFactor = word.EaseFactor;
+
+        var result = await _handler.Handle(
+            new AppFinishAttempt.FinishAttemptCommand(attempt.Id, userId),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotEqual(initialEaseFactor, word.EaseFactor); // SM-2 penalty reduced ease factor
+        Assert.Equal(0, word.Repetitions); // quality=0 resets repetitions
+    }
 }
