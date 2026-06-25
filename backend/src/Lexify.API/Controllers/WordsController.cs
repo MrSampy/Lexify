@@ -21,6 +21,9 @@ namespace Lexify.API.Controllers;
 [Route("api/blocks/{blockId:guid}/words")]
 public sealed class WordsController(ISender sender, ICurrentUserService currentUser) : BaseApiController
 {
+    private static readonly JsonSerializerOptions SseJsonOptions =
+        new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     /// <summary>Returns a paginated, searchable list of words in the block.</summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -128,9 +131,9 @@ public sealed class WordsController(ISender sender, ICurrentUserService currentU
         {
             string data = evt.EventType switch
             {
-                "done"      => JsonSerializer.Serialize(new { result = evt.Result }),
-                "streaming" => JsonSerializer.Serialize(new { chunk = evt.Chunk }),
-                "error"     => JsonSerializer.Serialize(new { message = evt.ErrorMessage }),
+                "done"      => JsonSerializer.Serialize(new { result = evt.Result }, SseJsonOptions),
+                "streaming" => JsonSerializer.Serialize(new { chunk = evt.Chunk }, SseJsonOptions),
+                "error"     => JsonSerializer.Serialize(new { message = evt.ErrorMessage }, SseJsonOptions),
                 _           => "{}"
             };
 

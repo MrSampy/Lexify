@@ -17,16 +17,13 @@ public sealed class GetBlocksQueryHandler(
     {
         var skip = (request.Page - 1) * request.PageSize;
 
-        var blocksTask = blockRepository.GetByUserIdAsync(
+        var blocks = await blockRepository.GetByUserIdAsync(
             request.UserId, request.LanguageId, request.Tag,
             skip, request.PageSize, cancellationToken);
 
-        var totalTask = blockRepository.CountByUserIdAsync(
+        var total = await blockRepository.CountByUserIdAsync(
             request.UserId, request.LanguageId, request.Tag, cancellationToken);
 
-        await Task.WhenAll(blocksTask, totalTask);
-
-        var blocks = blocksTask.Result;
         var tagsMap = await tagRepository.GetTagNamesByBlockIdsAsync(
             blocks.Select(b => b.Id), cancellationToken);
 
@@ -36,6 +33,6 @@ public sealed class GetBlocksQueryHandler(
                 Tags = tagsMap.TryGetValue(b.Id, out var tags) ? tags : []
             }).ToList();
 
-        return Result.Ok(new PagedResult<WordBlockDto>(dtos, totalTask.Result, request.Page, request.PageSize));
+        return Result.Ok(new PagedResult<WordBlockDto>(dtos, total, request.Page, request.PageSize));
     }
 }

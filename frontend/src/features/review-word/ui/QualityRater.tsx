@@ -45,10 +45,10 @@ export function QualityRater({ onRate, disabled }: QualityRaterProps) {
           key={quality}
           onClick={() => onRate(quality)}
           disabled={disabled}
-          className={`rounded-lg border-2 px-3 py-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+          className={`rounded-lg border-2 px-1 py-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:px-2 ${className}`}
         >
           <span className="block text-xs text-muted-foreground">{quality}</span>
-          {label}
+          <span className="break-words">{label}</span>
         </button>
       ))}
     </div>

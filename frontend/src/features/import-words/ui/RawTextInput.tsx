@@ -35,7 +35,7 @@ export function RawTextInput({ onSubmit }: Props) {
             onValueChange={(v) => v && setTargetLanguageId(Number(v))}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue>{LANGUAGES[targetLanguageId]?.name}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {Object.entries(LANGUAGES).map(([id, lang]) => (
@@ -53,7 +53,7 @@ export function RawTextInput({ onSubmit }: Props) {
             onValueChange={(v) => v && setNativeLanguageId(Number(v))}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue>{LANGUAGES[nativeLanguageId]?.name}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {Object.entries(LANGUAGES).map(([id, lang]) => (

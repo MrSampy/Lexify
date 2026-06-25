@@ -22,7 +22,7 @@ export function MultiSelectQuestion({ question, onSubmit, disabled }: MultiSelec
 
   return (
     <div>
-      <p className="mb-4 text-base font-medium">{question.questionText}</p>
+      <p className="mb-4 break-words text-base font-medium">{question.questionText}</p>
       <div className="mb-4 space-y-2">
         {options.map((option) => (
           <label

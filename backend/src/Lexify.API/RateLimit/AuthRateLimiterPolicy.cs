@@ -17,17 +17,23 @@ public sealed class AuthRateLimiterPolicy : IRateLimiterPolicy<string>
     {
         var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
 
-        var redis = httpContext.RequestServices.GetService<IConnectionMultiplexer>();
-
-        if (redis is not null)
+        try
         {
-            return RateLimitPartition.Get(
-                partitionKey: ip,
-                factory: key => new RedisSlidingWindowRateLimiter(
-                    redis.GetDatabase(),
-                    $"rl:auth:{key}",
-                    Limit,
-                    Window));
+            var redis = httpContext.RequestServices.GetService<IConnectionMultiplexer>();
+            if (redis is not null && redis.IsConnected)
+            {
+                return RateLimitPartition.Get(
+                    partitionKey: ip,
+                    factory: key => new RedisSlidingWindowRateLimiter(
+                        redis.GetDatabase(),
+                        $"rl:auth:{key}",
+                        Limit,
+                        Window));
+            }
+        }
+        catch
+        {
+            // Redis unavailable — fall through to in-memory limiter
         }
 
         return RateLimitPartition.GetSlidingWindowLimiter(

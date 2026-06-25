@@ -46,8 +46,8 @@ function WordPreviewRow({ word, onUpdate, onRemove }: RowProps) {
       </td>
       <td className="w-36 p-1">
         <Select value={word.wordType} onValueChange={(v) => v && onUpdate({ wordType: v })}>
-          <SelectTrigger className="h-7 text-xs">
-            <SelectValue />
+          <SelectTrigger className="h-7 text-xs capitalize">
+            <SelectValue>{word.wordType}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {WORD_TYPES.map((t) => (
