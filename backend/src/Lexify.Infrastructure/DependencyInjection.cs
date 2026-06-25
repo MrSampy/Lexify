@@ -89,7 +89,15 @@ public static class DependencyInjection
                 opts.UseNpgsqlConnection(connectionString)));
         services.AddHangfireServer(opts => opts.WorkerCount = 2);
         services.AddScoped<GenerateTestJob>();
+        services.AddScoped<CleanupRefreshTokensJob>();
+        services.AddScoped<AnonymizeDeletedUsersJob>();
+        services.AddScoped<SendReviewRemindersJob>();
+        services.AddScoped<CleanupAiLogsJob>();
         services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
+
+        // Email
+        services.Configure<SmtpSettings>(configuration.GetSection("Smtp"));
+        services.AddScoped<IEmailService, SmtpEmailService>();
 
         // AI settings
         services.Configure<OllamaSettings>(configuration.GetSection("Ollama"));

@@ -1,6 +1,7 @@
 using Hangfire;
 using Lexify.Application;
 using Lexify.Infrastructure;
+using Lexify.Infrastructure.Jobs;
 using Lexify.Infrastructure.Persistence.Seeders;
 using Lexify.API.Middleware;
 using Lexify.API.RateLimit;
@@ -29,7 +30,7 @@ builder.Services.AddSwaggerGen(options =>
         return docName switch
         {
             "auth"     => controller == "auth",
-            "content"  => controller is "blocks" or "words",
+            "content"  => controller is "blocks" or "words" or "search" or "tags" or "stats",
             "learning" => controller is "review" or "tests" or "attempts",
             "admin"    => controller == "admin",
             _          => false
@@ -86,6 +87,19 @@ var app = builder.Build();
 
 await DatabaseInitializer.InitializeAsync(app.Services);
 
+// Hangfire: global retry policy + recurring jobs
+GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = 3, DelaysInSeconds = [5, 25, 125] });
+
+var recurringJobs = app.Services.GetRequiredService<IRecurringJobManager>();
+recurringJobs.AddOrUpdate<CleanupRefreshTokensJob>(
+    "cleanup-refresh-tokens", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+recurringJobs.AddOrUpdate<AnonymizeDeletedUsersJob>(
+    "anonymize-deleted-users", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+recurringJobs.AddOrUpdate<SendReviewRemindersJob>(
+    "send-review-reminders", job => job.RunAsync(CancellationToken.None), "0 8 * * *");
+recurringJobs.AddOrUpdate<CleanupAiLogsJob>(
+    "cleanup-ai-logs", job => job.RunAsync(CancellationToken.None), Cron.Monthly);
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -105,6 +119,9 @@ app.UseAuthentication();
 app.UseMiddleware<CurrentUserMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
-app.UseHangfireDashboard("/hangfire");
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = [new Lexify.Infrastructure.HangfireAuthFilter()]
+});
 app.MapControllers();
 app.Run();
