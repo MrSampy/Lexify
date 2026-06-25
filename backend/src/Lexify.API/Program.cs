@@ -87,18 +87,21 @@ var app = builder.Build();
 
 await DatabaseInitializer.InitializeAsync(app.Services);
 
-// Hangfire: global retry policy + recurring jobs
-GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = 3, DelaysInSeconds = [5, 25, 125] });
+// Hangfire: global retry policy + recurring jobs (skipped in the Testing environment)
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = 3, DelaysInSeconds = [5, 25, 125] });
 
-var recurringJobs = app.Services.GetRequiredService<IRecurringJobManager>();
-recurringJobs.AddOrUpdate<CleanupRefreshTokensJob>(
-    "cleanup-refresh-tokens", job => job.RunAsync(CancellationToken.None), Cron.Daily);
-recurringJobs.AddOrUpdate<AnonymizeDeletedUsersJob>(
-    "anonymize-deleted-users", job => job.RunAsync(CancellationToken.None), Cron.Daily);
-recurringJobs.AddOrUpdate<SendReviewRemindersJob>(
-    "send-review-reminders", job => job.RunAsync(CancellationToken.None), "0 8 * * *");
-recurringJobs.AddOrUpdate<CleanupAiLogsJob>(
-    "cleanup-ai-logs", job => job.RunAsync(CancellationToken.None), Cron.Monthly);
+    var recurringJobs = app.Services.GetRequiredService<IRecurringJobManager>();
+    recurringJobs.AddOrUpdate<CleanupRefreshTokensJob>(
+        "cleanup-refresh-tokens", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+    recurringJobs.AddOrUpdate<AnonymizeDeletedUsersJob>(
+        "anonymize-deleted-users", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+    recurringJobs.AddOrUpdate<SendReviewRemindersJob>(
+        "send-review-reminders", job => job.RunAsync(CancellationToken.None), "0 8 * * *");
+    recurringJobs.AddOrUpdate<CleanupAiLogsJob>(
+        "cleanup-ai-logs", job => job.RunAsync(CancellationToken.None), Cron.Monthly);
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -125,3 +128,5 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 });
 app.MapControllers();
 app.Run();
+
+public partial class Program { }

@@ -26,19 +26,17 @@ public sealed class GetBlockByIdQueryHandler(
 
         var skip = (request.WordsPage - 1) * request.WordsPageSize;
 
-        var wordsTask = wordRepository.GetByBlockIdAsync(
+        // Sequential awaits: all three repositories share the same scoped DbContext,
+        // and concurrent EF Core operations on a single context cause a timeout.
+        var words = await wordRepository.GetByBlockIdAsync(
             request.BlockId, null, skip, request.WordsPageSize, cancellationToken);
-
-        var totalTask = wordRepository.CountByBlockIdAsync(
+        var total = await wordRepository.CountByBlockIdAsync(
             request.BlockId, null, cancellationToken);
+        var tags = await tagRepository.GetTagNamesByBlockIdAsync(request.BlockId, cancellationToken);
 
-        var tagsTask = tagRepository.GetTagNamesByBlockIdAsync(request.BlockId, cancellationToken);
-
-        await Task.WhenAll(wordsTask, totalTask, tagsTask);
-
-        var blockDto = mapper.Map<WordBlockDto>(block) with { Tags = tagsTask.Result };
-        var wordDtos = mapper.Map<IReadOnlyList<WordDto>>(wordsTask.Result);
-        var pagedWords = new PagedResult<WordDto>(wordDtos, totalTask.Result, request.WordsPage, request.WordsPageSize);
+        var blockDto = mapper.Map<WordBlockDto>(block) with { Tags = tags };
+        var wordDtos = mapper.Map<IReadOnlyList<WordDto>>(words);
+        var pagedWords = new PagedResult<WordDto>(wordDtos, total, request.WordsPage, request.WordsPageSize);
 
         return Result.Ok(new BlockDetailDto(blockDto, pagedWords));
     }
