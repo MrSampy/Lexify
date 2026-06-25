@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES, LANGUAGES } from '@/shared/config'
-import { Button, LanguageBadge } from '@/shared/ui'
+import { Badge, Button, LanguageBadge } from '@/shared/ui'
 import { useDeleteBlockMutation } from '../api/blockApi'
 import type { WordBlock } from '../model/types'
 import { EditBlockModal } from './EditBlockModal'
@@ -43,6 +43,16 @@ export function BlockCard({ block }: BlockCardProps) {
 
         {block.description && (
           <p className="line-clamp-2 text-sm text-muted-foreground">{block.description}</p>
+        )}
+
+        {block.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {block.tags.map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
         )}
 
         <div className="flex items-center justify-between">

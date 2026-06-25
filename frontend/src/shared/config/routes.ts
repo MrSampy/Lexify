@@ -10,6 +10,7 @@ export const ROUTES = {
   TEST_RUNNER: (id: string) => `/tests/${id}/run`,
   TEST_RESULTS: (id: string) => `/tests/${id}/results`,
   REVIEW: '/review',
+  SEARCH: '/search',
   ADMIN: {
     DASHBOARD: '/admin',
     USERS: '/admin/users',

@@ -38,6 +38,11 @@ const blockApi = {
     apiClient.patch(`/api/blocks/${id}`, input).then((r) => r.data),
 
   deleteBlock: (id: string) => apiClient.delete(`/api/blocks/${id}`).then((r) => r.data),
+
+  exportBlock: (id: string) =>
+    apiClient
+      .get(`/api/blocks/${id}/export`, { params: { format: 'csv' }, responseType: 'blob' })
+      .then((r) => ({ blob: r.data as Blob, filename: `block-${id}.csv` })),
 }
 
 export function useBlocks(filter: BlockFilter) {
@@ -83,6 +88,20 @@ export function useDeleteBlockMutation() {
     mutationFn: (id: string) => blockApi.deleteBlock(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: blockKeys.all })
+    },
+  })
+}
+
+export function useExportBlock() {
+  return useMutation({
+    mutationFn: (id: string) => blockApi.exportBlock(id),
+    onSuccess: ({ blob, filename }) => {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
     },
   })
 }
