@@ -112,4 +112,78 @@ public class WordTests
         var evt = Assert.Single(word.DomainEvents);
         Assert.IsType<WordReviewedEvent>(evt);
     }
+
+    [Fact]
+    public void UpdateTranslation_SetsNewTranslation()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко", notes: "fruit");
+
+        word.UpdateTranslation("яблоко");
+
+        Assert.Equal("яблоко", word.Translation);
+        Assert.Equal("fruit", word.Notes); // null notes arg does NOT overwrite
+    }
+
+    [Fact]
+    public void UpdateTranslation_WithNotes_OverwritesNotes()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко", notes: "old note");
+
+        word.UpdateTranslation("яблоко", "new note");
+
+        Assert.Equal("new note", word.Notes);
+    }
+
+    [Fact]
+    public void UpdateTranslation_WithEmptyTranslation_ThrowsDomainException()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+
+        var ex = Assert.Throws<DomainException>(() => word.UpdateTranslation("  "));
+        Assert.Equal("Translation cannot be empty.", ex.Message);
+    }
+
+    [Fact]
+    public void UpdateDetails_NullValues_OverwriteExistingFields()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко", notes: "fruit", exampleSentence: "I eat an apple.");
+
+        word.UpdateDetails("яблоко", null, null);
+
+        Assert.Equal("яблоко", word.Translation);
+        Assert.Null(word.Notes);
+        Assert.Null(word.ExampleSentence);
+    }
+
+    [Fact]
+    public void UpdateDetails_WithEmptyTranslation_ThrowsDomainException()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+
+        var ex = Assert.Throws<DomainException>(() => word.UpdateDetails("", null, null));
+        Assert.Equal("Translation cannot be empty.", ex.Message);
+    }
+
+    [Fact]
+    public void SetConfidence_SetsFlag()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+
+        word.SetConfidence(true, "hard word");
+
+        Assert.True(word.ConfidenceFlag);
+        Assert.Equal("hard word", word.ConfidenceNote);
+    }
+
+    [Fact]
+    public void SetConfidence_ClearsFlag()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+        word.SetConfidence(true, "hard word");
+
+        word.SetConfidence(false, null);
+
+        Assert.False(word.ConfidenceFlag);
+        Assert.Null(word.ConfidenceNote);
+    }
 }
