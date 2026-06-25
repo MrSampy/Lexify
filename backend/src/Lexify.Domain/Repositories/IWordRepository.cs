@@ -35,6 +35,17 @@ public interface IWordRepository
 
     Task<IReadOnlyList<Word>> GetByBlockIdsAsync(IEnumerable<Guid> blockIds, CancellationToken ct = default);
 
+    /// <summary>
+    /// Full-text search across all user's words. Uses FTS (GIN index) for queries &gt;= 3 chars,
+    /// ILIKE trigram fallback for shorter queries.
+    /// </summary>
+    Task<IReadOnlyList<WordSearchResult>> SearchAsync(
+        Guid userId,
+        string query,
+        short? languageId = null,
+        int limit = 20,
+        CancellationToken ct = default);
+
     Task AddAsync(Word word, CancellationToken ct = default);
     Task AddRangeAsync(IEnumerable<Word> words, CancellationToken ct = default);
     Task UpdateAsync(Word word, CancellationToken ct = default);

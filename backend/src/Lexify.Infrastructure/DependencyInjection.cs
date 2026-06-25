@@ -77,6 +77,7 @@ public static class DependencyInjection
         services.AddScoped<IQuestionRepository, QuestionRepository>();
         services.AddScoped<ITestAttemptRepository, TestAttemptRepository>();
         services.AddScoped<IAttemptAnswerRepository, AttemptAnswerRepository>();
+        services.AddScoped<ITagRepository, TagRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Hangfire — background jobs (PostgreSQL storage)

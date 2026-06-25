@@ -8,6 +8,7 @@ namespace Lexify.Application.Blocks.Queries.GetBlocks;
 
 public sealed class GetBlocksQueryHandler(
     IWordBlockRepository blockRepository,
+    ITagRepository tagRepository,
     IMapper mapper)
     : IRequestHandler<GetBlocksQuery, Result<PagedResult<WordBlockDto>>>
 {
@@ -25,7 +26,16 @@ public sealed class GetBlocksQueryHandler(
 
         await Task.WhenAll(blocksTask, totalTask);
 
-        var dtos = mapper.Map<IReadOnlyList<WordBlockDto>>(blocksTask.Result);
+        var blocks = blocksTask.Result;
+        var tagsMap = await tagRepository.GetTagNamesByBlockIdsAsync(
+            blocks.Select(b => b.Id), cancellationToken);
+
+        var dtos = blocks.Select(b =>
+            mapper.Map<WordBlockDto>(b) with
+            {
+                Tags = tagsMap.TryGetValue(b.Id, out var tags) ? tags : []
+            }).ToList();
+
         return Result.Ok(new PagedResult<WordBlockDto>(dtos, totalTask.Result, request.Page, request.PageSize));
     }
 }

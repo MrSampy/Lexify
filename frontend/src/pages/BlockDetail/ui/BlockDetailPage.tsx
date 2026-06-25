@@ -21,9 +21,10 @@ import {
   Checkbox,
   LanguageBadge,
 } from '@/shared/ui'
-import { useBlock, useDeleteBlockMutation } from '@/entities/block'
+import { useBlock, useDeleteBlockMutation, useExportBlock } from '@/entities/block'
 import { useCreateWordMutation } from '@/entities/word'
 import { WordRow } from '@/entities/word'
+import { TagInput } from '@/features/manage-tags'
 
 const WORD_TYPES = ['word', 'phrase', 'idiom', 'expression']
 
@@ -45,6 +46,7 @@ export function BlockDetailPage() {
 
   const { data, isLoading, isError } = useBlock(id ?? '', wordsPage)
   const deleteBlock = useDeleteBlockMutation()
+  const exportBlock = useExportBlock()
   const createWord = useCreateWordMutation(id ?? '')
 
   const {
@@ -128,15 +130,30 @@ export function BlockDetailPage() {
                 {block.wordCount} {block.wordCount === 1 ? 'word' : 'words'}
               </p>
             </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteBlock}
-              disabled={deleteBlock.isPending}
-            >
-              Delete block
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportBlock.mutate(block.id)}
+                disabled={exportBlock.isPending}
+              >
+                Export CSV
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteBlock}
+                disabled={deleteBlock.isPending}
+              >
+                Delete block
+              </Button>
+            </div>
           </div>
+        </div>
+
+        {/* Tags */}
+        <div className="mb-4">
+          <TagInput blockId={block.id} currentTags={block.tags} />
         </div>
 
         {/* Toolbar */}

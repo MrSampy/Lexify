@@ -8,6 +8,7 @@ public sealed class BlockMappingProfile : Profile
 {
     public BlockMappingProfile()
     {
-        CreateMap<WordBlock, WordBlockDto>();
+        CreateMap<WordBlock, WordBlockDto>()
+            .ForMember(dest => dest.Tags, opt => opt.MapFrom(_ => new List<string>()));
     }
 }

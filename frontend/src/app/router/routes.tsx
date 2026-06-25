@@ -11,6 +11,7 @@ import { TestRunnerPage } from '@/pages/TestRunner/ui/TestRunnerPage'
 import { TestResultsPage } from '@/pages/TestResults/ui/TestResultsPage'
 import { ReviewSessionPage } from '@/pages/ReviewSession/ui/ReviewSessionPage'
 import { DashboardPage } from '@/pages/Dashboard/ui/DashboardPage'
+import { SearchResultsPage } from '@/pages/Search/ui/SearchResultsPage'
 import { AdminDashboardPage } from '@/pages/AdminDashboard/ui/AdminDashboardPage'
 import { AdminUsersPage } from '@/pages/AdminUsers/ui/AdminUsersPage'
 import { AdminAiMonitorPage } from '@/pages/AdminAiMonitor/ui/AdminAiMonitorPage'
@@ -18,6 +19,7 @@ import { AdminSettingsPage } from '@/pages/AdminSettings/ui/AdminSettingsPage'
 import { AdminLanguagesPage } from '@/pages/AdminLanguages/ui/AdminLanguagesPage'
 import { AdminAuditPage } from '@/pages/AdminAudit/ui/AdminAuditPage'
 import { AdminLayout } from '@/app/layouts/AdminLayout'
+import { UserLayout } from '@/app/layouts/UserLayout'
 import { AuthGuard } from './guards/AuthGuard'
 import { AdminGuard } from './guards/AdminGuard'
 
@@ -27,15 +29,21 @@ const router = createBrowserRouter([
   {
     element: <AuthGuard />,
     children: [
-      { path: ROUTES.DASHBOARD, element: <DashboardPage /> },
-      { path: ROUTES.BLOCKS, element: <BlockListPage /> },
-      { path: '/blocks/:id', element: <BlockDetailPage /> },
-      { path: '/blocks/:id/import', element: <WordImportPage /> },
-      { path: ROUTES.TESTS, element: <TestListPage /> },
-      { path: ROUTES.TEST_CREATE, element: <TestCreatePage /> },
-      { path: '/tests/:id/run', element: <TestRunnerPage /> },
-      { path: '/tests/:id/results', element: <TestResultsPage /> },
-      { path: ROUTES.REVIEW, element: <ReviewSessionPage /> },
+      {
+        element: <UserLayout />,
+        children: [
+          { path: ROUTES.DASHBOARD, element: <DashboardPage /> },
+          { path: ROUTES.BLOCKS, element: <BlockListPage /> },
+          { path: '/blocks/:id', element: <BlockDetailPage /> },
+          { path: '/blocks/:id/import', element: <WordImportPage /> },
+          { path: ROUTES.TESTS, element: <TestListPage /> },
+          { path: ROUTES.TEST_CREATE, element: <TestCreatePage /> },
+          { path: '/tests/:id/run', element: <TestRunnerPage /> },
+          { path: '/tests/:id/results', element: <TestResultsPage /> },
+          { path: ROUTES.REVIEW, element: <ReviewSessionPage /> },
+          { path: ROUTES.SEARCH, element: <SearchResultsPage /> },
+        ],
+      },
       {
         element: <AdminGuard />,
         children: [

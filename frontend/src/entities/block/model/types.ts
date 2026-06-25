@@ -5,6 +5,7 @@ export interface WordBlock {
   title: string
   description: string | null
   wordCount: number
+  tags: string[]
   createdAt: string
   updatedAt: string
 }

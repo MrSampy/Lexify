@@ -10,6 +10,7 @@ namespace Lexify.Application.Blocks.Queries.GetBlockById;
 public sealed class GetBlockByIdQueryHandler(
     IWordBlockRepository blockRepository,
     IWordRepository wordRepository,
+    ITagRepository tagRepository,
     IMapper mapper)
     : IRequestHandler<GetBlockByIdQuery, Result<BlockDetailDto>>
 {
@@ -31,9 +32,11 @@ public sealed class GetBlockByIdQueryHandler(
         var totalTask = wordRepository.CountByBlockIdAsync(
             request.BlockId, null, cancellationToken);
 
-        await Task.WhenAll(wordsTask, totalTask);
+        var tagsTask = tagRepository.GetTagNamesByBlockIdAsync(request.BlockId, cancellationToken);
 
-        var blockDto = mapper.Map<WordBlockDto>(block);
+        await Task.WhenAll(wordsTask, totalTask, tagsTask);
+
+        var blockDto = mapper.Map<WordBlockDto>(block) with { Tags = tagsTask.Result };
         var wordDtos = mapper.Map<IReadOnlyList<WordDto>>(wordsTask.Result);
         var pagedWords = new PagedResult<WordDto>(wordDtos, totalTask.Result, request.WordsPage, request.WordsPageSize);
 

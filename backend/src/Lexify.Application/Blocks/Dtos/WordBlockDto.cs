@@ -8,4 +8,5 @@ public sealed record WordBlockDto(
     string? Description,
     int WordCount,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    IReadOnlyList<string> Tags);

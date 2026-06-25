@@ -86,6 +86,100 @@ public sealed class WordRepository(AppDbContext context) : IWordRepository
             context.Words.Remove(word);
     }
 
+    public async Task<IReadOnlyList<WordSearchResult>> SearchAsync(
+        Guid userId,
+        string query,
+        short? languageId = null,
+        int limit = 20,
+        CancellationToken ct = default)
+    {
+        var trimmed = query.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+            return [];
+
+        var cappedLimit = Math.Min(limit, 50);
+
+        if (trimmed.Length < 3)
+        {
+            // Trigram ILIKE fallback for very short queries
+            var pattern = $"%{trimmed}%";
+            return await context.Words
+                .Where(w =>
+                    context.WordBlocks.Any(wb =>
+                        wb.Id == w.BlockId &&
+                        wb.UserId == userId &&
+                        (languageId == null || wb.LanguageId == languageId)) &&
+                    (EF.Functions.ILike(w.Term, pattern) ||
+                     EF.Functions.ILike(w.Translation, pattern)))
+                .OrderBy(w => w.Term)
+                .Take(cappedLimit)
+                .Join(context.WordBlocks,
+                    w => w.BlockId,
+                    wb => wb.Id,
+                    (w, wb) => new WordSearchResult(w.Id, wb.Id, wb.Title, w.Term, w.Translation, w.WordType, 1.0))
+                .ToListAsync(ct);
+        }
+
+        // Full-text search via raw SQL to leverage idx_words_fts GIN index
+        return languageId.HasValue
+            ? await SearchFtsAsync(trimmed, userId, cappedLimit, languageId.Value, ct)
+            : await SearchFtsAsync(trimmed, userId, cappedLimit, null, ct);
+    }
+
+    private async Task<IReadOnlyList<WordSearchResult>> SearchFtsAsync(
+        string query, Guid userId, int limit, short? languageId, CancellationToken ct)
+    {
+        IQueryable<WordSearchResult> q;
+        if (languageId.HasValue)
+        {
+            var lang = languageId.Value;
+            q = context.Database.SqlQuery<WordSearchResult>($"""
+                SELECT w.id AS "WordId",
+                       wb.id AS "BlockId",
+                       wb.title AS "BlockTitle",
+                       w.term AS "Term",
+                       w.translation AS "Translation",
+                       w.word_type AS "WordType",
+                       ts_rank(
+                           to_tsvector('simple', immutable_unaccent(w.term) || ' ' || immutable_unaccent(w.translation)),
+                           plainto_tsquery('simple', immutable_unaccent({query}))
+                       ) AS "Rank"
+                FROM words w
+                JOIN word_blocks wb ON wb.id = w.block_id
+                WHERE wb.user_id = {userId}
+                  AND wb.language_id = {lang}
+                  AND to_tsvector('simple', immutable_unaccent(w.term) || ' ' || immutable_unaccent(w.translation))
+                      @@ plainto_tsquery('simple', immutable_unaccent({query}))
+                ORDER BY "Rank" DESC
+                LIMIT {limit}
+                """);
+        }
+        else
+        {
+            q = context.Database.SqlQuery<WordSearchResult>($"""
+                SELECT w.id AS "WordId",
+                       wb.id AS "BlockId",
+                       wb.title AS "BlockTitle",
+                       w.term AS "Term",
+                       w.translation AS "Translation",
+                       w.word_type AS "WordType",
+                       ts_rank(
+                           to_tsvector('simple', immutable_unaccent(w.term) || ' ' || immutable_unaccent(w.translation)),
+                           plainto_tsquery('simple', immutable_unaccent({query}))
+                       ) AS "Rank"
+                FROM words w
+                JOIN word_blocks wb ON wb.id = w.block_id
+                WHERE wb.user_id = {userId}
+                  AND to_tsvector('simple', immutable_unaccent(w.term) || ' ' || immutable_unaccent(w.translation))
+                      @@ plainto_tsquery('simple', immutable_unaccent({query}))
+                ORDER BY "Rank" DESC
+                LIMIT {limit}
+                """);
+        }
+
+        return await q.ToListAsync(ct);
+    }
+
     private IQueryable<Word> BuildBlockQuery(Guid blockId, string? search)
     {
         IQueryable<Word> query = context.Words.Where(w => w.BlockId == blockId);

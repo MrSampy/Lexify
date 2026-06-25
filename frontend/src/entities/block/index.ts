@@ -12,6 +12,7 @@ export {
   useCreateBlockMutation,
   useUpdateBlockMutation,
   useDeleteBlockMutation,
+  useExportBlock,
 } from './api/blockApi'
 export type { BlockDetail } from './api/blockApi'
 export { BlockCard } from './ui/BlockCard'
