@@ -59,6 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     environment: production
+    if: ${{ secrets.DEPLOY_HOST != '' }}
 
     steps:
       - name: Deploy via SSH
