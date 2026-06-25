@@ -1,11 +1,13 @@
 using System.Diagnostics;
+using Lexify.Application.Abstractions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Lexify.Application.Behaviors;
 
 public sealed class LoggingBehavior<TRequest, TResponse>(
-    ILogger<LoggingBehavior<TRequest, TResponse>> logger)
+    ILogger<LoggingBehavior<TRequest, TResponse>> logger,
+    ICurrentUserService currentUser)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
@@ -33,6 +35,12 @@ public sealed class LoggingBehavior<TRequest, TResponse>(
         CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;
+
+        using var scope = logger.BeginScope(new Dictionary<string, object>
+        {
+            ["UserId"] = currentUser.IsAuthenticated ? currentUser.UserId.ToString() : "anonymous"
+        });
+
         s_logHandling(logger, requestName, null);
 
         var sw = Stopwatch.StartNew();
