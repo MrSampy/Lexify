@@ -2,14 +2,17 @@ using Lexify.Application.Auth.Commands.Login;
 using Lexify.Application.Auth.Commands.Logout;
 using Lexify.Application.Auth.Commands.RefreshToken;
 using Lexify.Application.Auth.Commands.Register;
+using Lexify.API.RateLimit;
 using Lexify.API.Requests.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Lexify.API.Controllers;
 
 [Route("api/auth")]
+[EnableRateLimiting(AuthRateLimiterPolicy.PolicyName)]
 public sealed class AuthController(ISender sender) : BaseApiController
 {
     /// <summary>Register a new user account.</summary>

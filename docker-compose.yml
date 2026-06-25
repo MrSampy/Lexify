@@ -34,6 +34,49 @@ services:
     environment:
       - OLLAMA_KEEP_ALIVE=24h
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=${DATABASE_URL}
+      - ConnectionStrings__Redis=${REDIS_URL}
+      - Jwt__SecretKey=${JWT_SECRET}
+      - Jwt__Issuer=${JWT_ISSUER:-lexify}
+      - Jwt__Audience=${JWT_AUDIENCE:-lexify}
+      - Jwt__AccessTokenExpiryMinutes=${JWT_ACCESS_EXPIRY_MINUTES:-15}
+      - Jwt__RefreshTokenExpiryDays=${JWT_REFRESH_EXPIRY_DAYS:-30}
+      - Admin__Email=${ADMIN_EMAIL}
+      - Admin__Password=${ADMIN_PASSWORD}
+      - Admin__DisplayName=${ADMIN_DISPLAY_NAME:-Admin}
+      - Ollama__BaseUrl=http://ollama:11434
+      - Ollama__Model=${OLLAMA_MODEL:-qwen3:8b}
+      - Hangfire__ConnectionString=${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:

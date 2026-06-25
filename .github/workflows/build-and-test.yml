@@ -1,0 +1,61 @@
+name: Build & Test
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (.NET 8)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore backend/Lexify.slnx
+
+      - name: Build
+        run: dotnet build backend/Lexify.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test backend/Lexify.slnx --no-build -c Release --logger "trx;LogFileName=results.trx"
+        # Integration tests use Testcontainers — Docker is available on ubuntu-latest runners
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: "**/*.trx"
+
+  frontend:
+    name: Frontend (React/TypeScript)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Type-check & build
+        run: npm run build
+        working-directory: frontend
+
+      - name: Lint
+        run: npm run lint
+        working-directory: frontend

@@ -6,8 +6,25 @@ using Lexify.Infrastructure.Persistence.Seeders;
 using Lexify.API.Middleware;
 using Lexify.API.RateLimit;
 using Microsoft.OpenApi.Models;
+using Prometheus;
+using Serilog;
+using Serilog.Formatting.Compact;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── Serilog ──────────────────────────────────────────────────────────────────
+builder.Host.UseSerilog((ctx, services, cfg) => cfg
+    .ReadFrom.Configuration(ctx.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "Lexify.API")
+    .WriteTo.Console(new CompactJsonFormatter())
+    .WriteTo.File(
+        new CompactJsonFormatter(),
+        path: "logs/lexify-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14));
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -15,7 +32,17 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger — one page per functional area, each requiring Bearer login
+// ── Health checks ─────────────────────────────────────────────────────────────
+var connString = builder.Configuration.GetConnectionString("DefaultConnection");
+var redisString = builder.Configuration.GetConnectionString("Redis");
+
+var healthBuilder = builder.Services.AddHealthChecks();
+if (!string.IsNullOrEmpty(connString))
+    healthBuilder.AddNpgSql(connString, name: "postgres", tags: ["db"]);
+if (!string.IsNullOrEmpty(redisString))
+    healthBuilder.AddRedis(redisString, name: "redis", tags: ["cache"]);
+
+// ── Swagger ───────────────────────────────────────────────────────────────────
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("auth",     new OpenApiInfo { Title = "Lexify – Auth",     Version = "v1" });
@@ -23,7 +50,6 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("learning", new OpenApiInfo { Title = "Lexify – Learning", Version = "v1" });
     options.SwaggerDoc("admin",    new OpenApiInfo { Title = "Lexify – Admin",    Version = "v1" });
 
-    // Route each controller to its page
     options.DocInclusionPredicate((docName, api) =>
     {
         var controller = api.ActionDescriptor.RouteValues["controller"]?.ToLowerInvariant();
@@ -37,7 +63,6 @@ builder.Services.AddSwaggerGen(options =>
         };
     });
 
-    // Bearer auth on every page
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -64,13 +89,14 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Rate limiting
+// ── Rate limiting ─────────────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy<string, AiRateLimiterPolicy>(AiRateLimiterPolicy.PolicyName);
+    options.AddPolicy<string, AuthRateLimiterPolicy>(AuthRateLimiterPolicy.PolicyName);
 });
 
-// CORS — allow the Vite dev server
+// ── CORS ─────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -84,6 +110,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseSerilogRequestLogging();
 
 await DatabaseInitializer.InitializeAsync(app.Services);
 
@@ -115,6 +143,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors();
 app.UseMiddleware<ExceptionMiddleware>();
@@ -122,11 +151,14 @@ app.UseAuthentication();
 app.UseMiddleware<CurrentUserMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
+app.UseHttpMetrics();
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     Authorization = [new Lexify.Infrastructure.HangfireAuthFilter()]
 });
 app.MapControllers();
+app.MapHealthChecks("/api/health");
+app.MapMetrics("/metrics");
 app.Run();
 
 public partial class Program { }
