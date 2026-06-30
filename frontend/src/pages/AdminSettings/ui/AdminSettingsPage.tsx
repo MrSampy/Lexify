@@ -1,19 +1,10 @@
 import { useState } from 'react'
 import { Pencil, Check, X } from 'lucide-react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Button,
-  Input,
-  Badge,
-  Spinner,
-} from '@/shared/ui'
+import { Spinner } from '@/shared/ui'
 import { formatDate } from '@/shared/lib'
 import { useSettings, useUpdateSettingMutation } from '@/entities/admin'
+
+const COL_WIDTHS = ['220px', '1fr', '80px', '1fr', '120px', '40px']
 
 export function AdminSettingsPage() {
   const { data: settings, isLoading } = useSettings()
@@ -37,91 +28,157 @@ export function AdminSettingsPage() {
   }
 
   return (
-    <div className="p-8">
-      <h1 className="mb-6 text-2xl font-bold">System Settings</h1>
+    <div>
+      <div className="eyebrow" style={{ marginBottom: 14 }}>
+        ~/admin/settings
+      </div>
+      <h1 className="ds-h2" style={{ margin: '0 0 20px' }}>
+        System Settings
+      </h1>
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
           <Spinner size="lg" />
         </div>
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-56">Key</TableHead>
-                <TableHead>Value</TableHead>
-                <TableHead className="w-24">Type</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="w-32">Updated</TableHead>
-                <TableHead className="w-20" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(settings ?? []).map((s) => (
-                <TableRow key={s.key}>
-                  <TableCell className="font-mono text-sm font-medium">{s.key}</TableCell>
-                  <TableCell>
-                    {editingKey === s.key ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="h-7 w-48 text-sm"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') void handleSave(s.key)
-                            if (e.key === 'Escape') handleCancel()
-                          }}
-                        />
-                        <Button
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => void handleSave(s.key)}
-                          disabled={updateSetting.isPending}
-                        >
-                          <Check size={14} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={handleCancel}
-                        >
-                          <X size={14} />
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="font-mono text-sm">{s.value}</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {s.valueType}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {s.description ?? '—'}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {formatDate(s.updatedAt)}
-                  </TableCell>
-                  <TableCell>
-                    {editingKey !== s.key && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={() => handleEdit(s.key, s.value)}
-                      >
-                        <Pencil size={14} />
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div
+          style={{
+            background: 'var(--bg-2)',
+            border: '1px solid var(--line-2)',
+            borderRadius: 'var(--r-md)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Header row */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: COL_WIDTHS.join(' '),
+              gap: '0 16px',
+              padding: '10px 16px',
+              background: 'var(--bg-3)',
+              borderBottom: '1px solid var(--line-2)',
+            }}
+          >
+            {['Key', 'Value', 'Type', 'Description', 'Updated', ''].map((h) => (
+              <span
+                key={h}
+                className="ds-code"
+                style={{
+                  color: 'var(--fg-4)',
+                  fontSize: 10,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                {h}
+              </span>
+            ))}
+          </div>
+
+          {(settings ?? []).map((s, i) => (
+            <div
+              key={s.key}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: COL_WIDTHS.join(' '),
+                gap: '0 16px',
+                alignItems: 'center',
+                padding: '12px 16px',
+                borderBottom: i < (settings?.length ?? 0) - 1 ? '1px solid var(--line-1)' : 'none',
+              }}
+            >
+              <span className="ds-code" style={{ color: 'var(--fg-2)', fontSize: 12 }}>
+                {s.key}
+              </span>
+              <span>
+                {editingKey === s.key ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input
+                      className="lx-input"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      autoFocus
+                      style={{ height: 30, fontSize: 13, flex: 1 }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') void handleSave(s.key)
+                        if (e.key === 'Escape') handleCancel()
+                      }}
+                    />
+                    <button
+                      onClick={() => void handleSave(s.key)}
+                      disabled={updateSetting.isPending}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--success)',
+                        padding: 4,
+                      }}
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--fg-4)',
+                        padding: 4,
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="ds-code" style={{ color: 'var(--fg-1)', fontSize: 13 }}>
+                    {s.value}
+                  </span>
+                )}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 10,
+                  padding: '2px 7px',
+                  borderRadius: 'var(--r-sm)',
+                  background: 'var(--bg-3)',
+                  border: '1px solid var(--line-2)',
+                  color: 'var(--fg-4)',
+                }}
+              >
+                {s.valueType}
+              </span>
+              <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{s.description ?? '—'}</span>
+              <span className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 11 }}>
+                {formatDate(s.updatedAt)}
+              </span>
+              <div>
+                {editingKey !== s.key && (
+                  <button
+                    onClick={() => handleEdit(s.key, s.value)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--fg-4)',
+                      padding: 4,
+                      transition: 'color 0.12s',
+                    }}
+                    onMouseEnter={(e) => {
+                      ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--accent-color)'
+                    }}
+                    onMouseLeave={(e) => {
+                      ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--fg-4)'
+                    }}
+                  >
+                    <Pencil size={13} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

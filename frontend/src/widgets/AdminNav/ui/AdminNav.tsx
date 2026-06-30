@@ -1,63 +1,130 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart2, Users, Bot, Settings, Globe, ClipboardList, ChevronLeft } from 'lucide-react'
 import { ROUTES } from '@/shared/config'
 import { useAuthStore } from '@/entities/user'
 
 const NAV_ITEMS = [
-  { to: ROUTES.ADMIN.DASHBOARD, icon: BarChart2, label: 'Dashboard' },
-  { to: ROUTES.ADMIN.USERS, icon: Users, label: 'Users' },
-  { to: ROUTES.ADMIN.AI_MONITOR, icon: Bot, label: 'AI Monitor' },
-  { to: ROUTES.ADMIN.SETTINGS, icon: Settings, label: 'Settings' },
-  { to: ROUTES.ADMIN.LANGUAGES, icon: Globe, label: 'Languages' },
-  { to: ROUTES.ADMIN.AUDIT, icon: ClipboardList, label: 'Audit' },
+  { idx: '00', label: 'Dashboard', to: ROUTES.ADMIN.DASHBOARD, end: true },
+  { idx: '01', label: 'Users', to: ROUTES.ADMIN.USERS },
+  { idx: '02', label: 'AI Monitor', to: ROUTES.ADMIN.AI_MONITOR },
+  { idx: '03', label: 'Settings', to: ROUTES.ADMIN.SETTINGS },
+  { idx: '04', label: 'Languages', to: ROUTES.ADMIN.LANGUAGES },
+  { idx: '05', label: 'Audit log', to: ROUTES.ADMIN.AUDIT },
 ]
 
 export function AdminNav() {
   const user = useAuthStore((s) => s.user)
 
   return (
-    <aside className="flex h-screen w-56 shrink-0 flex-col border-r bg-card">
-      {/* Header */}
-      <div className="border-b px-4 py-4">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Admin Panel
-        </p>
+    <aside
+      style={{
+        width: 252,
+        flexShrink: 0,
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        overflowY: 'auto',
+        background: 'var(--bg-1)',
+        borderRight: '1px solid var(--line-1)',
+        padding: '20px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}
+    >
+      {/* Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 8px 18px' }}>
+        <span
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 18,
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: 'var(--fg-1)',
+          }}
+        >
+          <span style={{ color: 'var(--warning)' }}>&lt;</span>
+          Lexify
+          <span style={{ color: 'var(--warning)' }}>/&gt;</span>
+        </span>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3">
-        {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
+      <div className="ds-code" style={{ padding: '0 8px 6px', fontSize: 11, color: 'var(--fg-4)' }}>
+        // admin panel
+      </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <div
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'var(--fg-4)',
+            padding: '8px 8px 6px',
+          }}
+        >
+          ~/admin
+        </div>
+        {NAV_ITEMS.map(({ idx, label, to, end }) => (
           <NavLink
             key={to}
             to={to}
-            end={to === ROUTES.ADMIN.DASHBOARD}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                isActive
-                  ? 'bg-primary/10 font-medium text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              }`
-            }
+            end={end}
+            className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
+            style={{ color: 'var(--fg-2)' }}
           >
-            <Icon size={16} />
-            {label}
+            <span
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                opacity: 0.6,
+                width: 18,
+                flexShrink: 0,
+              }}
+            >
+              {idx}
+            </span>
+            <span style={{ position: 'relative', zIndex: 1, flex: 1 }}>{label}</span>
           </NavLink>
         ))}
-      </nav>
+      </div>
 
-      {/* Footer */}
-      <div className="border-t px-4 py-3">
+      <div style={{ flex: 1 }} />
+
+      {/* Back to app */}
+      <div style={{ borderTop: '1px solid var(--line-1)', paddingTop: 14 }}>
         {user && (
-          <p className="mb-2 truncate text-xs text-muted-foreground" title={user.email}>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              color: 'var(--fg-4)',
+              padding: '0 8px 10px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {user.email}
-          </p>
+          </div>
         )}
-        <NavLink
-          to={ROUTES.DASHBOARD}
-          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft size={14} />
-          Back to app
+        <NavLink to={ROUTES.DASHBOARD} className="lx-nav-item">
+          <span
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              opacity: 0.6,
+              width: 18,
+              flexShrink: 0,
+            }}
+          >
+            ←
+          </span>
+          <span style={{ position: 'relative', zIndex: 1 }}>Back to app</span>
         </NavLink>
       </div>
     </aside>

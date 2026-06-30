@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Button } from '@/shared/ui'
 import { BlockList } from '@/widgets/BlockList'
 import { BlockFilters } from '@/widgets/BlockList'
 import { CreateBlockModal } from '@/features/create-block'
@@ -22,40 +21,56 @@ export function BlockListPage() {
     setPage(1)
   }
 
-  const filter = {
-    languageId,
-    tag: tag || undefined,
-    page,
-    pageSize: 18,
-  }
+  const filter = { languageId, tag: tag || undefined, page, pageSize: 18 }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">My Blocks</h1>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowImport(true)}>
-              Import CSV
-            </Button>
-            <Button onClick={() => setShowCreate(true)}>+ New Block</Button>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <BlockFilters
-            languageId={languageId}
-            onLanguageChange={handleLanguageChange}
-            tag={tag}
-            onTagChange={handleTagChange}
-          />
-        </div>
-
-        <BlockList filter={filter} onPageChange={setPage} />
-
-        <CreateBlockModal open={showCreate} onClose={() => setShowCreate(false)} />
-        <CsvImportModal open={showImport} onClose={() => setShowImport(false)} />
+    <div>
+      {/* Header */}
+      <div className="eyebrow" style={{ marginBottom: 12 }}>
+        ~/blocks
       </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'end',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+          marginBottom: 22,
+        }}
+      >
+        <div>
+          <h1 className="ds-h2" style={{ margin: '0 0 4px' }}>
+            Word blocks
+          </h1>
+          <p className="ds-body" style={{ margin: 0, color: 'var(--fg-3)' }}>
+            Your vocabulary collections
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="lx-btn-secondary" onClick={() => setShowImport(true)}>
+            Import CSV
+          </button>
+          <button className="lx-btn-primary" onClick={() => setShowCreate(true)}>
+            + New block
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div style={{ marginBottom: 22 }}>
+        <BlockFilters
+          languageId={languageId}
+          onLanguageChange={handleLanguageChange}
+          tag={tag}
+          onTagChange={handleTagChange}
+        />
+      </div>
+
+      <BlockList filter={filter} onPageChange={setPage} />
+
+      <CreateBlockModal open={showCreate} onClose={() => setShowCreate(false)} />
+      <CsvImportModal open={showImport} onClose={() => setShowImport(false)} />
     </div>
   )
 }

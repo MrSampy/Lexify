@@ -5,15 +5,26 @@ export function FormatProgress() {
   const streamingText = useImportWordsStore((s) => s.streamingText)
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <Spinner size="sm" />
-        <p className="text-sm font-medium text-muted-foreground">AI is formatting your words…</p>
+        <span className="ds-code" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
+          AI is formatting your words…
+        </span>
       </div>
 
       {streamingText && (
-        <div className="max-h-72 overflow-y-auto rounded-lg border bg-muted/30 p-4">
-          <pre className="whitespace-pre-wrap font-mono text-xs text-muted-foreground">
+        <div className="term" style={{ maxHeight: 280, overflowY: 'auto' }}>
+          <pre
+            style={{
+              whiteSpace: 'pre-wrap',
+              margin: 0,
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              color: 'var(--fg-2)',
+              lineHeight: 1.6,
+            }}
+          >
             {streamingText}
           </pre>
         </div>

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES, LANGUAGES } from '@/shared/config'
-import { Badge, Button, LanguageBadge } from '@/shared/ui'
 import { useDeleteBlockMutation } from '../api/blockApi'
 import type { WordBlock } from '../model/types'
 import { EditBlockModal } from './EditBlockModal'
@@ -14,6 +13,7 @@ export function BlockCard({ block }: BlockCardProps) {
   const navigate = useNavigate()
   const deleteBlock = useDeleteBlockMutation()
   const [editing, setEditing] = useState(false)
+  const [hovered, setHovered] = useState(false)
   const langCode = LANGUAGES[block.languageId]?.code ?? String(block.languageId)
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -34,45 +34,102 @@ export function BlockCard({ block }: BlockCardProps) {
         tabIndex={0}
         onClick={() => navigate(ROUTES.BLOCK_DETAIL(block.id))}
         onKeyDown={(e) => e.key === 'Enter' && navigate(ROUTES.BLOCK_DETAIL(block.id))}
-        className="group flex cursor-pointer flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          padding: 20,
+          background: 'var(--bg-2)',
+          border: `1px solid ${hovered ? 'var(--accent-line)' : 'var(--line-2)'}`,
+          borderRadius: 'var(--r-lg)',
+          cursor: 'pointer',
+          transition: 'border-color 0.15s, box-shadow 0.15s',
+          boxShadow: hovered ? 'var(--glow-accent)' : 'none',
+          outline: 'none',
+        }}
       >
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold leading-tight">{block.title}</h3>
-          <LanguageBadge code={langCode} />
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'start',
+            gap: 10,
+            marginBottom: 18,
+          }}
+        >
+          <div className="ds-h4" style={{ color: 'var(--fg-1)', fontSize: 16 }}>
+            {block.title}
+          </div>
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              padding: '3px 8px',
+              borderRadius: 'var(--r-sm)',
+              background: 'var(--bg-1)',
+              border: '1px solid var(--line-2)',
+              color: 'var(--fg-2)',
+              flexShrink: 0,
+            }}
+          >
+            {langCode.toUpperCase()}
+          </span>
         </div>
 
-        {block.description && (
-          <p className="line-clamp-2 text-sm text-muted-foreground">{block.description}</p>
-        )}
-
         {block.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
             {block.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
+              <span key={tag} className="lx-tag">
                 {tag}
-              </Badge>
+              </span>
             ))}
           </div>
         )}
 
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {block.wordCount} {block.wordCount === 1 ? 'word' : 'words'}
-          </span>
-          <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-            <Button size="sm" variant="ghost" onClick={handleEdit} className="h-7 px-2 text-xs">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="ds-code" style={{ color: 'var(--fg-3)' }}>
+            {block.wordCount} words
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              opacity: hovered ? 1 : 0,
+              transition: 'opacity 0.15s',
+            }}
+          >
+            <button
+              onClick={handleEdit}
+              className="lx-btn-secondary"
+              style={{ padding: '5px 12px', fontSize: 12 }}
+            >
               Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
+            </button>
+            <button
               onClick={handleDelete}
               disabled={deleteBlock.isPending}
-              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+              style={{
+                padding: '5px 12px',
+                fontSize: 12,
+                fontFamily: 'var(--font-body)',
+                fontWeight: 600,
+                borderRadius: 'var(--r-md)',
+                cursor: 'pointer',
+                border: '1px solid rgba(255,92,108,0.3)',
+                background: 'transparent',
+                color: 'var(--danger)',
+                transition: 'all 0.12s',
+              }}
             >
               Delete
-            </Button>
+            </button>
           </div>
+          {!hovered && (
+            <span
+              style={{ color: 'var(--accent-color)', fontFamily: 'var(--font-mono)', fontSize: 13 }}
+            >
+              →
+            </span>
+          )}
         </div>
       </div>
 

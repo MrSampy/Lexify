@@ -1,30 +1,28 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
-import {
-  Button,
-  Spinner,
-  Badge,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui'
+import { Spinner } from '@/shared/ui'
 import { useTests, useDeleteTestMutation } from '@/entities/test'
 import type { TestStatus } from '@/entities/test'
 import { formatDate } from '@/shared/lib'
 
-const STATUS_LABELS: Record<TestStatus, string> = {
-  generating: 'Generating',
-  ready: 'Ready',
-  archived: 'Archived',
-}
-
-const STATUS_VARIANTS: Record<TestStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  generating: 'secondary',
-  ready: 'default',
-  archived: 'outline',
+const STATUS_STYLES: Record<
+  TestStatus,
+  { bg: string; color: string; border: string; label: string }
+> = {
+  generating: {
+    bg: 'var(--warning-ghost)',
+    color: 'var(--warning)',
+    border: 'rgba(245,181,61,0.3)',
+    label: 'Generating',
+  },
+  ready: {
+    bg: 'var(--success-ghost)',
+    color: 'var(--success)',
+    border: 'rgba(63,214,139,0.3)',
+    label: 'Ready',
+  },
+  archived: { bg: 'var(--bg-3)', color: 'var(--fg-3)', border: 'var(--line-2)', label: 'Archived' },
 }
 
 export function TestListPage() {
@@ -37,122 +35,206 @@ export function TestListPage() {
   const deleteTest = useDeleteTestMutation()
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Archive test "${title}"?`)) return
+    if (!confirm(`Delete test "${title}"?`)) return
     await deleteTest.mutateAsync(id)
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Tests</h1>
-          <Button onClick={() => navigate(ROUTES.TEST_CREATE)}>+ New test</Button>
+    <div>
+      {/* Header */}
+      <div className="eyebrow" style={{ marginBottom: 12 }}>
+        ~/tests
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'end',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+          marginBottom: 22,
+        }}
+      >
+        <div>
+          <h1 className="ds-h2" style={{ margin: '0 0 4px' }}>
+            Tests
+          </h1>
+          <p className="ds-body" style={{ margin: 0, color: 'var(--fg-3)' }}>
+            AI-generated quizzes across your blocks.
+          </p>
         </div>
-
-        {/* Filter */}
-        <div className="mb-4 w-48">
-          <Select
+        <div style={{ display: 'flex', gap: 10 }}>
+          {/* Status filter */}
+          <select
             value={statusFilter}
-            onValueChange={(v) => {
-              if (v) setStatusFilter(v)
+            onChange={(e) => {
+              setStatusFilter(e.target.value)
               setPage(1)
             }}
+            style={{
+              padding: '9px 14px',
+              background: 'var(--bg-2)',
+              border: '1px solid var(--line-2)',
+              borderRadius: 'var(--r-md)',
+              color: 'var(--fg-1)',
+              fontSize: 13,
+              fontFamily: 'var(--font-mono)',
+              cursor: 'pointer',
+              outline: 'none',
+            }}
           >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="generating">Generating</SelectItem>
-              <SelectItem value="ready">Ready</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
+            <option value="all">all ▾</option>
+            <option value="generating">generating</option>
+            <option value="ready">ready</option>
+            <option value="archived">archived</option>
+          </select>
+          <button className="lx-btn-primary" onClick={() => navigate(ROUTES.TEST_CREATE)}>
+            + New test
+          </button>
         </div>
+      </div>
 
-        {/* Content */}
-        {isLoading && (
-          <div className="flex justify-center py-16">
-            <Spinner size="lg" />
-          </div>
-        )}
+      {/* Content */}
+      {isLoading && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
+          <Spinner size="lg" />
+        </div>
+      )}
 
-        {isError && (
-          <p className="py-8 text-center text-sm text-muted-foreground">Failed to load tests.</p>
-        )}
+      {isError && (
+        <p
+          className="ds-sm"
+          style={{ textAlign: 'center', padding: '32px 0', color: 'var(--fg-3)' }}
+        >
+          Failed to load tests.
+        </p>
+      )}
 
-        {data && data.items.length === 0 && (
-          <div className="py-16 text-center">
-            <p className="mb-4 text-muted-foreground">No tests yet.</p>
-            <Button onClick={() => navigate(ROUTES.TEST_CREATE)}>Create your first test</Button>
-          </div>
-        )}
+      {data && data.items.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '64px 0' }}>
+          <p className="ds-body" style={{ color: 'var(--fg-3)', marginBottom: 16 }}>
+            No tests yet.
+          </p>
+          <button className="lx-btn-primary" onClick={() => navigate(ROUTES.TEST_CREATE)}>
+            Create your first test
+          </button>
+        </div>
+      )}
 
-        {data && data.items.length > 0 && (
-          <div className="space-y-3">
-            {data.items.map((test) => (
+      {data && data.items.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {data.items.map((test) => {
+            const s = STATUS_STYLES[test.status] ?? STATUS_STYLES.archived
+            return (
               <div
                 key={test.id}
-                className="flex items-center justify-between rounded-lg border bg-card p-4 shadow-sm"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 18,
+                  padding: '18px 20px',
+                  background: 'var(--bg-2)',
+                  border: '1px solid var(--line-2)',
+                  borderRadius: 'var(--r-lg)',
+                  flexWrap: 'wrap',
+                }}
               >
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex items-center gap-2">
-                    <span className="truncate font-medium">{test.title}</span>
-                    <Badge variant={STATUS_VARIANTS[test.status]}>
-                      {STATUS_LABELS[test.status]}
-                    </Badge>
+                <div style={{ flex: 1, minWidth: 180 }}>
+                  <div
+                    className="ds-h4"
+                    style={{ color: 'var(--fg-1)', fontSize: 16, marginBottom: 4 }}
+                  >
+                    {test.title}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <div className="ds-code" style={{ color: 'var(--fg-3)' }}>
                     {test.questionCount != null ? `${test.questionCount} questions · ` : ''}
                     {formatDate(test.createdAt)}
-                  </p>
+                  </div>
                 </div>
-                <div className="ml-4 flex shrink-0 gap-2">
+
+                <span
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 11,
+                    padding: '4px 10px',
+                    borderRadius: 'var(--r-pill)',
+                    background: s.bg,
+                    color: s.color,
+                    border: `1px solid ${s.border}`,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {test.status === 'generating' && (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        animation: 'spin 1s linear infinite',
+                        fontSize: 10,
+                      }}
+                    >
+                      ⟳
+                    </span>
+                  )}
+                  {s.label}
+                </span>
+
+                <div style={{ display: 'flex', gap: 8 }}>
                   {test.status === 'ready' && (
-                    <Link to={ROUTES.TEST_RUNNER(test.id)}>
-                      <Button size="sm">Run</Button>
+                    <Link to={ROUTES.TEST_RUNNER(test.id)} style={{ textDecoration: 'none' }}>
+                      <button className="lx-btn-primary" style={{ padding: '9px 18px' }}>
+                        Run →
+                      </button>
                     </Link>
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <button
+                    className="lx-btn-secondary"
+                    style={{ padding: '9px 14px', color: 'var(--fg-3)' }}
                     onClick={() => void handleDelete(test.id, test.title)}
                     disabled={deleteTest.isPending}
                   >
                     Delete
-                  </Button>
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            )
+          })}
+        </div>
+      )}
 
-        {/* Pagination */}
-        {data && data.totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!data.hasPreviousPage}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              Previous
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              {page} / {data.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!data.hasNextPage}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        )}
-      </div>
+      {/* Pagination */}
+      {data && data.totalPages > 1 && (
+        <div
+          style={{
+            marginTop: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+          }}
+        >
+          <button
+            className="lx-btn-secondary"
+            disabled={!data.hasPreviousPage}
+            onClick={() => setPage((p) => p - 1)}
+            style={{ padding: '8px 16px' }}
+          >
+            Previous
+          </button>
+          <span className="ds-code" style={{ color: 'var(--fg-3)' }}>
+            {page} / {data.totalPages}
+          </span>
+          <button
+            className="lx-btn-secondary"
+            disabled={!data.hasNextPage}
+            onClick={() => setPage((p) => p + 1)}
+            style={{ padding: '8px 16px' }}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   )
 }

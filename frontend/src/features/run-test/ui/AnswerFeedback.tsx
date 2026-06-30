@@ -1,5 +1,3 @@
-import { Button } from '@/shared/ui'
-
 interface AnswerFeedbackProps {
   isCorrect: boolean
   correctAnswer: string
@@ -17,28 +15,55 @@ export function AnswerFeedback({
 }: AnswerFeedbackProps) {
   return (
     <div
-      className={`rounded-lg border p-4 ${
-        isCorrect
-          ? 'border-green-200 bg-green-50 dark:bg-green-950/20'
-          : 'border-red-200 bg-red-50 dark:bg-red-950/20'
-      }`}
+      style={{
+        padding: '16px 18px',
+        background: isCorrect ? 'rgba(63,214,139,0.06)' : 'rgba(255,92,108,0.06)',
+        border: `1px solid ${isCorrect ? 'rgba(63,214,139,0.3)' : 'rgba(255,92,108,0.3)'}`,
+        borderRadius: 'var(--r-md)',
+        borderLeft: `3px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'}`,
+      }}
     >
-      <p className={`mb-2 font-semibold ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
-        {isCorrect ? 'Correct!' : 'Incorrect'}
-      </p>
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isCorrect ? 12 : 8 }}
+      >
+        <span
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 14,
+            color: isCorrect ? 'var(--success)' : 'var(--danger)',
+          }}
+        >
+          {isCorrect ? '✓' : '✕'}
+        </span>
+        <span
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 600,
+            fontSize: 14,
+            color: isCorrect ? 'var(--success)' : 'var(--danger)',
+          }}
+        >
+          {isCorrect ? 'Correct!' : 'Incorrect'}
+        </span>
+      </div>
       {!isCorrect && (
-        <div className="mb-3 space-y-1 text-sm">
-          <p className="text-muted-foreground">
-            Your answer: <span className="text-red-600">{givenAnswer || '—'}</span>
-          </p>
-          <p className="text-muted-foreground">
-            Correct: <span className="font-medium text-green-700">{correctAnswer}</span>
-          </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
+          <div className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 11 }}>
+            your answer: <span style={{ color: 'var(--danger)' }}>{givenAnswer || '—'}</span>
+          </div>
+          <div className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 11 }}>
+            correct:{' '}
+            <span style={{ color: 'var(--success)', fontWeight: 600 }}>{correctAnswer}</span>
+          </div>
         </div>
       )}
-      <Button size="sm" onClick={onNext}>
-        {isLast ? 'Finish' : 'Next'}
-      </Button>
+      <button
+        className="lx-btn-primary"
+        style={{ padding: '8px 20px', fontSize: 13 }}
+        onClick={onNext}
+      >
+        {isLast ? 'Finish →' : 'Next →'}
+      </button>
     </div>
   )
 }

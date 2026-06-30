@@ -1,14 +1,12 @@
 import { useCallback, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
-import { Input } from '@/shared/ui'
 import { debounce } from '@/shared/lib/debounce'
 import { ROUTES } from '@/shared/config'
 
 export function SearchBar() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  // Initialize from URL; use key on the page level to re-mount on navigation if needed
   const [value, setValue] = useState(() => searchParams.get('q') ?? '')
 
   const debouncedNavigate = useRef(
@@ -34,14 +32,26 @@ export function SearchBar() {
   }
 
   return (
-    <div className="relative">
-      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-      <Input
-        placeholder="Search words..."
+    <div style={{ position: 'relative' }}>
+      <Search
+        style={{
+          position: 'absolute',
+          left: 10,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 13,
+          height: 13,
+          color: 'var(--fg-4)',
+          pointerEvents: 'none',
+        }}
+      />
+      <input
+        className="lx-input"
+        placeholder="search words…"
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        className="h-9 w-64 pl-8"
+        style={{ height: 34, width: 200, paddingLeft: 30, fontSize: 13 }}
       />
     </div>
   )

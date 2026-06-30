@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 import { LANGUAGES } from '@/shared/config'
-import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui'
 import { useUserTags } from '@/entities/block/api/tagApi'
 
 interface BlockFiltersProps {
@@ -25,24 +24,59 @@ export function BlockFilters({
     : userTags.slice(0, 6)
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <div className="relative">
-        <Input
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+      <div style={{ position: 'relative' }}>
+        <input
           ref={inputRef}
-          placeholder="Filter by tag..."
+          className="lx-input"
+          placeholder="filter by tag…"
           value={tag}
           onChange={(e) => onTagChange(e.target.value)}
           onFocus={() => setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-          className="h-9 w-48"
+          style={{ height: 36, width: 180, fontSize: 13 }}
         />
         {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-md border bg-popover shadow-md">
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: '100%',
+              zIndex: 20,
+              marginTop: 4,
+              width: '100%',
+              background: 'var(--bg-3)',
+              border: '1px solid var(--line-2)',
+              borderRadius: 'var(--r-md)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              overflow: 'hidden',
+            }}
+          >
             {suggestions.map((s) => (
               <button
                 key={s}
                 type="button"
-                className="w-full px-3 py-1.5 text-left text-sm hover:bg-accent"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '8px 14px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  color: 'var(--fg-2)',
+                  borderBottom: '1px solid var(--line-1)',
+                }}
+                onMouseEnter={(e) => {
+                  ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--accent-ghost)'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--fg-1)'
+                }}
+                onMouseLeave={(e) => {
+                  ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--fg-2)'
+                }}
                 onMouseDown={(e) => {
                   e.preventDefault()
                   onTagChange(s)
@@ -55,36 +89,46 @@ export function BlockFilters({
             {tag && (
               <button
                 type="button"
-                className="w-full border-t px-3 py-1.5 text-left text-xs text-muted-foreground hover:bg-accent"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '7px 14px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: 'var(--fg-4)',
+                }}
                 onMouseDown={(e) => {
                   e.preventDefault()
                   onTagChange('')
                   setShowSuggestions(false)
                 }}
               >
-                Clear filter
+                clear filter
               </button>
             )}
           </div>
         )}
       </div>
 
-      <Select
+      <select
+        className="lx-input"
         value={languageId !== undefined ? String(languageId) : 'all'}
-        onValueChange={(v) => onLanguageChange(v === 'all' ? undefined : Number(v))}
+        onChange={(e) =>
+          onLanguageChange(e.target.value === 'all' ? undefined : Number(e.target.value))
+        }
+        style={{ height: 36, width: 160, fontSize: 13, cursor: 'pointer' }}
       >
-        <SelectTrigger className="h-9 w-40">
-          <SelectValue placeholder="All languages" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All languages</SelectItem>
-          {Object.entries(LANGUAGES).map(([id, lang]) => (
-            <SelectItem key={id} value={id}>
-              {lang.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <option value="all">All languages</option>
+        {Object.entries(LANGUAGES).map(([id, lang]) => (
+          <option key={id} value={id}>
+            {lang.name}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

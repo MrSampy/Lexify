@@ -1,13 +1,4 @@
 import { useState } from 'react'
-import {
-  Button,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui'
 import { debounce } from '@/shared/lib'
 import {
   useAdminUsers,
@@ -54,54 +45,54 @@ export function AdminUsersPage() {
   }
 
   return (
-    <div className="p-8">
-      <h1 className="mb-6 text-2xl font-bold">Users</h1>
+    <div>
+      <div className="eyebrow" style={{ marginBottom: 14 }}>
+        ~/admin/users
+      </div>
+      <h1 className="ds-h2" style={{ margin: '0 0 20px' }}>
+        Users
+      </h1>
 
       {/* Filters */}
-      <div className="mb-4 flex flex-wrap gap-3">
-        <Input
-          placeholder="Search by email…"
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        <input
+          className="lx-input"
+          placeholder="search by email…"
           value={emailInput}
           onChange={(e) => {
             setEmailInput(e.target.value)
             debouncedSetEmail(e.target.value)
           }}
-          className="w-56"
+          style={{ width: 220, height: 36, fontSize: 13 }}
         />
-        <Select
+        <select
+          className="lx-input"
           value={role}
-          onValueChange={(v) => {
-            setRole(!v || v === 'all' ? '' : v)
+          onChange={(e) => {
+            setRole(e.target.value === 'all' ? '' : e.target.value)
             setPage(1)
           }}
+          style={{ width: 140, height: 36, fontSize: 13, cursor: 'pointer' }}
         >
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="All roles" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All roles</SelectItem>
-            <SelectItem value="user">User</SelectItem>
-            <SelectItem value="moderator">Moderator</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
+          <option value="all">All roles</option>
+          <option value="user">User</option>
+          <option value="moderator">Moderator</option>
+          <option value="admin">Admin</option>
+        </select>
+        <select
+          className="lx-input"
           value={status}
-          onValueChange={(v) => {
-            setStatus(!v || v === 'all' ? '' : v)
+          onChange={(e) => {
+            setStatus(e.target.value === 'all' ? '' : e.target.value)
             setPage(1)
           }}
+          style={{ width: 150, height: 36, fontSize: 13, cursor: 'pointer' }}
         >
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
-            <SelectItem value="deleted">Deleted</SelectItem>
-          </SelectContent>
-        </Select>
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="suspended">Suspended</option>
+          <option value="deleted">Deleted</option>
+        </select>
       </div>
 
       <UsersTable
@@ -116,26 +107,34 @@ export function AdminUsersPage() {
 
       {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            marginTop: 16,
+          }}
+        >
+          <button
+            className="lx-btn-secondary"
+            style={{ padding: '6px 16px', fontSize: 12 }}
             disabled={!data.hasPreviousPage}
             onClick={() => setPage((p) => p - 1)}
           >
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
+            ← Previous
+          </button>
+          <span className="ds-code" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
             {page} / {data.totalPages}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            className="lx-btn-secondary"
+            style={{ padding: '6px 16px', fontSize: 12 }}
             disabled={!data.hasNextPage}
             onClick={() => setPage((p) => p + 1)}
           >
-            Next
-          </Button>
+            Next →
+          </button>
         </div>
       )}
 

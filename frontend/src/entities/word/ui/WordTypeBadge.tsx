@@ -1,10 +1,13 @@
-import { cn } from '@/lib/utils'
-
-const COLOR_MAP: Record<string, string> = {
-  word: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  phrase: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-  idiom: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
-  expression: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+const TYPE_STYLES: Record<string, { bg: string; color: string; border: string; label: string }> = {
+  word: { bg: '#1e3a5f', color: '#60a5fa', border: 'rgba(96,165,250,0.3)', label: 'Word' },
+  phrase: { bg: '#2e1065', color: '#c084fc', border: 'rgba(192,132,252,0.3)', label: 'Phrase' },
+  expression: {
+    bg: '#431407',
+    color: '#fb923c',
+    border: 'rgba(251,146,60,0.3)',
+    label: 'Expression',
+  },
+  idiom: { bg: '#14532d', color: '#4ade80', border: 'rgba(74,222,128,0.3)', label: 'Idiom' },
 }
 
 interface WordTypeBadgeProps {
@@ -12,17 +15,28 @@ interface WordTypeBadgeProps {
   className?: string
 }
 
-export function WordTypeBadge({ type, className }: WordTypeBadgeProps) {
-  const colors = COLOR_MAP[type.toLowerCase()] ?? 'bg-muted text-muted-foreground'
+export function WordTypeBadge({ type }: WordTypeBadgeProps) {
+  const s = TYPE_STYLES[type.toLowerCase()] ?? {
+    bg: 'var(--bg-3)',
+    color: 'var(--fg-2)',
+    border: 'var(--line-2)',
+    label: type,
+  }
   return (
     <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize',
-        colors,
-        className,
-      )}
+      style={{
+        display: 'inline-block',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11,
+        padding: '3px 9px',
+        borderRadius: 'var(--r-pill)',
+        background: s.bg,
+        color: s.color,
+        border: `1px solid ${s.border}`,
+        whiteSpace: 'nowrap',
+      }}
     >
-      {type}
+      {s.label}
     </span>
   )
 }
