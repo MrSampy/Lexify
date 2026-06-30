@@ -59,7 +59,7 @@ export function TestCreatePage() {
         <div className="ds-h3" style={{ color: 'var(--accent-color)' }}>
           Generating your test…
         </div>
-        <p className="ds-code" style={{ color: 'var(--fg-3)' }}>
+        <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
           AI is building questions — this may take a moment
         </p>
       </div>
@@ -71,15 +71,16 @@ export function TestCreatePage() {
       {/* Header */}
       <Link
         to={ROUTES.TESTS}
-        className="ds-code"
         style={{
           color: 'var(--accent-color)',
           textDecoration: 'none',
           display: 'inline-block',
           marginBottom: 16,
+          fontSize: 14,
+          fontWeight: 700,
         }}
       >
-        ← tests / new
+        ← Back to tests
       </Link>
       <h1 className="ds-h2" style={{ margin: '0 0 6px' }}>
         Create a test
@@ -99,14 +100,11 @@ export function TestCreatePage() {
         {/* Blocks column */}
         <div>
           <div className="lx-section-head" style={{ marginBottom: 14 }}>
-            <span className="ds-code" style={{ color: 'var(--accent-color)' }}>
-              01
-            </span>
             <h2
               style={{
                 margin: 0,
                 fontFamily: 'var(--font-body)',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: 13,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
@@ -122,14 +120,11 @@ export function TestCreatePage() {
         {/* Question types column */}
         <div>
           <div className="lx-section-head" style={{ marginBottom: 14 }}>
-            <span className="ds-code" style={{ color: 'var(--accent-color)' }}>
-              02
-            </span>
             <h2
               style={{
                 margin: 0,
                 fontFamily: 'var(--font-body)',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: 13,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
@@ -143,7 +138,9 @@ export function TestCreatePage() {
 
           {/* Question count */}
           <div style={{ marginTop: 16 }}>
-            <label className="lx-label">question_count</label>
+            <label className="lx-label" style={{ marginBottom: 6, display: 'block' }}>
+              Number of questions
+            </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <input
                 type="number"
@@ -154,7 +151,7 @@ export function TestCreatePage() {
                 className="lx-input"
                 style={{ width: 100 }}
               />
-              <span className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 12 }}>
+              <span className="ds-sm" style={{ color: 'var(--fg-4)' }}>
                 5–50
               </span>
             </div>
@@ -174,9 +171,7 @@ export function TestCreatePage() {
                 marginTop: 16,
               }}
             >
-              <span className="ds-code" style={{ color: 'var(--accent-color)' }}>
-                i
-              </span>
+              <span style={{ color: 'var(--accent-color)', fontSize: 15 }}>ℹ️</span>
               <span className="ds-sm" style={{ color: 'var(--fg-2)' }}>
                 {selectedBlockIds.length} block{selectedBlockIds.length !== 1 ? 's' : ''} selected.
               </span>
@@ -192,7 +187,7 @@ export function TestCreatePage() {
                 borderRadius: 'var(--r-md)',
                 color: 'var(--danger)',
                 fontSize: 13,
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-body)',
                 marginTop: 12,
               }}
             >

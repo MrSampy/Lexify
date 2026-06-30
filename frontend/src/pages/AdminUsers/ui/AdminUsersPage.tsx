@@ -46,9 +46,6 @@ export function AdminUsersPage() {
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>
-        ~/admin/users
-      </div>
       <h1 className="ds-h2" style={{ margin: '0 0 20px' }}>
         Users
       </h1>
@@ -124,7 +121,7 @@ export function AdminUsersPage() {
           >
             ← Previous
           </button>
-          <span className="ds-code" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
+          <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
             {page} / {data.totalPages}
           </span>
           <button

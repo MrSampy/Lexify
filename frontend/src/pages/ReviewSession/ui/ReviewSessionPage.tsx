@@ -65,8 +65,8 @@ export function ReviewSessionPage() {
           textAlign: 'center',
         }}
       >
-        <div className="eyebrow">~/review — complete</div>
-        <div className="ds-h2">Session complete</div>
+        <div style={{ fontSize: 48 }}>🎉</div>
+        <div className="ds-h2">Session complete!</div>
         <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
           Reviewed {ratings.length} words
         </p>
@@ -82,7 +82,7 @@ export function ReviewSessionPage() {
             >
               {hardCount}
             </div>
-            <div className="ds-code" style={{ color: 'var(--fg-3)' }}>
+            <div className="ds-sm" style={{ color: 'var(--fg-3)', fontWeight: 600 }}>
               hard (0–2)
             </div>
           </div>
@@ -97,7 +97,7 @@ export function ReviewSessionPage() {
             >
               {easyCount}
             </div>
-            <div className="ds-code" style={{ color: 'var(--fg-3)' }}>
+            <div className="ds-sm" style={{ color: 'var(--fg-3)', fontWeight: 600 }}>
               easy (3–5)
             </div>
           </div>
@@ -133,8 +133,7 @@ export function ReviewSessionPage() {
         </p>
         <Link
           to={ROUTES.DASHBOARD}
-          className="ds-code"
-          style={{ color: 'var(--accent-color)', textDecoration: 'none' }}
+          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
         >
           Back to dashboard
         </Link>
@@ -155,7 +154,7 @@ export function ReviewSessionPage() {
           textAlign: 'center',
         }}
       >
-        <div className="eyebrow">~/review</div>
+        <div style={{ fontSize: 48 }}>📖</div>
         <div className="ds-h3">No words due for review!</div>
         <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
           Come back later or add new words.
@@ -190,8 +189,8 @@ export function ReviewSessionPage() {
           marginBottom: 8,
         }}
       >
-        <div className="eyebrow">~/review</div>
-        <span className="ds-code" style={{ color: 'var(--accent-color)' }}>
+        <div style={{ fontWeight: 700, color: 'var(--fg-2)', fontSize: 14 }}>Review 🔄</div>
+        <span style={{ color: 'var(--accent-color)', fontSize: 13, fontWeight: 700 }}>
           {remaining} words remaining
         </span>
       </div>
@@ -219,20 +218,6 @@ export function ReviewSessionPage() {
               minHeight: 280,
             }}
           >
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-                padding: '4px 10px',
-                borderRadius: 'var(--r-sm)',
-                background: 'var(--bg-1)',
-                border: '1px solid var(--line-2)',
-                color: 'var(--fg-2)',
-                marginBottom: 20,
-              }}
-            >
-              {currentWord.term}
-            </span>
             <div
               style={{
                 fontFamily: 'var(--font-display)',
@@ -270,7 +255,7 @@ export function ReviewSessionPage() {
               minHeight: 280,
             }}
           >
-            <div className="ds-code" style={{ color: 'var(--fg-4)', marginBottom: 8 }}>
+            <div style={{ color: 'var(--fg-4)', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
               {currentWord.term}
             </div>
             <div
@@ -301,10 +286,15 @@ export function ReviewSessionPage() {
       {flipped && (
         <div>
           <div
-            className="ds-code"
-            style={{ color: 'var(--fg-4)', textAlign: 'center', marginBottom: 12 }}
+            style={{
+              color: 'var(--fg-3)',
+              textAlign: 'center',
+              marginBottom: 12,
+              fontSize: 13,
+              fontWeight: 600,
+            }}
           >
-            // how well did you recall it?
+            How well did you recall it?
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {[0, 1, 2, 3, 4, 5].map((n) => (
@@ -348,7 +338,12 @@ export function ReviewSessionPage() {
                   {n}
                 </span>
                 <span
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--fg-3)' }}
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 10,
+                    color: 'var(--fg-3)',
+                    fontWeight: 600,
+                  }}
                 >
                   {RATER_LABELS[n]}
                 </span>

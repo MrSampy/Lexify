@@ -134,44 +134,41 @@ export function WordImportPage() {
   const hasDraft = step === 'input' && storedBlockId === blockId && formattedWords.length > 0
 
   const STEPS = [
-    { idx: '01', label: 'Input' },
-    { idx: '02', label: 'Formatting' },
-    { idx: '03', label: 'Preview' },
-    { idx: '04', label: 'Save' },
+    { idx: '1', label: 'Input' },
+    { idx: '2', label: 'Formatting' },
+    { idx: '3', label: 'Preview' },
+    { idx: '4', label: 'Save' },
   ]
   const STEP_INDEX: Record<string, number> = { input: 0, formatting: 1, preview: 2, saving: 3 }
   const stepIndex = STEP_INDEX[step] ?? 0
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>
-        ~/import
-      </div>
+      <Link
+        to={ROUTES.BLOCK_DETAIL(blockId ?? '')}
+        style={{
+          color: 'var(--accent-color)',
+          textDecoration: 'none',
+          fontSize: 14,
+          fontWeight: 700,
+          marginBottom: 16,
+          display: 'inline-block',
+        }}
+      >
+        ← Back to block
+      </Link>
 
       {/* Page title */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 24 }}>
         <h1 className="ds-h2" style={{ margin: 0 }}>
           AI Word Import
         </h1>
         {blockData && (
-          <span className="ds-code" style={{ color: 'var(--fg-3)' }}>
+          <span className="ds-sm" style={{ color: 'var(--fg-3)' }}>
             into &ldquo;{blockData.block.title}&rdquo;
           </span>
         )}
       </div>
-      <Link
-        to={ROUTES.BLOCK_DETAIL(blockId ?? '')}
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 12,
-          color: 'var(--fg-3)',
-          textDecoration: 'none',
-          marginBottom: 24,
-          display: 'inline-block',
-        }}
-      >
-        ← back to block
-      </Link>
 
       {/* Stepper */}
       <div
@@ -203,7 +200,8 @@ export function WordImportPage() {
           >
             <span
               style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-body)',
+                fontWeight: 700,
                 fontSize: 11,
                 color:
                   i === stepIndex
@@ -242,7 +240,7 @@ export function WordImportPage() {
             borderRadius: 'var(--r-md)',
           }}
         >
-          <span className="ds-code" style={{ color: 'var(--fg-2)', fontSize: 13 }}>
+          <span style={{ color: 'var(--fg-2)', fontSize: 13, fontWeight: 600 }}>
             Draft saved — {formattedWords.length} words. Restore?
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -303,8 +301,8 @@ export function WordImportPage() {
                   />
                 ))}
               </div>
-              <span className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 11, flex: 1 }}>
-                ai-format — streaming…
+              <span style={{ color: 'var(--fg-4)', fontSize: 11, flex: 1, fontWeight: 600 }}>
+                AI formatting — streaming…
               </span>
               <button
                 className="lx-btn-secondary"
@@ -338,7 +336,7 @@ export function WordImportPage() {
                 borderTop: '1px solid var(--line-2)',
               }}
             >
-              <span className="ds-code" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
+              <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
                 {formattedWords.length} {formattedWords.length === 1 ? 'word' : 'words'} ready
               </span>
               <div style={{ display: 'flex', gap: 10 }}>
@@ -369,8 +367,8 @@ export function WordImportPage() {
             }}
           >
             <Spinner size="sm" />
-            <span className="ds-code" style={{ color: 'var(--fg-3)' }}>
-              saving words to block…
+            <span style={{ color: 'var(--fg-3)', fontWeight: 600, fontSize: 14 }}>
+              Saving words to block…
             </span>
           </div>
         )}

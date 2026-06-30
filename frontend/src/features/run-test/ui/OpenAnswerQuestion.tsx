@@ -61,7 +61,7 @@ export function OpenAnswerQuestion({ question, onSubmit, disabled }: OpenAnswerQ
         </button>
       </div>
       {showCloseHint && (
-        <p className="ds-code" style={{ marginTop: 8, color: 'var(--warning)', fontSize: 11 }}>
+        <p style={{ marginTop: 8, color: 'var(--warning)', fontSize: 11, fontWeight: 600 }}>
           Almost — double-check your spelling.
         </p>
       )}

@@ -32,18 +32,17 @@ export function ReviewDueBanner() {
           alignItems: 'center',
           justifyContent: 'center',
           color: 'var(--accent-color)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: 16,
+          fontSize: 18,
         }}
       >
-        ▶
+        🔄
       </div>
       <div style={{ flex: 1 }}>
         <div className="ds-h4" style={{ color: 'var(--fg-1)' }}>
           {data.length} {data.length === 1 ? 'word' : 'words'} due for review today
         </div>
-        <div className="ds-code" style={{ color: 'var(--fg-3)', marginTop: 2 }}>
-          SM-2 — only what's actually due
+        <div className="ds-sm" style={{ color: 'var(--fg-3)', marginTop: 2 }}>
+          Spaced repetition — only what's actually due
         </div>
       </div>
       <button

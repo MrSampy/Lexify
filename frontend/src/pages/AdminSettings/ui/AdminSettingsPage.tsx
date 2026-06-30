@@ -29,9 +29,6 @@ export function AdminSettingsPage() {
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>
-        ~/admin/settings
-      </div>
       <h1 className="ds-h2" style={{ margin: '0 0 20px' }}>
         System Settings
       </h1>
@@ -63,8 +60,9 @@ export function AdminSettingsPage() {
             {['Key', 'Value', 'Type', 'Description', 'Updated', ''].map((h) => (
               <span
                 key={h}
-                className="ds-code"
                 style={{
+                  fontFamily: 'var(--font-body)',
+                  fontWeight: 700,
                   color: 'var(--fg-4)',
                   fontSize: 10,
                   textTransform: 'uppercase',
@@ -88,9 +86,7 @@ export function AdminSettingsPage() {
                 borderBottom: i < (settings?.length ?? 0) - 1 ? '1px solid var(--line-1)' : 'none',
               }}
             >
-              <span className="ds-code" style={{ color: 'var(--fg-2)', fontSize: 12 }}>
-                {s.key}
-              </span>
+              <span style={{ color: 'var(--fg-2)', fontSize: 12, fontWeight: 600 }}>{s.key}</span>
               <span>
                 {editingKey === s.key ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -132,14 +128,12 @@ export function AdminSettingsPage() {
                     </button>
                   </div>
                 ) : (
-                  <span className="ds-code" style={{ color: 'var(--fg-1)', fontSize: 13 }}>
-                    {s.value}
-                  </span>
+                  <span style={{ color: 'var(--fg-1)', fontSize: 13 }}>{s.value}</span>
                 )}
               </span>
               <span
                 style={{
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--font-body)',
                   fontSize: 10,
                   padding: '2px 7px',
                   borderRadius: 'var(--r-sm)',
@@ -151,9 +145,7 @@ export function AdminSettingsPage() {
                 {s.valueType}
               </span>
               <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{s.description ?? '—'}</span>
-              <span className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 11 }}>
-                {formatDate(s.updatedAt)}
-              </span>
+              <span style={{ color: 'var(--fg-4)', fontSize: 11 }}>{formatDate(s.updatedAt)}</span>
               <div>
                 {editingKey !== s.key && (
                   <button

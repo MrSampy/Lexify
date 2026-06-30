@@ -17,7 +17,7 @@ const chartTooltipStyle = {
   border: '1px solid var(--line-2)',
   borderRadius: 6,
   color: 'var(--fg-1)',
-  fontFamily: 'var(--font-mono)',
+  fontFamily: 'var(--font-body)',
   fontSize: 11,
 }
 
@@ -44,7 +44,7 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
       >
         {value}
       </div>
-      <div className="ds-code" style={{ color: 'var(--fg-3)', fontSize: 11 }}>
+      <div className="ds-sm" style={{ color: 'var(--fg-3)', fontSize: 11, fontWeight: 600 }}>
         {label}
       </div>
     </div>
@@ -64,9 +64,6 @@ export function AdminDashboardPage() {
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>
-        ~/admin/dashboard
-      </div>
       <h1 className="ds-h2" style={{ margin: '0 0 24px' }}>
         Dashboard
       </h1>
@@ -113,16 +110,16 @@ export function AdminDashboardPage() {
           }}
         >
           <div
-            className="ds-code"
             style={{
               color: 'var(--fg-3)',
               fontSize: 11,
+              fontWeight: 700,
               marginBottom: 16,
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
             }}
           >
-            // registrations — 30d
+            Registrations — 30d
           </div>
           {regLoading ? (
             <div
@@ -136,8 +133,8 @@ export function AdminDashboardPage() {
               <Spinner />
             </div>
           ) : regData.length === 0 ? (
-            <p className="ds-code" style={{ color: 'var(--fg-4)' }}>
-              no data
+            <p className="ds-sm" style={{ color: 'var(--fg-4)' }}>
+              No data
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
@@ -145,11 +142,11 @@ export function AdminDashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--line-1)" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-mono)' }}
+                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-body)' }}
                   tickFormatter={(v: string) => v.slice(5)}
                 />
                 <YAxis
-                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-mono)' }}
+                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-body)' }}
                   allowDecimals={false}
                 />
                 <Tooltip contentStyle={chartTooltipStyle} />
@@ -174,16 +171,16 @@ export function AdminDashboardPage() {
           }}
         >
           <div
-            className="ds-code"
             style={{
               color: 'var(--fg-3)',
               fontSize: 11,
+              fontWeight: 700,
               marginBottom: 16,
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
             }}
           >
-            // ai calls — last 24h
+            AI calls — last 24h
           </div>
           {aiLoading ? (
             <div
@@ -197,8 +194,8 @@ export function AdminDashboardPage() {
               <Spinner />
             </div>
           ) : aiData.length === 0 ? (
-            <p className="ds-code" style={{ color: 'var(--fg-4)' }}>
-              no data
+            <p className="ds-sm" style={{ color: 'var(--fg-4)' }}>
+              No data
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
@@ -206,10 +203,10 @@ export function AdminDashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--line-1)" />
                 <XAxis
                   dataKey="hour"
-                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-mono)' }}
+                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-body)' }}
                 />
                 <YAxis
-                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-mono)' }}
+                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-body)' }}
                   allowDecimals={false}
                 />
                 <Tooltip contentStyle={chartTooltipStyle} />

@@ -7,16 +7,12 @@ export function BlockSelector() {
   const toggleBlock = useGenerateTestStore((s) => s.toggleBlock)
 
   if (isLoading) {
-    return (
-      <p className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 12 }}>
-        Loading blocks…
-      </p>
-    )
+    return <p style={{ color: 'var(--fg-4)', fontSize: 12, fontWeight: 600 }}>Loading blocks…</p>
   }
 
   if (!data || data.items.length === 0) {
     return (
-      <p className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 12 }}>
+      <p style={{ color: 'var(--fg-4)', fontSize: 12, fontWeight: 600 }}>
         No blocks found. Create a block first.
       </p>
     )
@@ -61,7 +57,7 @@ export function BlockSelector() {
               >
                 {block.title}
               </p>
-              <p className="ds-code" style={{ margin: 0, fontSize: 10, color: 'var(--fg-4)' }}>
+              <p style={{ margin: 0, fontSize: 10, color: 'var(--fg-4)', fontWeight: 600 }}>
                 {block.wordCount} words
               </p>
             </div>

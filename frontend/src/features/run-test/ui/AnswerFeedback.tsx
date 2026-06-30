@@ -28,8 +28,7 @@ export function AnswerFeedback({
       >
         <span
           style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 14,
+            fontSize: 16,
             color: isCorrect ? 'var(--success)' : 'var(--danger)',
           }}
         >
@@ -48,10 +47,10 @@ export function AnswerFeedback({
       </div>
       {!isCorrect && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
-          <div className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 11 }}>
+          <div style={{ color: 'var(--fg-4)', fontSize: 11, fontWeight: 600 }}>
             your answer: <span style={{ color: 'var(--danger)' }}>{givenAnswer || '—'}</span>
           </div>
-          <div className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 11 }}>
+          <div style={{ color: 'var(--fg-4)', fontSize: 11, fontWeight: 600 }}>
             correct:{' '}
             <span style={{ color: 'var(--success)', fontWeight: 600 }}>{correctAnswer}</span>
           </div>

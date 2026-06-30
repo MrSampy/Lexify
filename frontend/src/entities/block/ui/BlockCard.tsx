@@ -61,13 +61,14 @@ export function BlockCard({ block }: BlockCardProps) {
           </div>
           <span
             style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--font-body)',
+              fontWeight: 700,
               fontSize: 11,
-              padding: '3px 8px',
-              borderRadius: 'var(--r-sm)',
-              background: 'var(--bg-1)',
-              border: '1px solid var(--line-2)',
-              color: 'var(--fg-2)',
+              padding: '3px 10px',
+              borderRadius: 'var(--r-pill)',
+              background: 'var(--accent-ghost)',
+              border: '1px solid var(--accent-line)',
+              color: 'var(--accent-dim)',
               flexShrink: 0,
             }}
           >
@@ -86,7 +87,7 @@ export function BlockCard({ block }: BlockCardProps) {
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div className="ds-code" style={{ color: 'var(--fg-3)' }}>
+          <div className="ds-sm" style={{ color: 'var(--fg-3)' }}>
             {block.wordCount} words
           </div>
           <div
@@ -125,7 +126,12 @@ export function BlockCard({ block }: BlockCardProps) {
           </div>
           {!hovered && (
             <span
-              style={{ color: 'var(--accent-color)', fontFamily: 'var(--font-mono)', fontSize: 13 }}
+              style={{
+                color: 'var(--accent-color)',
+                fontFamily: 'var(--font-body)',
+                fontSize: 13,
+                fontWeight: 700,
+              }}
             >
               →
             </span>

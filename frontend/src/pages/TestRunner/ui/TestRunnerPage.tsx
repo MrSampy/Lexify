@@ -162,10 +162,9 @@ export function TestRunnerPage() {
         </p>
         <Link
           to={ROUTES.TESTS}
-          className="ds-code"
-          style={{ color: 'var(--accent-color)', textDecoration: 'none' }}
+          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
         >
-          ← back to tests
+          ← Back to tests
         </Link>
       </div>
     )
@@ -185,16 +184,13 @@ export function TestRunnerPage() {
       >
         <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
           This test is not ready yet{' '}
-          <span className="ds-code" style={{ color: 'var(--warning)' }}>
-            ({test.status})
-          </span>
+          <span style={{ color: 'var(--warning)', fontWeight: 700 }}>({test.status})</span>
         </p>
         <Link
           to={ROUTES.TESTS}
-          className="ds-code"
-          style={{ color: 'var(--accent-color)', textDecoration: 'none' }}
+          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
         >
-          ← back to tests
+          ← Back to tests
         </Link>
       </div>
     )
@@ -205,9 +201,6 @@ export function TestRunnerPage() {
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 6 }}>
-        <div className="eyebrow">~/test</div>
-      </div>
       <div
         style={{
           display: 'flex',
@@ -220,7 +213,7 @@ export function TestRunnerPage() {
           {test.title}
         </h1>
         {questions.length > 0 && (
-          <span className="ds-code" style={{ color: 'var(--accent-color)' }}>
+          <span style={{ color: 'var(--accent-color)', fontWeight: 700, fontSize: 14 }}>
             {currentQuestionIndex + 1} / {questions.length}
           </span>
         )}
@@ -236,10 +229,10 @@ export function TestRunnerPage() {
       {/* Correct counter */}
       {questions.length > 0 && (
         <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-          <span className="ds-code" style={{ color: 'var(--success)', fontSize: 11 }}>
+          <span style={{ color: 'var(--success)', fontSize: 11, fontWeight: 700 }}>
             ✓ {correctCount} correct
           </span>
-          <span className="ds-code" style={{ color: 'var(--danger)', fontSize: 11 }}>
+          <span style={{ color: 'var(--danger)', fontSize: 11, fontWeight: 700 }}>
             ✕ {currentQuestionIndex - correctCount} incorrect
           </span>
         </div>
@@ -268,15 +261,16 @@ export function TestRunnerPage() {
           >
             <span
               style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-body)',
+                fontWeight: 700,
                 fontSize: 10,
-                padding: '2px 8px',
-                borderRadius: 'var(--r-sm)',
-                background: 'var(--bg-1)',
-                border: '1px solid var(--line-2)',
-                color: 'var(--fg-4)',
+                padding: '2px 10px',
+                borderRadius: 'var(--r-pill)',
+                background: 'var(--accent-ghost)',
+                border: '1px solid var(--accent-line)',
+                color: 'var(--accent-dim)',
                 textTransform: 'uppercase',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.06em',
               }}
             >
               {currentQuestion.questionType.replaceAll('_', ' ')}
@@ -310,9 +304,7 @@ export function TestRunnerPage() {
             {finishAttempt.isPending && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
                 <Spinner size="sm" />
-                <span className="ds-code" style={{ color: 'var(--fg-3)' }}>
-                  finishing…
-                </span>
+                <span style={{ color: 'var(--fg-3)', fontSize: 13 }}>finishing…</span>
               </div>
             )}
           </div>
@@ -326,8 +318,9 @@ export function TestRunnerPage() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
+            fontFamily: 'var(--font-body)',
+            fontSize: 13,
+            fontWeight: 600,
             color: 'var(--fg-4)',
             padding: '6px 12px',
           }}

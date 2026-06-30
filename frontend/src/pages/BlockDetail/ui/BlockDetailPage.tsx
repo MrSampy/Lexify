@@ -108,15 +108,16 @@ export function BlockDetailPage() {
       {/* Back */}
       <Link
         to={ROUTES.BLOCKS}
-        className="ds-code"
         style={{
           color: 'var(--accent-color)',
           textDecoration: 'none',
           display: 'inline-block',
           marginBottom: 16,
+          fontSize: 14,
+          fontWeight: 700,
         }}
       >
-        ← back to blocks
+        ← Back to blocks
       </Link>
 
       {/* Header */}
@@ -137,13 +138,14 @@ export function BlockDetailPage() {
             </h1>
             <span
               style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 12,
-                padding: '4px 9px',
-                borderRadius: 'var(--r-sm)',
-                background: 'var(--bg-1)',
-                border: '1px solid var(--line-2)',
-                color: 'var(--fg-2)',
+                fontFamily: 'var(--font-body)',
+                fontSize: 11,
+                fontWeight: 700,
+                padding: '4px 12px',
+                borderRadius: 'var(--r-pill)',
+                background: 'var(--accent-ghost)',
+                border: '1px solid var(--accent-line)',
+                color: 'var(--accent-dim)',
               }}
             >
               {langCode.toUpperCase()}
@@ -330,7 +332,7 @@ export function BlockDetailPage() {
             padding: '12px 18px',
             background: 'var(--bg-1)',
             borderBottom: '1px solid var(--line-2)',
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--font-body)',
             fontSize: 11,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
@@ -350,13 +352,11 @@ export function BlockDetailPage() {
               padding: '48px 18px',
               textAlign: 'center',
               color: 'var(--fg-3)',
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--font-body)',
               fontSize: 13,
             }}
           >
-            {confidenceOnly
-              ? '// no flagged words on this page'
-              : '// no words yet — add some above'}
+            {confidenceOnly ? 'No flagged words on this page' : 'No words yet — add some above'}
           </div>
         ) : (
           displayedWords.map((word) => <WordRow key={word.id} word={word} blockId={block.id} />)

@@ -8,7 +8,7 @@ export function FormatProgress() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <Spinner size="sm" />
-        <span className="ds-code" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
+        <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
           AI is formatting your words…
         </span>
       </div>
@@ -19,7 +19,7 @@ export function FormatProgress() {
             style={{
               whiteSpace: 'pre-wrap',
               margin: 0,
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--font-body)',
               fontSize: 12,
               color: 'var(--fg-2)',
               lineHeight: 1.6,

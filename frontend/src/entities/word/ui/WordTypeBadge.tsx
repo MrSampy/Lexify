@@ -26,7 +26,8 @@ export function WordTypeBadge({ type }: WordTypeBadgeProps) {
     <span
       style={{
         display: 'inline-block',
-        fontFamily: 'var(--font-mono)',
+        fontFamily: 'var(--font-body)',
+        fontWeight: 700,
         fontSize: 11,
         padding: '3px 9px',
         borderRadius: 'var(--r-pill)',

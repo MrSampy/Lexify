@@ -26,9 +26,6 @@ export function BlockListPage() {
   return (
     <div>
       {/* Header */}
-      <div className="eyebrow" style={{ marginBottom: 12 }}>
-        ~/blocks
-      </div>
       <div
         style={{
           display: 'flex',

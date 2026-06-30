@@ -23,10 +23,6 @@ export function SearchResultsPage() {
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto' }}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>
-        ~/search
-      </div>
-
       {/* Search bar display */}
       <div
         style={{
@@ -41,7 +37,7 @@ export function SearchResultsPage() {
           boxShadow: q ? '0 0 0 3px var(--accent-ghost)' : 'none',
         }}
       >
-        <span style={{ color: 'var(--accent-color)', fontFamily: 'var(--font-mono)' }}>⌕</span>
+        <span style={{ color: 'var(--accent-color)', fontSize: 16 }}>🔍</span>
         <span style={{ flex: 1, color: 'var(--fg-1)', fontSize: 15 }}>
           {q || 'type to search…'}
         </span>
@@ -49,7 +45,7 @@ export function SearchResultsPage() {
       </div>
 
       {q && data && (
-        <div className="ds-code" style={{ color: 'var(--fg-4)', marginBottom: 24 }}>
+        <div className="ds-sm" style={{ color: 'var(--fg-4)', marginBottom: 24, fontWeight: 600 }}>
           {data.length} match{data.length !== 1 ? 'es' : ''} across {Object.keys(grouped).length}{' '}
           block{Object.keys(grouped).length !== 1 ? 's' : ''}
         </div>
@@ -62,7 +58,7 @@ export function SearchResultsPage() {
       )}
 
       {isError && (
-        <p style={{ color: 'var(--danger)', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
+        <p style={{ color: 'var(--danger)', fontFamily: 'var(--font-body)', fontSize: 13 }}>
           Search failed. Please try again.
         </p>
       )}

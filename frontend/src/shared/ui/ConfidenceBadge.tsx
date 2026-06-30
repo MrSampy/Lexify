@@ -22,7 +22,7 @@ export function ConfidenceBadge({ flag, showLabel = false, className }: Confiden
     >
       <AlertTriangle style={{ width: 13, height: 13 }} />
       {showLabel && (
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600 }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700 }}>
           review
         </span>
       )}

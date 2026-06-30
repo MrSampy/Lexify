@@ -42,9 +42,6 @@ export function TestListPage() {
   return (
     <div>
       {/* Header */}
-      <div className="eyebrow" style={{ marginBottom: 12 }}>
-        ~/tests
-      </div>
       <div
         style={{
           display: 'flex',
@@ -78,7 +75,7 @@ export function TestListPage() {
               borderRadius: 'var(--r-md)',
               color: 'var(--fg-1)',
               fontSize: 13,
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--font-body)',
               cursor: 'pointer',
               outline: 'none',
             }}
@@ -146,7 +143,7 @@ export function TestListPage() {
                   >
                     {test.title}
                   </div>
-                  <div className="ds-code" style={{ color: 'var(--fg-3)' }}>
+                  <div className="ds-sm" style={{ color: 'var(--fg-3)' }}>
                     {test.questionCount != null ? `${test.questionCount} questions · ` : ''}
                     {formatDate(test.createdAt)}
                   </div>
@@ -154,9 +151,10 @@ export function TestListPage() {
 
                 <span
                   style={{
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--font-body)',
                     fontSize: 11,
-                    padding: '4px 10px',
+                    fontWeight: 700,
+                    padding: '4px 12px',
                     borderRadius: 'var(--r-pill)',
                     background: s.bg,
                     color: s.color,

@@ -39,9 +39,6 @@ export function AdminLanguagesPage() {
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>
-        ~/admin/languages
-      </div>
       <div
         style={{
           display: 'flex',
@@ -84,8 +81,9 @@ export function AdminLanguagesPage() {
             {['Code', 'Name', 'Native', 'Sort', 'Status', ''].map((h) => (
               <span
                 key={h}
-                className="ds-code"
                 style={{
+                  fontFamily: 'var(--font-body)',
+                  fontWeight: 700,
                   color: 'var(--fg-4)',
                   fontSize: 10,
                   textTransform: 'uppercase',
@@ -109,17 +107,15 @@ export function AdminLanguagesPage() {
                 borderBottom: i < (languages?.length ?? 0) - 1 ? '1px solid var(--line-1)' : 'none',
               }}
             >
-              <span className="ds-code" style={{ color: 'var(--accent-color)', fontSize: 13 }}>
+              <span style={{ color: 'var(--accent-color)', fontSize: 13, fontWeight: 700 }}>
                 {lang.code}
               </span>
               <span style={{ color: 'var(--fg-1)', fontSize: 14 }}>{lang.name}</span>
               <span style={{ color: 'var(--fg-3)', fontSize: 13 }}>{lang.nativeName}</span>
-              <span className="ds-code" style={{ color: 'var(--fg-4)', fontSize: 12 }}>
-                {lang.sortOrder}
-              </span>
+              <span style={{ color: 'var(--fg-4)', fontSize: 12 }}>{lang.sortOrder}</span>
               <span
                 style={{
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--font-body)',
                   fontSize: 10,
                   padding: '3px 8px',
                   borderRadius: 999,

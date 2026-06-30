@@ -32,9 +32,6 @@ export function AdminAiMonitorPage() {
 
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>
-        ~/admin/ai-monitor
-      </div>
       <h1 className="ds-h2" style={{ margin: '0 0 20px' }}>
         AI Monitor
       </h1>
@@ -64,12 +61,15 @@ export function AdminAiMonitorPage() {
                   flexShrink: 0,
                 }}
               />
-              <span className="ds-code" style={{ color: 'var(--fg-2)', fontSize: 12 }}>
+              <span style={{ color: 'var(--fg-2)', fontSize: 12, fontWeight: 600 }}>
                 {p.provider}
               </span>
               <span
-                className="ds-code"
-                style={{ color: STATUS_DOT[p.status] ?? 'var(--fg-4)', fontSize: 11 }}
+                style={{
+                  color: STATUS_DOT[p.status] ?? 'var(--fg-4)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                }}
               >
                 {p.status} · {p.recentSuccessRatePercent.toFixed(0)}%
               </span>
@@ -132,9 +132,7 @@ export function AdminAiMonitorPage() {
             }}
             style={{ accentColor: 'var(--accent-color)', width: 14, height: 14 }}
           />
-          <span className="ds-code" style={{ color: 'var(--fg-2)', fontSize: 13 }}>
-            Success only
-          </span>
+          <span style={{ color: 'var(--fg-2)', fontSize: 13, fontWeight: 600 }}>Success only</span>
         </label>
       </div>
 
@@ -160,7 +158,7 @@ export function AdminAiMonitorPage() {
           >
             ← Previous
           </button>
-          <span className="ds-code" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
+          <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
             {page} / {logsData.totalPages}
           </span>
           <button

@@ -166,7 +166,7 @@ export function WordRow({ word, blockId }: WordRowProps) {
             border: 'none',
             cursor: 'pointer',
             color: 'var(--fg-4)',
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--font-body)',
             fontSize: 13,
             transition: 'color 0.12s',
           }}

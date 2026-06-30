@@ -33,8 +33,7 @@ export function TestResultsPage() {
         </p>
         <Link
           to={ROUTES.TESTS}
-          className="ds-code"
-          style={{ color: 'var(--accent-color)', textDecoration: 'none' }}
+          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
         >
           ← Back to tests
         </Link>
@@ -53,13 +52,6 @@ export function TestResultsPage() {
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto' }}>
-      <div
-        className="eyebrow"
-        style={{ marginBottom: 14, justifyContent: 'center', textAlign: 'center' }}
-      >
-        ~/tests/results
-      </div>
-
       {/* Score circle */}
       <div
         style={{
@@ -101,7 +93,7 @@ export function TestResultsPage() {
             >
               {scorePercent}%
             </span>
-            <span className="ds-code" style={{ color: 'var(--fg-3)' }}>
+            <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
               {data.correctAnswers} / {data.totalQuestions}
             </span>
           </div>
@@ -136,7 +128,7 @@ export function TestResultsPage() {
             >
               <span
                 style={{
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--font-body)',
                   color: r.isCorrect ? 'var(--success)' : 'var(--danger)',
                   fontSize: 15,
                   width: 16,
@@ -147,10 +139,10 @@ export function TestResultsPage() {
               <span style={{ flex: 1, color: 'var(--fg-1)', fontSize: 14 }}>{r.questionText}</span>
               {!r.isCorrect && (
                 <div style={{ textAlign: 'right' }}>
-                  <div className="ds-code" style={{ color: 'var(--danger)', fontSize: 11 }}>
+                  <div style={{ color: 'var(--danger)', fontSize: 11, fontWeight: 600 }}>
                     {r.givenAnswer || '—'}
                   </div>
-                  <div className="ds-code" style={{ color: 'var(--success)', fontSize: 11 }}>
+                  <div style={{ color: 'var(--success)', fontSize: 11, fontWeight: 600 }}>
                     {r.correctAnswer}
                   </div>
                 </div>

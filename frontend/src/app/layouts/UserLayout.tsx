@@ -1,4 +1,4 @@
-import { useLocation, useNavigate, NavLink, Outlet } from 'react-router-dom'
+import { useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { useAuthStore } from '@/entities/user'
 import { authApi } from '@/features/auth'
@@ -6,18 +6,18 @@ import { authApi } from '@/features/auth'
 const RT_KEY = 'lexify_rt'
 
 const APP_NAV = [
-  { idx: '00', label: 'Dashboard', to: ROUTES.DASHBOARD },
-  { idx: '01', label: 'Word blocks', to: ROUTES.BLOCKS },
-  { idx: '02', label: 'Tests', to: ROUTES.TESTS },
-  { idx: '03', label: 'Review', to: ROUTES.REVIEW },
-  { idx: '04', label: 'Search', to: ROUTES.SEARCH },
+  { label: 'Dashboard', to: ROUTES.DASHBOARD, emoji: '🏠' },
+  { label: 'Word blocks', to: ROUTES.BLOCKS, emoji: '📚' },
+  { label: 'Tests', to: ROUTES.TESTS, emoji: '📝' },
+  { label: 'Review', to: ROUTES.REVIEW, emoji: '🔄' },
+  { label: 'Search', to: ROUTES.SEARCH, emoji: '🔍' },
 ]
 
 export function UserLayout() {
   const logout = useAuthStore((s) => s.logout)
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
-  const location = useLocation()
+  const isAdmin = user?.role === 'admin'
 
   async function handleLogout() {
     const token = sessionStorage.getItem(RT_KEY)
@@ -32,189 +32,158 @@ export function UserLayout() {
     navigate(ROUTES.LOGIN, { replace: true })
   }
 
-  const isAdmin = user?.role === 'admin'
-
   return (
-    <div
-      style={{
-        position: 'relative',
-        zIndex: 1,
-        display: 'flex',
-        alignItems: 'stretch',
-        minHeight: '100vh',
-      }}
-    >
+    <div style={{ display: 'flex', alignItems: 'stretch', minHeight: '100vh' }}>
       {/* ── SIDEBAR ── */}
       <aside
         style={{
-          width: 252,
+          width: 248,
           flexShrink: 0,
           position: 'sticky',
           top: 0,
           height: '100vh',
           overflowY: 'auto',
           background: 'var(--bg-1)',
-          borderRight: '1px solid var(--line-1)',
-          padding: '20px 14px',
+          borderRight: '1.5px solid var(--line-2)',
+          padding: '20px 12px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 6,
+          boxShadow: '2px 0 12px rgba(20,80,60,0.05)',
         }}
       >
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 8px 18px' }}>
+        <div style={{ padding: '4px 8px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              background: 'var(--accent-color)',
+              borderRadius: 'var(--r-sm)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(22,185,129,0.3)',
+            }}
+          >
+            <span
+              style={{
+                color: '#fff',
+                fontSize: 18,
+                fontWeight: 800,
+                fontFamily: 'var(--font-display)',
+              }}
+            >
+              L
+            </span>
+          </div>
           <span
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 18,
+              fontFamily: 'var(--font-display)',
+              fontSize: 20,
               fontWeight: 700,
-              letterSpacing: '-0.02em',
               color: 'var(--fg-1)',
             }}
           >
-            <span style={{ color: 'var(--accent-color)' }}>&lt;</span>
             Lexify
-            <span style={{ color: 'var(--accent-color)' }}>/&gt;</span>
           </span>
         </div>
 
-        {/* Section label */}
+        {/* Nav section label */}
         <div
-          className="ds-code"
-          style={{ padding: '0 8px 6px', fontSize: 11, color: 'var(--fg-4)' }}
+          style={{
+            padding: '0 8px 8px',
+            fontSize: 11,
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.10em',
+            color: 'var(--fg-4)',
+          }}
         >
-          // navigation
+          Menu
         </div>
 
-        {/* App nav */}
-        <div style={{ marginBottom: 10 }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 11,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--fg-4)',
-              padding: '8px 8px 6px',
-            }}
-          >
-            ~/app
-          </div>
-          {APP_NAV.map(({ idx, label, to }) => (
+        {/* Nav items */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
+          {APP_NAV.map(({ label, to, emoji }) => (
             <NavLink
               key={to}
               to={to}
               end={to === ROUTES.DASHBOARD}
               className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
             >
-              <span
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  opacity: 0.6,
-                  width: 18,
-                  flexShrink: 0,
-                }}
-              >
-                {idx}
-              </span>
-              <span style={{ position: 'relative', zIndex: 1, flex: 1, textAlign: 'left' }}>
-                {label}
-              </span>
+              <span style={{ fontSize: 16 }}>{emoji}</span>
+              <span>{label}</span>
             </NavLink>
           ))}
-        </div>
+        </nav>
 
         {/* Admin link */}
         {isAdmin && (
-          <div style={{ marginBottom: 10 }}>
+          <>
             <div
               style={{
-                fontFamily: 'var(--font-mono)',
+                padding: '12px 8px 8px',
                 fontSize: 11,
-                letterSpacing: '0.12em',
+                fontWeight: 800,
                 textTransform: 'uppercase',
+                letterSpacing: '0.10em',
                 color: 'var(--fg-4)',
-                padding: '8px 8px 6px',
               }}
             >
-              ~/admin
+              Admin
             </div>
             <NavLink
               to={ROUTES.ADMIN.DASHBOARD}
               className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
-              style={{ color: 'var(--warning)' }}
+              style={({ isActive }) => ({ color: isActive ? 'var(--warning)' : 'var(--fg-3)' })}
             >
-              <span
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  opacity: 0.6,
-                  width: 18,
-                  flexShrink: 0,
-                }}
-              >
-                ⚙
-              </span>
-              <span style={{ position: 'relative', zIndex: 1 }}>Admin panel</span>
+              <span style={{ fontSize: 16 }}>⚙️</span>
+              <span>Admin panel</span>
             </NavLink>
-          </div>
+          </>
         )}
 
-        {/* Spacer */}
         <div style={{ flex: 1 }} />
 
         {/* User info + logout */}
-        <div
-          style={{
-            borderTop: '1px solid var(--line-1)',
-            paddingTop: 14,
-            marginTop: 8,
-          }}
-        >
+        <div style={{ borderTop: '1.5px solid var(--line-2)', paddingTop: 12, marginTop: 8 }}>
           {user && (
             <div
               style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
+                padding: '6px 8px 10px',
+                fontSize: 12,
                 color: 'var(--fg-4)',
-                padding: '0 8px 10px',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+                fontWeight: 600,
               }}
             >
-              {user.email}
+              {user.displayName ?? user.email.split('@')[0]}
             </div>
           )}
           <button
             onClick={handleLogout}
             className="lx-nav-item"
-            style={{ color: 'var(--danger)', width: '100%', textAlign: 'left' }}
+            style={{ color: 'var(--danger)', width: '100%' }}
           >
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-                opacity: 0.6,
-                width: 18,
-                flexShrink: 0,
-              }}
-            >
-              ⏻
-            </span>
+            <span style={{ fontSize: 16 }}>👋</span>
             <span>Sign out</span>
           </button>
         </div>
       </aside>
 
       {/* ── MAIN CONTENT ── */}
-      <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-        {/* Chrome bar */}
+      <main
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--bg-0)',
+        }}
+      >
+        {/* Top bar */}
         <div
           style={{
             position: 'sticky',
@@ -223,35 +192,36 @@ export function UserLayout() {
             display: 'flex',
             alignItems: 'center',
             gap: 14,
-            padding: '10px 24px',
-            background: 'rgba(10, 14, 21, 0.85)',
+            padding: '10px 28px',
+            background: 'rgba(238,249,243,0.90)',
             backdropFilter: 'blur(12px)',
-            borderBottom: '1px solid var(--line-2)',
+            borderBottom: '1.5px solid var(--line-2)',
           }}
         >
-          <span className="ds-code" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
-            ~{location.pathname}
-          </span>
           <div style={{ flex: 1 }} />
           {user && (
-            <span
+            <div
               style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-                padding: '3px 10px',
-                borderRadius: 'var(--r-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '5px 14px',
+                borderRadius: 'var(--r-pill)',
                 background: 'var(--accent-ghost)',
-                border: '1px solid var(--accent-line)',
-                color: 'var(--accent-color)',
+                border: '1.5px solid var(--accent-line)',
+                color: 'var(--accent-dim)',
+                fontSize: 13,
+                fontWeight: 700,
               }}
             >
+              <span>👤</span>
               {user.displayName ?? user.email.split('@')[0]}
-            </span>
+            </div>
           )}
         </div>
 
         {/* Page content */}
-        <div style={{ flex: 1, padding: '32px 24px 64px', overflowX: 'hidden' }}>
+        <div style={{ flex: 1, padding: '32px 28px 64px', overflowX: 'hidden' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <Outlet />
           </div>

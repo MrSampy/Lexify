@@ -6,28 +6,30 @@ import { useBlocks } from '@/entities/block'
 import { useTests } from '@/entities/test'
 import { ReviewDueBanner } from '@/widgets/ReviewDueBanner'
 
-function StatCard({ label, value }: { label: string; value: number | undefined }) {
+function StatCard({
+  label,
+  value,
+  emoji,
+}: {
+  label: string
+  value: number | undefined
+  emoji: string
+}) {
   return (
-    <div
-      style={{
-        padding: '18px 20px',
-        background: 'var(--bg-2)',
-        border: '1px solid var(--line-2)',
-        borderRadius: 'var(--r-lg)',
-      }}
-    >
+    <div className="lx-card" style={{ padding: '20px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 28, marginBottom: 6 }}>{emoji}</div>
       <div
         style={{
           fontFamily: 'var(--font-display)',
-          fontWeight: 700,
-          fontSize: 32,
+          fontWeight: 800,
+          fontSize: 30,
           color: 'var(--fg-1)',
-          letterSpacing: '-0.02em',
+          lineHeight: 1,
         }}
       >
         {value ?? '—'}
       </div>
-      <div className="ds-code" style={{ color: 'var(--fg-3)', marginTop: 4 }}>
+      <div className="ds-sm" style={{ color: 'var(--fg-3)', marginTop: 4, fontWeight: 600 }}>
         {label}
       </div>
     </div>
@@ -35,11 +37,11 @@ function StatCard({ label, value }: { label: string; value: number | undefined }
 }
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  ready: { bg: 'var(--success-ghost)', color: 'var(--success)', border: 'rgba(63,214,139,0.3)' },
+  ready: { bg: 'var(--success-ghost)', color: 'var(--success)', border: 'rgba(22,185,129,0.3)' },
   generating: {
     bg: 'var(--warning-ghost)',
     color: 'var(--warning)',
-    border: 'rgba(245,181,61,0.3)',
+    border: 'rgba(224,153,42,0.3)',
   },
   archived: { bg: 'var(--bg-3)', color: 'var(--fg-3)', border: 'var(--line-2)' },
 }
@@ -57,11 +59,8 @@ export function DashboardPage() {
   return (
     <div>
       {/* Greeting */}
-      <div className="eyebrow" style={{ marginBottom: 12 }}>
-        ~/dashboard
-      </div>
       <h1 className="ds-h2" style={{ margin: '0 0 6px' }}>
-        Welcome back, {displayName}
+        Hi, {displayName}! 🌱
       </h1>
       <p className="ds-body" style={{ margin: '0 0 24px', color: 'var(--fg-3)' }}>
         Here's where your vocabulary stands today.
@@ -70,78 +69,6 @@ export function DashboardPage() {
       {/* Review banner */}
       <div style={{ marginBottom: 26 }}>
         <ReviewDueBanner />
-      </div>
-
-      {/* 2 CTA cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 16,
-          marginBottom: 26,
-        }}
-      >
-        <Link to={ROUTES.BLOCKS} style={{ textDecoration: 'none' }}>
-          <div
-            className="lx-card"
-            style={{
-              padding: 24,
-              cursor: 'pointer',
-              transition: 'border-color 0.15s, box-shadow 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget as HTMLDivElement
-              el.style.borderColor = 'var(--accent-line)'
-              el.style.boxShadow = 'var(--glow-accent)'
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget as HTMLDivElement
-              el.style.borderColor = 'var(--line-2)'
-              el.style.boxShadow = 'none'
-            }}
-          >
-            <div className="ds-code" style={{ color: 'var(--accent-color)', marginBottom: 14 }}>
-              ~/blocks
-            </div>
-            <div className="ds-h3" style={{ marginBottom: 6 }}>
-              Word blocks
-            </div>
-            <p className="ds-sm" style={{ color: 'var(--fg-3)', margin: 0 }}>
-              Organize and import vocabulary →
-            </p>
-          </div>
-        </Link>
-
-        <Link to={ROUTES.TESTS} style={{ textDecoration: 'none' }}>
-          <div
-            className="lx-card"
-            style={{
-              padding: 24,
-              cursor: 'pointer',
-              transition: 'border-color 0.15s, box-shadow 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget as HTMLDivElement
-              el.style.borderColor = 'var(--accent-line)'
-              el.style.boxShadow = 'var(--glow-accent)'
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget as HTMLDivElement
-              el.style.borderColor = 'var(--line-2)'
-              el.style.boxShadow = 'none'
-            }}
-          >
-            <div className="ds-code" style={{ color: 'var(--accent-color)', marginBottom: 14 }}>
-              ~/tests
-            </div>
-            <div className="ds-h3" style={{ marginBottom: 6 }}>
-              Tests
-            </div>
-            <p className="ds-sm" style={{ color: 'var(--fg-3)', margin: 0 }}>
-              AI-generated quizzes, 4 question types →
-            </p>
-          </div>
-        </Link>
       </div>
 
       {/* Stats */}
@@ -153,24 +80,55 @@ export function DashboardPage() {
           marginBottom: 36,
         }}
       >
-        <StatCard label="blocks" value={stats?.totalBlocks} />
-        <StatCard label="words total" value={stats?.totalWords} />
-        <StatCard label="answers this week" value={stats?.wordsAnsweredThisWeek} />
-        <StatCard label="tests this week" value={stats?.testsCompletedThisWeek} />
+        <StatCard emoji="📚" label="blocks" value={stats?.totalBlocks} />
+        <StatCard emoji="🔤" label="words total" value={stats?.totalWords} />
+        <StatCard emoji="✅" label="answers this week" value={stats?.wordsAnsweredThisWeek} />
+        <StatCard emoji="📝" label="tests this week" value={stats?.testsCompletedThisWeek} />
+      </div>
+
+      {/* CTA cards */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: 16,
+          marginBottom: 36,
+        }}
+      >
+        <Link to={ROUTES.BLOCKS} style={{ textDecoration: 'none' }}>
+          <div className="lx-card" style={{ padding: 24, cursor: 'pointer' }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>📚</div>
+            <div className="ds-h3" style={{ marginBottom: 6 }}>
+              Word blocks
+            </div>
+            <p className="ds-sm" style={{ color: 'var(--fg-3)', margin: 0 }}>
+              Organize and import vocabulary →
+            </p>
+          </div>
+        </Link>
+
+        <Link to={ROUTES.TESTS} style={{ textDecoration: 'none' }}>
+          <div className="lx-card" style={{ padding: 24, cursor: 'pointer' }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>📝</div>
+            <div className="ds-h3" style={{ marginBottom: 6 }}>
+              Tests
+            </div>
+            <p className="ds-sm" style={{ color: 'var(--fg-3)', margin: 0 }}>
+              AI-generated quizzes, 4 question types →
+            </p>
+          </div>
+        </Link>
       </div>
 
       {/* Recent blocks */}
       <div style={{ marginBottom: 32 }}>
         <div className="lx-section-head">
-          <span className="ds-code" style={{ color: 'var(--accent-color)' }}>
-            01
-          </span>
           <h2
             style={{
               margin: 0,
               fontFamily: 'var(--font-body)',
-              fontWeight: 600,
-              fontSize: 13,
+              fontWeight: 700,
+              fontSize: 14,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
               color: 'var(--fg-2)',
@@ -181,10 +139,10 @@ export function DashboardPage() {
           <div className="lx-rule" />
           <Link
             to={ROUTES.BLOCKS}
-            className="ds-code"
             style={{
               color: 'var(--accent-color)',
-              fontSize: 12,
+              fontSize: 13,
+              fontWeight: 700,
               flexShrink: 0,
               textDecoration: 'none',
             }}
@@ -200,7 +158,7 @@ export function DashboardPage() {
         ) : recentBlocks.length === 0 ? (
           <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
             No blocks yet.{' '}
-            <Link to={ROUTES.BLOCKS} style={{ color: 'var(--accent-color)' }}>
+            <Link to={ROUTES.BLOCKS} style={{ color: 'var(--accent-color)', fontWeight: 700 }}>
               Create your first block →
             </Link>
           </p>
@@ -220,23 +178,14 @@ export function DashboardPage() {
                   to={ROUTES.BLOCK_DETAIL(block.id)}
                   style={{ textDecoration: 'none' }}
                 >
-                  <div
-                    className="lx-card"
-                    style={{ padding: 18, cursor: 'pointer', transition: 'border-color 0.15s' }}
-                    onMouseEnter={(e) => {
-                      ;(e.currentTarget as HTMLDivElement).style.borderColor = 'var(--accent-line)'
-                    }}
-                    onMouseLeave={(e) => {
-                      ;(e.currentTarget as HTMLDivElement).style.borderColor = 'var(--line-2)'
-                    }}
-                  >
+                  <div className="lx-card" style={{ padding: 18, cursor: 'pointer' }}>
                     <div
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'start',
                         gap: 10,
-                        marginBottom: 14,
+                        marginBottom: 10,
                       }}
                     >
                       <div className="ds-h4" style={{ color: 'var(--fg-1)', fontSize: 15 }}>
@@ -244,20 +193,20 @@ export function DashboardPage() {
                       </div>
                       <span
                         style={{
-                          fontFamily: 'var(--font-mono)',
                           fontSize: 11,
-                          padding: '3px 8px',
-                          borderRadius: 'var(--r-sm)',
-                          background: 'var(--bg-1)',
-                          border: '1px solid var(--line-2)',
-                          color: 'var(--fg-2)',
+                          padding: '3px 10px',
+                          borderRadius: 'var(--r-pill)',
+                          background: 'var(--accent-ghost)',
+                          color: 'var(--accent-dim)',
+                          fontWeight: 700,
                           flexShrink: 0,
+                          border: '1px solid var(--accent-line)',
                         }}
                       >
                         {langCode.toUpperCase()}
                       </span>
                     </div>
-                    <div className="ds-code" style={{ color: 'var(--fg-3)' }}>
+                    <div className="ds-sm" style={{ color: 'var(--fg-4)' }}>
                       {block.wordCount} words
                     </div>
                   </div>
@@ -271,15 +220,12 @@ export function DashboardPage() {
       {/* Recent tests */}
       <div>
         <div className="lx-section-head">
-          <span className="ds-code" style={{ color: 'var(--accent-color)' }}>
-            02
-          </span>
           <h2
             style={{
               margin: 0,
               fontFamily: 'var(--font-body)',
-              fontWeight: 600,
-              fontSize: 13,
+              fontWeight: 700,
+              fontSize: 14,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
               color: 'var(--fg-2)',
@@ -290,10 +236,10 @@ export function DashboardPage() {
           <div className="lx-rule" />
           <Link
             to={ROUTES.TESTS}
-            className="ds-code"
             style={{
               color: 'var(--accent-color)',
-              fontSize: 12,
+              fontSize: 13,
+              fontWeight: 700,
               flexShrink: 0,
               textDecoration: 'none',
             }}
@@ -309,7 +255,7 @@ export function DashboardPage() {
         ) : recentTests.length === 0 ? (
           <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
             No tests yet.{' '}
-            <Link to={ROUTES.TEST_CREATE} style={{ color: 'var(--accent-color)' }}>
+            <Link to={ROUTES.TEST_CREATE} style={{ color: 'var(--accent-color)', fontWeight: 700 }}>
               Create your first test →
             </Link>
           </p>
@@ -320,34 +266,29 @@ export function DashboardPage() {
               return (
                 <div
                   key={test.id}
+                  className="lx-card"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 18,
                     padding: '16px 20px',
-                    background: 'var(--bg-2)',
-                    border: '1px solid var(--line-2)',
-                    borderRadius: 'var(--r-lg)',
                     flexWrap: 'wrap',
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 180 }}>
-                    <div
-                      className="ds-h4"
-                      style={{ color: 'var(--fg-1)', fontSize: 15, marginBottom: 4 }}
-                    >
+                    <div className="ds-h4" style={{ color: 'var(--fg-1)', fontSize: 15 }}>
                       {test.title}
                     </div>
                   </div>
                   <span
                     style={{
-                      fontFamily: 'var(--font-mono)',
                       fontSize: 11,
-                      padding: '4px 10px',
+                      padding: '4px 12px',
                       borderRadius: 'var(--r-pill)',
                       background: s.bg,
                       color: s.color,
                       border: `1px solid ${s.border}`,
+                      fontWeight: 700,
                     }}
                   >
                     {test.status}
@@ -356,7 +297,7 @@ export function DashboardPage() {
                     <Link to={ROUTES.TEST_RUNNER(test.id)} style={{ textDecoration: 'none' }}>
                       <button
                         className="lx-btn-primary"
-                        style={{ padding: '8px 16px', fontSize: 13 }}
+                        style={{ padding: '8px 18px', fontSize: 13 }}
                       >
                         Run →
                       </button>

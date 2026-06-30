@@ -11,54 +11,70 @@ export function RegisterPage() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '24px 16px',
-        background: 'var(--bg-1)',
-        backgroundImage:
-          'linear-gradient(var(--line-1) 1px, transparent 1px), linear-gradient(90deg, var(--line-1) 1px, transparent 1px)',
-        backgroundSize: '64px 64px',
-        position: 'relative',
-        zIndex: 1,
+        background: 'var(--bg-0)',
       }}
     >
       <div style={{ width: '100%', maxWidth: 400 }}>
         {/* Logo */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 34 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: 32,
+            gap: 12,
+            alignItems: 'center',
+          }}
+        >
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              background: 'var(--accent-color)',
+              borderRadius: 'var(--r-sm)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 6px 16px rgba(22,185,129,0.30)',
+            }}
+          >
+            <span
+              style={{
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 800,
+                fontFamily: 'var(--font-display)',
+              }}
+            >
+              L
+            </span>
+          </div>
           <span
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 22,
+              fontFamily: 'var(--font-display)',
+              fontSize: 26,
               fontWeight: 700,
-              letterSpacing: '-0.02em',
               color: 'var(--fg-1)',
             }}
           >
-            <span style={{ color: 'var(--accent-color)' }}>&lt;</span>
             Lexify
-            <span style={{ color: 'var(--accent-color)' }}>/&gt;</span>
           </span>
         </div>
 
         {/* Card */}
-        <div
-          style={{
-            background: 'var(--bg-2)',
-            border: '1px solid var(--line-2)',
-            borderRadius: 'var(--r-lg)',
-            padding: 30,
-          }}
-        >
-          <div className="eyebrow" style={{ marginBottom: 14 }}>
-            02 / AUTH
-          </div>
-          <h1 className="ds-h3" style={{ margin: '0 0 6px' }}>
-            Create your account
+        <div className="lx-card" style={{ padding: 32, boxShadow: 'var(--shadow-2)' }}>
+          <h1 className="ds-h3" style={{ margin: '0 0 6px', textAlign: 'center' }}>
+            Create your account ✨
           </h1>
-          <p className="ds-sm" style={{ margin: '0 0 24px', color: 'var(--fg-3)' }}>
+          <p
+            className="ds-sm"
+            style={{ margin: '0 0 24px', color: 'var(--fg-3)', textAlign: 'center' }}
+          >
             Already registered?{' '}
             <Link
               to={ROUTES.LOGIN}
-              style={{ color: 'var(--accent-color)', textDecoration: 'none' }}
+              style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
             >
-              Sign in →
+              Sign in
             </Link>
           </p>
 

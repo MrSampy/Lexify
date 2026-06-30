@@ -1,9 +1,6 @@
 export function AdminAuditPage() {
   return (
     <div>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>
-        ~/admin/audit
-      </div>
       <h1 className="ds-h2" style={{ margin: '0 0 20px' }}>
         Audit Log
       </h1>
@@ -18,15 +15,7 @@ export function AdminAuditPage() {
           textAlign: 'center',
         }}
       >
-        <div
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 32,
-            color: 'var(--fg-4)',
-          }}
-        >
-          [ ]
-        </div>
+        <div style={{ fontSize: 48 }}>📋</div>
         <div className="ds-h3" style={{ color: 'var(--fg-2)' }}>
           Audit logs
         </div>

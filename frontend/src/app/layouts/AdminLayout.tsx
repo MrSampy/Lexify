@@ -38,12 +38,15 @@ export function AdminLayout() {
           <div style={{ flex: 1 }} />
           <span
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 11,
+              fontFamily: 'var(--font-body)',
+              fontWeight: 800,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
               padding: '3px 10px',
-              borderRadius: 'var(--r-sm)',
+              borderRadius: 'var(--r-pill)',
               background: 'var(--warning-ghost)',
-              border: '1px solid rgba(245,181,61,0.3)',
+              border: '1px solid rgba(224,153,42,0.3)',
               color: 'var(--warning)',
             }}
           >

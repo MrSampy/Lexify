@@ -104,7 +104,7 @@ export function RegisterForm() {
             borderRadius: 'var(--r-md)',
             color: 'var(--danger)',
             fontSize: 13,
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--font-body)',
           }}
         >
           {errors.root.message}
