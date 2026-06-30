@@ -62,21 +62,24 @@ export async function streamFormatWords({
         pendingEventType = line.slice(6).trim()
       } else if (line.startsWith('data:') && pendingEventType) {
         const raw = line.slice(5).trim()
+        let parsedData: Record<string, unknown> | null = null
         try {
-          const data = JSON.parse(raw) as Record<string, unknown>
+          parsedData = JSON.parse(raw) as Record<string, unknown>
+        } catch {
+          // ignore malformed JSON chunks
+        }
+        if (parsedData) {
           const event: FormattingSseEvent = { type: pendingEventType as SseEventType }
 
           if (pendingEventType === 'streaming') {
-            event.chunk = data.chunk as string
+            event.chunk = parsedData.chunk as string
           } else if (pendingEventType === 'done') {
-            event.result = data.result as FormatWordsResult
+            event.result = parsedData.result as FormatWordsResult
           } else if (pendingEventType === 'error') {
-            event.message = data.message as string
+            event.message = parsedData.message as string
           }
 
           onEvent(event)
-        } catch {
-          // ignore malformed chunks
         }
 
         pendingEventType = null

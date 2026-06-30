@@ -31,6 +31,35 @@ export function ReviewSessionPage() {
     }
   }
 
+  // isFinished must be checked before isLoading — mutation invalidates the
+  // query causing a brief refetch, which would otherwise overwrite the finished screen
+  if (isFinished) {
+    const hardCount = ratings.filter((r) => r.quality < 3).length
+    const easyCount = ratings.filter((r) => r.quality >= 3).length
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
+        <p className="text-4xl">✅</p>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Сесія завершена!</h1>
+          <p className="mt-1 text-muted-foreground">Пройдено: {ratings.length} слів</p>
+        </div>
+        <div className="flex gap-8 text-center">
+          <div>
+            <p className="text-3xl font-bold text-red-500">{hardCount}</p>
+            <p className="text-sm text-muted-foreground">Складних (0–2)</p>
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-green-500">{easyCount}</p>
+            <p className="text-sm text-muted-foreground">Легких (3–5)</p>
+          </div>
+        </div>
+        <Link to={ROUTES.DASHBOARD}>
+          <Button>До дашборду</Button>
+        </Link>
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -65,34 +94,15 @@ export function ReviewSessionPage() {
     )
   }
 
-  if (isFinished) {
-    const hardCount = ratings.filter((r) => r.quality < 3).length
-    const easyCount = ratings.filter((r) => r.quality >= 3).length
+  const currentWord = words[currentIndex]
+
+  if (!currentWord) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
-        <p className="text-4xl">✅</p>
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Сесія завершена!</h1>
-          <p className="mt-1 text-muted-foreground">Пройдено: {ratings.length} слів</p>
-        </div>
-        <div className="flex gap-8 text-center">
-          <div>
-            <p className="text-3xl font-bold text-red-500">{hardCount}</p>
-            <p className="text-sm text-muted-foreground">Складних (0–2)</p>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-green-500">{easyCount}</p>
-            <p className="text-sm text-muted-foreground">Легких (3–5)</p>
-          </div>
-        </div>
-        <Link to={ROUTES.DASHBOARD}>
-          <Button>До дашборду</Button>
-        </Link>
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner size="lg" />
       </div>
     )
   }
-
-  const currentWord = words[currentIndex]
 
   return (
     <div className="min-h-screen bg-background">

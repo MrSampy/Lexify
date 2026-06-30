@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { ROUTES } from '@/shared/config'
 import { Button, Spinner } from '@/shared/ui'
 import {
@@ -7,8 +8,10 @@ import {
   useStartAttemptMutation,
   useSubmitAnswerMutation,
   useFinishAttemptMutation,
+  testKeys,
+  testApi,
 } from '@/entities/test'
-import type { Question } from '@/entities/test'
+import type { Question, Test } from '@/entities/test'
 import {
   useTestRunnerStore,
   TestProgressBar,
@@ -61,6 +64,7 @@ function QuestionView({
 export function TestRunnerPage() {
   const { id: testId } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const startedRef = useRef(false)
 
   const { data: test, isLoading, isError } = useTest(testId ?? '')
@@ -87,8 +91,14 @@ export function TestRunnerPage() {
     startedRef.current = true
 
     startAttempt.mutate(test.id, {
-      onSuccess: ({ attemptId: aid }) => {
-        init(test.id, aid, test.questions)
+      onSuccess: async ({ attemptId: aid }) => {
+        // Fetch fresh test data so we always get the latest questions,
+        // not the potentially stale closure value from when the effect ran
+        const freshTest = await queryClient.fetchQuery<Test>({
+          queryKey: testKeys.detail(test.id),
+          queryFn: () => testApi.getTestById(test.id),
+        })
+        init(test.id, aid, freshTest.questions)
       },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps

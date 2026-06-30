@@ -24,15 +24,13 @@ public sealed class GetWordsByBlockQueryHandler(
 
         var skip = (request.Page - 1) * request.PageSize;
 
-        var wordsTask = wordRepository.GetByBlockIdAsync(
+        var words = await wordRepository.GetByBlockIdAsync(
             request.BlockId, request.Search, skip, request.PageSize, cancellationToken);
 
-        var totalTask = wordRepository.CountByBlockIdAsync(
+        var total = await wordRepository.CountByBlockIdAsync(
             request.BlockId, request.Search, cancellationToken);
 
-        await Task.WhenAll(wordsTask, totalTask);
-
-        var dtos = mapper.Map<IReadOnlyList<WordDto>>(wordsTask.Result);
-        return Result.Ok(new PagedResult<WordDto>(dtos, totalTask.Result, request.Page, request.PageSize));
+        var dtos = mapper.Map<IReadOnlyList<WordDto>>(words);
+        return Result.Ok(new PagedResult<WordDto>(dtos, total, request.Page, request.PageSize));
     }
 }

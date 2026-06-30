@@ -158,7 +158,9 @@ export function CsvImportModal({ open, onClose }: CsvImportModalProps) {
               <label className="text-sm font-medium">Language</label>
               <Select value={languageId} onValueChange={(v) => setLanguageId(v ?? '')}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select language" />
+                  <SelectValue placeholder="Select language">
+                    {languageId ? LANGUAGES[Number(languageId)]?.name : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(LANGUAGES).map(([id, lang]) => (

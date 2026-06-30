@@ -200,7 +200,9 @@ export function BlockDetailPage() {
               <div className="space-y-1">
                 <Select value={wordType} onValueChange={(v) => v && setValue('wordType', v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Word type" />
+                    <SelectValue placeholder="Word type">
+                      {wordType ? wordType.charAt(0).toUpperCase() + wordType.slice(1) : undefined}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {WORD_TYPES.map((t) => (

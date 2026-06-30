@@ -9,6 +9,15 @@ public sealed class BlockMappingProfile : Profile
     public BlockMappingProfile()
     {
         CreateMap<WordBlock, WordBlockDto>()
-            .ForMember(dest => dest.Tags, opt => opt.MapFrom(_ => new List<string>()));
+            .ConstructUsing((src, _) => new WordBlockDto(
+                src.Id,
+                src.UserId,
+                src.LanguageId,
+                src.Title,
+                src.Description,
+                src.WordCount,
+                src.CreatedAt,
+                src.UpdatedAt,
+                []));
     }
 }

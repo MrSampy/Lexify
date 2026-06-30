@@ -11,6 +11,8 @@ public sealed class Test : BaseEntity
     public string Status { get; private set; } = default!;
     public int? QuestionCount { get; private set; }
 
+    public bool IsArchived => Status == Statuses.Archived;
+
     public IReadOnlyCollection<Question> Questions => _questions.AsReadOnly();
 
     private Test() { }

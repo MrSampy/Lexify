@@ -13,20 +13,16 @@ public sealed class GetUserStatsQueryHandler(
     {
         var since = DateTimeOffset.UtcNow.AddDays(-7);
 
-        var summaryTask = blockRepository.GetUserSummaryAsync(request.UserId, cancellationToken);
-        var dueTask = wordRepository.GetDueForReviewAsync(request.UserId, limit: 9999, cancellationToken);
-        var answersTask = attemptRepository.CountAnswersSinceAsync(request.UserId, since, cancellationToken);
-        var testsTask = attemptRepository.CountCompletedSinceAsync(request.UserId, since, cancellationToken);
-
-        await Task.WhenAll(summaryTask, dueTask, answersTask, testsTask);
-
-        var (totalBlocks, totalWords) = await summaryTask;
+        var (totalBlocks, totalWords) = await blockRepository.GetUserSummaryAsync(request.UserId, cancellationToken);
+        var dueWords = await wordRepository.GetDueForReviewAsync(request.UserId, limit: 9999, cancellationToken);
+        var answersThisWeek = await attemptRepository.CountAnswersSinceAsync(request.UserId, since, cancellationToken);
+        var testsThisWeek = await attemptRepository.CountCompletedSinceAsync(request.UserId, since, cancellationToken);
 
         return Result<UserStatsDto>.Ok(new UserStatsDto(
             TotalBlocks: totalBlocks,
             TotalWords: totalWords,
-            DueWordsCount: (await dueTask).Count,
-            WordsAnsweredThisWeek: await answersTask,
-            TestsCompletedThisWeek: await testsTask));
+            DueWordsCount: dueWords.Count,
+            WordsAnsweredThisWeek: answersThisWeek,
+            TestsCompletedThisWeek: testsThisWeek));
     }
 }

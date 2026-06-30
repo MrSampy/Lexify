@@ -18,9 +18,12 @@ public sealed class DeleteTestCommandHandler(
         if (test.UserId != request.UserId)
             return Result.Forbidden("You do not have access to this test.");
 
-        test.Archive();
-        await testRepository.UpdateAsync(test, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!test.IsArchived)
+        {
+            test.Archive();
+            await testRepository.UpdateAsync(test, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         return Result.Ok();
     }

@@ -80,7 +80,9 @@ export function CreateBlockModal({ open, onClose }: CreateBlockModalProps) {
               onValueChange={(v) => setValue('languageId', Number(v))}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Language" />
+                <SelectValue placeholder="Language">
+                  {LANGUAGES[languageId]?.name ?? 'Language'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(LANGUAGES).map(([id, lang]) => (
