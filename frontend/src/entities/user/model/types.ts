@@ -13,12 +13,10 @@ export interface AuthResponse {
   expiresAt: string
 }
 
-interface JwtPayload {
-  sub: string
-  email: string
-  role: UserRole
-  exp: number
-}
+const DOTNET_ROLE_CLAIM = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type JwtPayload = Record<string, any>
 
 export function parseJwt(token: string): JwtPayload {
   const payload = token.split('.')[1]
@@ -27,5 +25,6 @@ export function parseJwt(token: string): JwtPayload {
 
 export function userFromJwt(token: string): User {
   const payload = parseJwt(token)
-  return { id: payload.sub, email: payload.email, role: payload.role, displayName: null }
+  const role = (payload[DOTNET_ROLE_CLAIM] ?? payload['role'] ?? 'user') as UserRole
+  return { id: payload.sub, email: payload.email, role, displayName: null }
 }

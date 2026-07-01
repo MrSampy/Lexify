@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ROUTES, LANGUAGES } from '@/shared/config'
-import { Button, Spinner } from '@/shared/ui'
+import { Spinner } from '@/shared/ui'
 import { useBlock, useUpdateBlockMutation } from '@/entities/block'
 import { useImportWordsMutation } from '@/entities/word'
 import {
@@ -133,97 +133,245 @@ export function WordImportPage() {
   // Show draft restore banner when user is on 'input' but has saved words from a previous preview
   const hasDraft = step === 'input' && storedBlockId === blockId && formattedWords.length > 0
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <Link
-            to={ROUTES.BLOCK_DETAIL(blockId ?? '')}
-            className="mb-2 inline-block text-sm text-muted-foreground hover:underline"
-          >
-            ← Back to block
-          </Link>
-          <h1 className="text-2xl font-bold">Import words with AI</h1>
-          {blockData && (
-            <p className="text-sm text-muted-foreground">
-              into &ldquo;{blockData.block.title}&rdquo;
-            </p>
-          )}
-        </div>
+  const STEPS = [
+    { idx: '1', label: 'Input' },
+    { idx: '2', label: 'Formatting' },
+    { idx: '3', label: 'Preview' },
+    { idx: '4', label: 'Save' },
+  ]
+  const STEP_INDEX: Record<string, number> = { input: 0, formatting: 1, preview: 2, saving: 3 }
+  const stepIndex = STEP_INDEX[step] ?? 0
 
-        {/* Draft restore banner */}
-        {hasDraft && (
-          <div className="mb-4 flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">
-            <p className="text-sm">
-              You have a saved draft with {formattedWords.length} words. Restore it?
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={resetAll}>
-                Discard
-              </Button>
-              <Button size="sm" onClick={restoreDraft}>
-                Restore
-              </Button>
+  return (
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <Link
+        to={ROUTES.BLOCK_DETAIL(blockId ?? '')}
+        style={{
+          color: 'var(--accent-color)',
+          textDecoration: 'none',
+          fontSize: 14,
+          fontWeight: 700,
+          marginBottom: 16,
+          display: 'inline-block',
+        }}
+      >
+        ← Back to block
+      </Link>
+
+      {/* Page title */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 24 }}>
+        <h1 className="ds-h2" style={{ margin: 0 }}>
+          AI Word Import
+        </h1>
+        {blockData && (
+          <span className="ds-sm" style={{ color: 'var(--fg-3)' }}>
+            into &ldquo;{blockData.block.title}&rdquo;
+          </span>
+        )}
+      </div>
+
+      {/* Stepper */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0,
+          marginBottom: 24,
+          background: 'var(--bg-2)',
+          border: '1px solid var(--line-2)',
+          borderRadius: 'var(--r-md)',
+          overflow: 'hidden',
+        }}
+      >
+        {STEPS.map((s, i) => (
+          <div
+            key={s.idx}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 16px',
+              borderRight: i < STEPS.length - 1 ? '1px solid var(--line-2)' : 'none',
+              background: i === stepIndex ? 'var(--accent-ghost)' : 'transparent',
+              borderBottom:
+                i === stepIndex ? '2px solid var(--accent-color)' : '2px solid transparent',
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontWeight: 700,
+                fontSize: 11,
+                color:
+                  i === stepIndex
+                    ? 'var(--accent-color)'
+                    : i < stepIndex
+                      ? 'var(--success)'
+                      : 'var(--fg-4)',
+              }}
+            >
+              {i < stepIndex ? '✓' : s.idx}
+            </span>
+            <span
+              style={{
+                fontSize: 12,
+                color:
+                  i === stepIndex ? 'var(--fg-1)' : i < stepIndex ? 'var(--fg-3)' : 'var(--fg-4)',
+              }}
+            >
+              {s.label}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Draft restore banner */}
+      {hasDraft && (
+        <div
+          style={{
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            background: 'var(--accent-ghost)',
+            border: '1px solid var(--accent-line)',
+            borderRadius: 'var(--r-md)',
+          }}
+        >
+          <span style={{ color: 'var(--fg-2)', fontSize: 13, fontWeight: 600 }}>
+            Draft saved — {formattedWords.length} words. Restore?
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="lx-btn-secondary"
+              style={{ padding: '6px 14px', fontSize: 12 }}
+              onClick={resetAll}
+            >
+              Discard
+            </button>
+            <button
+              className="lx-btn-primary"
+              style={{ padding: '6px 14px', fontSize: 12 }}
+              onClick={restoreDraft}
+            >
+              Restore
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step content */}
+      <div
+        style={{
+          background: 'var(--bg-2)',
+          border: '1px solid var(--line-2)',
+          borderRadius: 'var(--r-lg)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Step 1 — input */}
+        {step === 'input' && (
+          <div style={{ padding: '24px 28px' }}>
+            {error && <ImportErrorBanner message={error} onRetry={() => void handleFormat()} />}
+            <RawTextInput onSubmit={() => void handleFormat()} />
+          </div>
+        )}
+
+        {/* Step 2 — formatting (SSE streaming) */}
+        {step === 'formatting' && (
+          <div>
+            {/* Terminal header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 16px',
+                background: 'var(--bg-3)',
+                borderBottom: '1px solid var(--line-2)',
+              }}
+            >
+              <div style={{ display: 'flex', gap: 6 }}>
+                {['#FF5F57', '#FEBC2E', '#28C840'].map((c) => (
+                  <div
+                    key={c}
+                    style={{ width: 10, height: 10, borderRadius: '50%', background: c }}
+                  />
+                ))}
+              </div>
+              <span style={{ color: 'var(--fg-4)', fontSize: 11, flex: 1, fontWeight: 600 }}>
+                AI formatting — streaming…
+              </span>
+              <button
+                className="lx-btn-secondary"
+                style={{ padding: '4px 12px', fontSize: 11 }}
+                onClick={handleAbort}
+              >
+                ✕ cancel
+              </button>
+            </div>
+            <div style={{ padding: '20px 24px' }}>
+              <FormatProgress />
             </div>
           </div>
         )}
 
-        {/* Step content */}
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
-          {/* Step 1 — input */}
-          {step === 'input' && (
-            <>
-              {error && <ImportErrorBanner message={error} onRetry={() => void handleFormat()} />}
-              <RawTextInput onSubmit={() => void handleFormat()} />
-            </>
-          )}
-
-          {/* Step 2 — formatting (SSE streaming) */}
-          {step === 'formatting' && (
-            <div className="space-y-4">
-              <FormatProgress />
-              <div className="flex justify-end">
-                <Button variant="outline" size="sm" onClick={handleAbort}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3 — preview & save */}
-          {step === 'preview' && (
-            <div className="space-y-6">
-              <BlockTitleInput />
+        {/* Step 3 — preview & save */}
+        {step === 'preview' && (
+          <div style={{ padding: '24px 28px' }}>
+            <BlockTitleInput />
+            <div style={{ marginTop: 20 }}>
               <WordPreviewTable />
-              <div className="flex items-center justify-between gap-4 border-t pt-4">
-                <p className="text-sm text-muted-foreground">
-                  {formattedWords.length} {formattedWords.length === 1 ? 'word' : 'words'} ready to
-                  import
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={resetToInput}>
-                    ← Back
-                  </Button>
-                  <Button
-                    onClick={() => void handleSave()}
-                    disabled={formattedWords.length === 0 || importWords.isPending}
-                  >
-                    Save to block
-                  </Button>
-                </div>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginTop: 20,
+                paddingTop: 16,
+                borderTop: '1px solid var(--line-2)',
+              }}
+            >
+              <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
+                {formattedWords.length} {formattedWords.length === 1 ? 'word' : 'words'} ready
+              </span>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="lx-btn-secondary" onClick={resetToInput}>
+                  ← Back
+                </button>
+                <button
+                  className="lx-btn-primary"
+                  onClick={() => void handleSave()}
+                  disabled={formattedWords.length === 0 || importWords.isPending}
+                >
+                  Save to block
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Step 4 — saving */}
-          {step === 'saving' && (
-            <div className="flex items-center justify-center gap-3 py-12">
-              <Spinner size="sm" />
-              <p className="text-sm text-muted-foreground">Saving words to block…</p>
-            </div>
-          )}
-        </div>
+        {/* Step 4 — saving */}
+        {step === 'saving' && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              padding: '60px 28px',
+            }}
+          >
+            <Spinner size="sm" />
+            <span style={{ color: 'var(--fg-3)', fontWeight: 600, fontSize: 14 }}>
+              Saving words to block…
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,4 +1,3 @@
-import { Checkbox } from '@/shared/ui'
 import type { QuestionType } from '@/entities/test'
 import { useGenerateTestStore } from '../model/store'
 
@@ -23,19 +22,34 @@ export function QuestionTypeSelector() {
   const toggleQuestionType = useGenerateTestStore((s) => s.toggleQuestionType)
 
   return (
-    <div className="space-y-2">
-      {ALL_TYPES.map((type) => (
-        <label
-          key={type}
-          className="flex cursor-pointer items-center gap-3 rounded-md p-2 hover:bg-muted/50"
-        >
-          <Checkbox
-            checked={questionTypes.includes(type)}
-            onCheckedChange={() => toggleQuestionType(type)}
-          />
-          <span className="text-sm">{QUESTION_TYPE_LABELS[type]}</span>
-        </label>
-      ))}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {ALL_TYPES.map((type) => {
+        const isSelected = questionTypes.includes(type)
+        return (
+          <label
+            key={type}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '10px 14px',
+              background: isSelected ? 'var(--accent-ghost)' : 'var(--bg-3)',
+              border: `1px solid ${isSelected ? 'var(--accent-line)' : 'var(--line-2)'}`,
+              borderRadius: 'var(--r-md)',
+              cursor: 'pointer',
+              transition: 'border-color 0.12s, background 0.12s',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => toggleQuestionType(type)}
+              style={{ accentColor: 'var(--accent-color)', width: 14, height: 14, flexShrink: 0 }}
+            />
+            <span style={{ fontSize: 13, color: 'var(--fg-1)' }}>{QUESTION_TYPE_LABELS[type]}</span>
+          </label>
+        )
+      })}
     </div>
   )
 }

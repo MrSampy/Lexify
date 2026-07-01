@@ -4,23 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { ROUTES, LANGUAGES } from '@/shared/config'
-import {
-  Button,
-  Spinner,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Checkbox,
-  LanguageBadge,
-} from '@/shared/ui'
+import { Spinner } from '@/shared/ui'
 import { useBlock, useDeleteBlockMutation, useExportBlock } from '@/entities/block'
 import { useCreateWordMutation } from '@/entities/word'
 import { WordRow } from '@/entities/word'
@@ -84,7 +68,7 @@ export function BlockDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
         <Spinner size="lg" />
       </div>
     )
@@ -92,10 +76,24 @@ export function BlockDetailPage() {
 
   if (isError || !data) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Block not found or failed to load.</p>
-        <Link to={ROUTES.BLOCKS} className="text-primary hover:underline">
-          Back to blocks
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 16,
+          padding: '80px 0',
+        }}
+      >
+        <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
+          Block not found or failed to load.
+        </p>
+        <Link
+          to={ROUTES.BLOCKS}
+          className="ds-code"
+          style={{ color: 'var(--accent-color)', textDecoration: 'none' }}
+        >
+          ← Back to blocks
         </Link>
       </div>
     )
@@ -103,181 +101,300 @@ export function BlockDetailPage() {
 
   const { block, words } = data
   const langCode = LANGUAGES[block.languageId]?.code ?? String(block.languageId)
-
   const displayedWords = confidenceOnly ? words.items.filter((w) => w.confidenceFlag) : words.items
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <Link
-            to={ROUTES.BLOCKS}
-            className="mb-2 inline-block text-sm text-muted-foreground hover:underline"
-          >
-            ← Back to blocks
-          </Link>
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">{block.title}</h1>
-                <LanguageBadge code={langCode} />
-              </div>
-              {block.description && (
-                <p className="text-sm text-muted-foreground">{block.description}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {block.wordCount} {block.wordCount === 1 ? 'word' : 'words'}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => exportBlock.mutate(block.id)}
-                disabled={exportBlock.isPending}
-              >
-                Export CSV
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDeleteBlock}
-                disabled={deleteBlock.isPending}
-              >
-                Delete block
-              </Button>
-            </div>
-          </div>
-        </div>
+    <div>
+      {/* Back */}
+      <Link
+        to={ROUTES.BLOCKS}
+        style={{
+          color: 'var(--accent-color)',
+          textDecoration: 'none',
+          display: 'inline-block',
+          marginBottom: 16,
+          fontSize: 14,
+          fontWeight: 700,
+        }}
+      >
+        ← Back to blocks
+      </Link>
 
-        {/* Tags */}
-        <div className="mb-4">
-          <TagInput blockId={block.id} currentTags={block.tags} />
-        </div>
-
-        {/* Toolbar */}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="confidence"
-              checked={confidenceOnly}
-              onCheckedChange={(v) => setConfidenceOnly(Boolean(v))}
-            />
-            <label htmlFor="confidence" className="cursor-pointer text-sm">
-              Confidence flagged only
-            </label>
-          </div>
-          <div className="flex gap-2">
-            <Link to={ROUTES.WORD_IMPORT(block.id)}>
-              <Button variant="outline" size="sm">
-                AI Import
-              </Button>
-            </Link>
-            <Button size="sm" onClick={() => setShowAddWord((v) => !v)}>
-              {showAddWord ? 'Cancel' : '+ Add word'}
-            </Button>
-          </div>
-        </div>
-
-        {/* Add word form */}
-        {showAddWord && (
-          <form
-            onSubmit={handleSubmit(onAddWord)}
-            className="mb-4 rounded-lg border bg-card p-4 shadow-sm"
-          >
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Input placeholder="Term" {...register('term')} />
-                {errors.term && <p className="text-xs text-destructive">{errors.term.message}</p>}
-              </div>
-              <div className="space-y-1">
-                <Input placeholder="Translation" {...register('translation')} />
-                {errors.translation && (
-                  <p className="text-xs text-destructive">{errors.translation.message}</p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <Select value={wordType} onValueChange={(v) => v && setValue('wordType', v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Word type">
-                      {wordType ? wordType.charAt(0).toUpperCase() + wordType.slice(1) : undefined}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {WORD_TYPES.map((t) => (
-                      <SelectItem key={t} value={t} className="capitalize">
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Input placeholder="Notes (optional)" {...register('notes')} />
-              </div>
-            </div>
-            <div className="mt-3 flex justify-end">
-              <Button type="submit" size="sm" disabled={isSubmitting || createWord.isPending}>
-                Add
-              </Button>
-            </div>
-          </form>
-        )}
-
-        {/* Words table */}
-        <div className="rounded-lg border bg-card shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Term</TableHead>
-                <TableHead>Translation</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Notes</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayedWords.length === 0 ? (
-                <TableRow>
-                  <td colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
-                    {confidenceOnly ? 'No flagged words on this page.' : 'No words yet.'}
-                  </td>
-                </TableRow>
-              ) : (
-                displayedWords.map((word) => (
-                  <WordRow key={word.id} word={word} blockId={block.id} />
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Pagination */}
-        {words.totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!words.hasPreviousPage}
-              onClick={() => setWordsPage((p) => p - 1)}
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'start',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+            <h1 className="ds-h2" style={{ margin: 0 }}>
+              {block.title}
+            </h1>
+            <span
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: 11,
+                fontWeight: 700,
+                padding: '4px 12px',
+                borderRadius: 'var(--r-pill)',
+                background: 'var(--accent-ghost)',
+                border: '1px solid var(--accent-line)',
+                color: 'var(--accent-dim)',
+              }}
             >
-              Previous
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              {wordsPage} / {words.totalPages}
+              {langCode.toUpperCase()}
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!words.hasNextPage}
-              onClick={() => setWordsPage((p) => p + 1)}
-            >
-              Next
-            </Button>
           </div>
+          <p className="ds-body" style={{ margin: 0, color: 'var(--fg-3)' }}>
+            {block.wordCount} words
+            {words.items.filter((w) => w.confidenceFlag).length > 0 && (
+              <> · {words.items.filter((w) => w.confidenceFlag).length} flagged</>
+            )}
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            className="lx-btn-secondary"
+            onClick={() => exportBlock.mutate(block.id)}
+            disabled={exportBlock.isPending}
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={handleDeleteBlock}
+            disabled={deleteBlock.isPending}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: 14,
+              fontWeight: 600,
+              borderRadius: 'var(--r-md)',
+              padding: '10px 20px',
+              cursor: 'pointer',
+              border: '1px solid rgba(255,92,108,0.3)',
+              background: 'transparent',
+              color: 'var(--danger)',
+              transition: 'all 0.12s',
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+
+      {/* Tags */}
+      <div style={{ marginBottom: 18 }}>
+        <TagInput blockId={block.id} currentTags={block.tags} />
+      </div>
+
+      {/* Toolbar */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          marginBottom: 18,
+        }}
+      >
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 13,
+            color: 'var(--fg-3)',
+            cursor: 'pointer',
+          }}
+        >
+          <span
+            style={{
+              width: 16,
+              height: 16,
+              borderRadius: 4,
+              border: `1px solid ${confidenceOnly ? 'var(--accent-color)' : 'var(--line-3)'}`,
+              background: confidenceOnly ? 'var(--accent-ghost)' : 'transparent',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: 10,
+              color: 'var(--accent-color)',
+            }}
+            onClick={() => setConfidenceOnly((v) => !v)}
+          >
+            {confidenceOnly ? '✓' : ''}
+          </span>
+          Confidence flagged only
+        </label>
+        <div style={{ flex: 1 }} />
+        <Link to={ROUTES.WORD_IMPORT(block.id)} style={{ textDecoration: 'none' }}>
+          <button className="lx-btn-secondary" style={{ padding: '8px 14px' }}>
+            AI import
+          </button>
+        </Link>
+        <button
+          className="lx-btn-primary"
+          style={{ padding: '8px 14px' }}
+          onClick={() => setShowAddWord((v) => !v)}
+        >
+          {showAddWord ? 'Cancel' : '+ Add word'}
+        </button>
+      </div>
+
+      {/* Add word form */}
+      {showAddWord && (
+        <form
+          onSubmit={handleSubmit(onAddWord)}
+          style={{
+            marginBottom: 18,
+            padding: 20,
+            background: 'var(--bg-2)',
+            border: '1px solid var(--line-2)',
+            borderRadius: 'var(--r-lg)',
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: 12,
+            }}
+          >
+            <div>
+              <input className="lx-input" placeholder="Term" {...register('term')} />
+              {errors.term && (
+                <p style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>
+                  {errors.term.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <input className="lx-input" placeholder="Translation" {...register('translation')} />
+              {errors.translation && (
+                <p style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>
+                  {errors.translation.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <select
+                value={wordType}
+                onChange={(e) => setValue('wordType', e.target.value)}
+                className="lx-input"
+                style={{ cursor: 'pointer' }}
+              >
+                {WORD_TYPES.map((t) => (
+                  <option key={t} value={t} style={{ background: 'var(--bg-2)' }}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <input className="lx-input" placeholder="Notes (optional)" {...register('notes')} />
+            </div>
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="submit"
+              className="lx-btn-primary"
+              disabled={isSubmitting || createWord.isPending}
+              style={{ padding: '8px 20px' }}
+            >
+              Add
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Words table */}
+      <div
+        style={{
+          background: 'var(--bg-2)',
+          border: '1px solid var(--line-2)',
+          borderRadius: 'var(--r-lg)',
+          overflowX: 'auto',
+        }}
+      >
+        {/* Table header */}
+        <div
+          style={{
+            display: 'grid',
+            minWidth: 560,
+            gridTemplateColumns: '1.4fr 1.4fr 0.9fr 1.6fr 60px',
+            gap: 12,
+            padding: '12px 18px',
+            background: 'var(--bg-1)',
+            borderBottom: '1px solid var(--line-2)',
+            fontFamily: 'var(--font-body)',
+            fontSize: 11,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'var(--fg-3)',
+          }}
+        >
+          <div>Term</div>
+          <div>Translation</div>
+          <div>Type</div>
+          <div>Notes</div>
+          <div />
+        </div>
+
+        {displayedWords.length === 0 ? (
+          <div
+            style={{
+              padding: '48px 18px',
+              textAlign: 'center',
+              color: 'var(--fg-3)',
+              fontFamily: 'var(--font-body)',
+              fontSize: 13,
+            }}
+          >
+            {confidenceOnly ? 'No flagged words on this page' : 'No words yet — add some above'}
+          </div>
+        ) : (
+          displayedWords.map((word) => <WordRow key={word.id} word={word} blockId={block.id} />)
         )}
       </div>
+
+      {/* Pagination */}
+      {words.totalPages > 1 && (
+        <div
+          style={{
+            marginTop: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+          }}
+        >
+          <button
+            className="lx-btn-secondary"
+            disabled={!words.hasPreviousPage}
+            onClick={() => setWordsPage((p) => p - 1)}
+            style={{ padding: '8px 16px' }}
+          >
+            Previous
+          </button>
+          <span className="ds-code" style={{ color: 'var(--fg-3)' }}>
+            {wordsPage} / {words.totalPages}
+          </span>
+          <button
+            className="lx-btn-secondary"
+            disabled={!words.hasNextPage}
+            onClick={() => setWordsPage((p) => p + 1)}
+            style={{ padding: '8px 16px' }}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   )
 }

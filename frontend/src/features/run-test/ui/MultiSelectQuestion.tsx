@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Button, Checkbox } from '@/shared/ui'
 import type { Question } from '@/entities/test'
 
 interface MultiSelectQuestionProps {
@@ -22,25 +21,55 @@ export function MultiSelectQuestion({ question, onSubmit, disabled }: MultiSelec
 
   return (
     <div>
-      <p className="mb-4 break-words text-base font-medium">{question.questionText}</p>
-      <div className="mb-4 space-y-2">
-        {options.map((option) => (
-          <label
-            key={option.id}
-            className="flex cursor-pointer items-center gap-3 rounded-md p-2 hover:bg-muted/50"
-          >
-            <Checkbox
-              checked={selected.includes(option.optionText)}
-              onCheckedChange={() => toggle(option.optionText)}
-              disabled={disabled}
-            />
-            <span className="text-sm">{option.optionText}</span>
-          </label>
-        ))}
+      <p
+        style={{
+          fontSize: 16,
+          fontWeight: 500,
+          color: 'var(--fg-1)',
+          marginBottom: 20,
+          lineHeight: 1.5,
+        }}
+      >
+        {question.questionText}
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+        {options.map((option) => {
+          const isSelected = selected.includes(option.optionText)
+          return (
+            <label
+              key={option.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '11px 14px',
+                background: isSelected ? 'var(--accent-ghost)' : 'var(--bg-3)',
+                border: `1px solid ${isSelected ? 'var(--accent-line)' : 'var(--line-2)'}`,
+                borderRadius: 'var(--r-md)',
+                cursor: disabled ? 'default' : 'pointer',
+                transition: 'border-color 0.12s, background 0.12s',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => !disabled && toggle(option.optionText)}
+                disabled={disabled}
+                style={{ accentColor: 'var(--accent-color)', width: 14, height: 14, flexShrink: 0 }}
+              />
+              <span style={{ fontSize: 14, color: 'var(--fg-1)' }}>{option.optionText}</span>
+            </label>
+          )
+        })}
       </div>
-      <Button onClick={handleCheck} disabled={disabled || selected.length === 0}>
+      <button
+        className="lx-btn-primary"
+        onClick={handleCheck}
+        disabled={disabled || selected.length === 0}
+        style={{ padding: '10px 24px' }}
+      >
         Check
-      </Button>
+      </button>
     </div>
   )
 }

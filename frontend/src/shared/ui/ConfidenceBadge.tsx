@@ -1,5 +1,4 @@
 import { AlertTriangle } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 interface ConfidenceBadgeProps {
   flag: boolean
@@ -12,11 +11,21 @@ export function ConfidenceBadge({ flag, showLabel = false, className }: Confiden
 
   return (
     <span
-      className={cn('inline-flex items-center gap-1 text-amber-500', className)}
+      className={className}
       title="Low confidence"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        color: 'var(--warning)',
+      }}
     >
-      <AlertTriangle className="h-4 w-4" />
-      {showLabel && <span className="text-xs font-medium">Review</span>}
+      <AlertTriangle style={{ width: 13, height: 13 }} />
+      {showLabel && (
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700 }}>
+          review
+        </span>
+      )}
     </span>
   )
 }

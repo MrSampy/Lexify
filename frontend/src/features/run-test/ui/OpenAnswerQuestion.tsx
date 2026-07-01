@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react'
-import { Button, Input } from '@/shared/ui'
 import type { Question } from '@/entities/test'
 import { levenshtein } from '@/shared/lib'
 
@@ -23,31 +22,48 @@ export function OpenAnswerQuestion({ question, onSubmit, disabled }: OpenAnswerQ
     if (e.key === 'Enter') handleCheck()
   }
 
-  // Client-side hint: check if close enough (distance ≤ 1 character) to show suggestion
   const firstOption = question.options[0]?.optionText ?? ''
   const distance = firstOption ? levenshtein(value.toLowerCase(), firstOption.toLowerCase()) : null
   const showCloseHint = value.length > 2 && distance !== null && distance > 0 && distance <= 1
 
   return (
     <div>
-      <p className="mb-4 text-base font-medium">{question.questionText}</p>
-      <div className="flex gap-2">
-        <Input
+      <p
+        style={{
+          fontSize: 16,
+          fontWeight: 500,
+          color: 'var(--fg-1)',
+          marginBottom: 20,
+          lineHeight: 1.5,
+        }}
+      >
+        {question.questionText}
+      </p>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <input
           ref={inputRef}
+          className="lx-input"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type your answer…"
+          placeholder="type your answer…"
           disabled={disabled}
-          className="flex-1"
           autoFocus
+          style={{ flex: 1, height: 42, fontSize: 15 }}
         />
-        <Button onClick={handleCheck} disabled={disabled || !value.trim()}>
+        <button
+          className="lx-btn-primary"
+          onClick={handleCheck}
+          disabled={disabled || !value.trim()}
+          style={{ padding: '0 22px' }}
+        >
           Check
-        </Button>
+        </button>
       </div>
       {showCloseHint && (
-        <p className="mt-1.5 text-xs text-amber-600">Almost there — double-check your spelling.</p>
+        <p style={{ marginTop: 8, color: 'var(--warning)', fontSize: 11, fontWeight: 600 }}>
+          Almost — double-check your spelling.
+        </p>
       )}
     </div>
   )

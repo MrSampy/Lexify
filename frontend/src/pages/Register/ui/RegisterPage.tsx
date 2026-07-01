@@ -4,19 +4,80 @@ import { RegisterForm } from '@/features/auth'
 
 export function RegisterPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link to={ROUTES.LOGIN} className="text-primary underline-offset-4 hover:underline">
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px 16px',
+        background: 'var(--bg-0)',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: 400 }}>
+        {/* Logo */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: 32,
+            gap: 12,
+            alignItems: 'center',
+          }}
+        >
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              background: 'var(--accent-color)',
+              borderRadius: 'var(--r-sm)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 6px 16px rgba(22,185,129,0.30)',
+            }}
+          >
+            <span
+              style={{
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 800,
+                fontFamily: 'var(--font-display)',
+              }}
+            >
+              L
+            </span>
+          </div>
+          <span
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 26,
+              fontWeight: 700,
+              color: 'var(--fg-1)',
+            }}
+          >
+            Lexify
+          </span>
+        </div>
+
+        {/* Card */}
+        <div className="lx-card" style={{ padding: 32, boxShadow: 'var(--shadow-2)' }}>
+          <h1 className="ds-h3" style={{ margin: '0 0 6px', textAlign: 'center' }}>
+            Create your account ✨
+          </h1>
+          <p
+            className="ds-sm"
+            style={{ margin: '0 0 24px', color: 'var(--fg-3)', textAlign: 'center' }}
+          >
+            Already registered?{' '}
+            <Link
+              to={ROUTES.LOGIN}
+              style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
+            >
               Sign in
             </Link>
           </p>
-        </div>
 
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
           <RegisterForm />
         </div>
       </div>

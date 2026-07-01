@@ -2,7 +2,6 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate } from 'react-router-dom'
-import { Button, Input } from '@/shared/ui'
 import { ROUTES } from '@/shared/config'
 import { useAuthStore } from '@/entities/user'
 import { authApi } from '../api/authApi'
@@ -33,43 +32,78 @@ export function LoginForm() {
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Login failed. Please try again.'
+        'Invalid email or password.'
       setError('root', { message })
     }
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="text-sm font-medium">
-          Email
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+    >
+      <div>
+        <label className="lx-label" htmlFor="email">
+          email
         </label>
-        <Input id="email" type="email" autoComplete="email" {...register('email')} />
-        {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+        <input
+          id="email"
+          type="email"
+          autoComplete="email"
+          className="lx-input"
+          {...register('email')}
+        />
+        {errors.email && (
+          <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
+            {errors.email.message}
+          </p>
+        )}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          Password
+      <div>
+        <label className="lx-label" htmlFor="password">
+          password
         </label>
-        <Input
+        <input
           id="password"
           type="password"
           autoComplete="current-password"
+          className="lx-input"
           {...register('password')}
         />
-        {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+        {errors.password && (
+          <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
+            {errors.password.message}
+          </p>
+        )}
       </div>
 
       {errors.root && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div
+          style={{
+            padding: '10px 14px',
+            background: 'var(--danger-ghost)',
+            border: '1px solid rgba(255,92,108,0.3)',
+            borderRadius: 'var(--r-md)',
+            color: 'var(--danger)',
+            fontSize: 13,
+            fontFamily: 'var(--font-body)',
+          }}
+        >
           {errors.root.message}
-        </p>
+        </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting}>
+      <div style={{ height: 4 }} />
+
+      <button
+        type="submit"
+        className="lx-btn-primary"
+        disabled={isSubmitting}
+        style={{ width: '100%', justifyContent: 'center' }}
+      >
         {isSubmitting ? 'Signing in…' : 'Sign in'}
-      </Button>
+      </button>
     </form>
   )
 }

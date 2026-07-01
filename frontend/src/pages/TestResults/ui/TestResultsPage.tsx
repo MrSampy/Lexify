@@ -1,9 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { ROUTES } from '@/shared/config'
-import { Button, Spinner } from '@/shared/ui'
+import { Spinner } from '@/shared/ui'
 import { useAttemptResults } from '@/entities/test'
-import { formatPercent } from '@/shared/lib'
 
 export function TestResultsPage() {
   const { id: attemptId } = useParams<{ id: string }>()
@@ -13,7 +11,7 @@ export function TestResultsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
         <Spinner size="lg" />
       </div>
     )
@@ -21,112 +19,150 @@ export function TestResultsPage() {
 
   if (isError || !data) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Results not available yet.</p>
-        <Link to={ROUTES.TESTS} className="text-sm text-primary hover:underline">
-          Back to tests
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 16,
+          padding: '80px 0',
+        }}
+      >
+        <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
+          Results not available yet.
+        </p>
+        <Link
+          to={ROUTES.TESTS}
+          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
+        >
+          ← Back to tests
         </Link>
       </div>
     )
   }
 
+  const scorePercent = Math.round(data.score * 100)
   const wrongAnswers = data.answers.filter((a) => !a.isCorrect)
-  const chartData = [
-    { name: 'Correct', value: data.correctAnswers },
-    { name: 'Incorrect', value: data.totalQuestions - data.correctAnswers },
-  ]
-  const COLORS = ['#22c55e', '#ef4444']
+
+  const getMessage = () => {
+    if (scorePercent >= 90) return 'Excellent session!'
+    if (scorePercent >= 60) return 'Good work!'
+    return 'Keep practicing!'
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <Link
-            to={ROUTES.TESTS}
-            className="mb-2 inline-block text-sm text-muted-foreground hover:underline"
+    <div style={{ maxWidth: 720, margin: '0 auto' }}>
+      {/* Score circle */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          marginBottom: 30,
+        }}
+      >
+        <div style={{ position: 'relative', width: 148, height: 148, marginBottom: 18 }}>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              background: `conic-gradient(var(--accent-color) 0% ${scorePercent}%, var(--bg-3) ${scorePercent}% 100%)`,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 10,
+              borderRadius: '50%',
+              background: 'var(--bg-1)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            ← Tests
-          </Link>
-          <h1 className="text-2xl font-bold">Test results</h1>
-        </div>
-
-        {/* Score card */}
-        <div className="mb-6 rounded-lg border bg-card p-6 shadow-sm">
-          <div className="flex flex-col items-center gap-6 sm:flex-row">
-            {/* Donut chart */}
-            <div className="h-40 w-40 shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={45}
-                    outerRadius={65}
-                    dataKey="value"
-                    strokeWidth={0}
-                  >
-                    {chartData.map((_, index) => (
-                      <Cell key={index} fill={COLORS[index]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Score text */}
-            <div className="text-center sm:text-left">
-              <p className="text-5xl font-bold">{formatPercent(data.score)}</p>
-              <p className="mt-1 text-muted-foreground">
-                {data.correctAnswers} / {data.totalQuestions} correct
-              </p>
-              <div className="mt-3 flex gap-4 text-sm">
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-                  Correct: {data.correctAnswers}
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-                  Wrong: {data.totalQuestions - data.correctAnswers}
-                </span>
-              </div>
-            </div>
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 40,
+                color: 'var(--fg-1)',
+              }}
+            >
+              {scorePercent}%
+            </span>
+            <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
+              {data.correctAnswers} / {data.totalQuestions}
+            </span>
           </div>
         </div>
 
-        {/* Wrong answers */}
-        {wrongAnswers.length > 0 && (
-          <div className="mb-6 rounded-lg border bg-card shadow-sm">
-            <div className="border-b px-5 py-3">
-              <h2 className="text-sm font-semibold">Incorrect answers ({wrongAnswers.length})</h2>
-            </div>
-            <div className="divide-y">
-              {wrongAnswers.map((a) => (
-                <div key={a.questionId} className="px-5 py-3 text-sm">
-                  <p className="mb-1 font-medium">{a.questionText}</p>
-                  <div className="space-y-0.5 text-xs text-muted-foreground">
-                    <p>
-                      Your answer: <span className="text-destructive">{a.givenAnswer || '—'}</span>
-                    </p>
-                    <p>
-                      Correct: <span className="font-medium text-green-600">{a.correctAnswer}</span>
-                    </p>
+        <h1 className="ds-h3" style={{ margin: '0 0 4px' }}>
+          {getMessage()}
+        </h1>
+        <p className="ds-body" style={{ margin: 0, color: 'var(--fg-3)' }}>
+          {wrongAnswers.length > 0
+            ? `${wrongAnswers.length} words moved to shorter review interval.`
+            : 'All answers correct — great job!'}
+        </p>
+      </div>
+
+      {/* Answer breakdown */}
+      {data.answers.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+          {data.answers.map((r) => (
+            <div
+              key={r.questionId}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                padding: '13px 18px',
+                background: 'var(--bg-2)',
+                border: '1px solid var(--line-2)',
+                borderRadius: 'var(--r-md)',
+                borderLeft: `3px solid ${r.isCorrect ? 'var(--success)' : 'var(--danger)'}`,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  color: r.isCorrect ? 'var(--success)' : 'var(--danger)',
+                  fontSize: 15,
+                  width: 16,
+                }}
+              >
+                {r.isCorrect ? '✓' : '✕'}
+              </span>
+              <span style={{ flex: 1, color: 'var(--fg-1)', fontSize: 14 }}>{r.questionText}</span>
+              {!r.isCorrect && (
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ color: 'var(--danger)', fontSize: 11, fontWeight: 600 }}>
+                    {r.givenAnswer || '—'}
+                  </div>
+                  <div style={{ color: 'var(--success)', fontSize: 11, fontWeight: 600 }}>
+                    {r.correctAnswer}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={() => navigate(ROUTES.TEST_RUNNER(data.testId))}>Try again</Button>
-          <Button variant="outline" onClick={() => navigate(ROUTES.TESTS)}>
-            Back to tests
-          </Button>
+          ))}
         </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+        <button
+          className="lx-btn-secondary"
+          onClick={() => navigate(ROUTES.TEST_RUNNER(data.testId))}
+        >
+          ↺ Try again
+        </button>
+        <button className="lx-btn-primary" onClick={() => navigate(ROUTES.TESTS)}>
+          Back to tests
+        </button>
       </div>
     </div>
   )

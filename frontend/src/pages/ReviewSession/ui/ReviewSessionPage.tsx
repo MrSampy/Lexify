@@ -1,9 +1,26 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
-import { Button, Spinner } from '@/shared/ui'
-import { useDueWords, useRateWordMutation, ReviewCard, QualityRater } from '@/features/review-word'
-import { TestProgressBar } from '@/features/run-test'
+import { Spinner } from '@/shared/ui'
+import { useDueWords, useRateWordMutation } from '@/features/review-word'
+
+const RATER_LABELS: Record<number, string> = {
+  0: 'Blackout',
+  1: 'Barely',
+  2: 'Effort',
+  3: 'Hesitant',
+  4: 'Easy',
+  5: 'Perfect',
+}
+
+const RATER_COLORS = [
+  '#FF5C6C', // 0
+  '#FF7A4D', // 1
+  '#F5B53D', // 2
+  '#9FC65A', // 3
+  '#4FCA7A', // 4
+  '#3FD68B', // 5
+]
 
 interface RatingEntry {
   wordId: string
@@ -14,6 +31,7 @@ export function ReviewSessionPage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [ratings, setRatings] = useState<RatingEntry[]>([])
   const [isFinished, setIsFinished] = useState(false)
+  const [flipped, setFlipped] = useState(false)
 
   const { data: words, isLoading, isError } = useDueWords()
   const rateWord = useRateWordMutation()
@@ -23,6 +41,7 @@ export function ReviewSessionPage() {
     rateWord.mutate({ wordId: word.id, quality })
     const newRatings = [...ratings, { wordId: word.id, quality }]
     setRatings(newRatings)
+    setFlipped(false)
 
     if (currentIndex + 1 === words!.length) {
       setIsFinished(true)
@@ -31,30 +50,60 @@ export function ReviewSessionPage() {
     }
   }
 
-  // isFinished must be checked before isLoading — mutation invalidates the
-  // query causing a brief refetch, which would otherwise overwrite the finished screen
   if (isFinished) {
     const hardCount = ratings.filter((r) => r.quality < 3).length
     const easyCount = ratings.filter((r) => r.quality >= 3).length
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
-        <p className="text-4xl">✅</p>
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Сесія завершена!</h1>
-          <p className="mt-1 text-muted-foreground">Пройдено: {ratings.length} слів</p>
-        </div>
-        <div className="flex gap-8 text-center">
-          <div>
-            <p className="text-3xl font-bold text-red-500">{hardCount}</p>
-            <p className="text-sm text-muted-foreground">Складних (0–2)</p>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '60vh',
+          gap: 24,
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ fontSize: 48 }}>🎉</div>
+        <div className="ds-h2">Session complete!</div>
+        <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
+          Reviewed {ratings.length} words
+        </p>
+        <div style={{ display: 'flex', gap: 32 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 40,
+                fontWeight: 700,
+                color: 'var(--danger)',
+              }}
+            >
+              {hardCount}
+            </div>
+            <div className="ds-sm" style={{ color: 'var(--fg-3)', fontWeight: 600 }}>
+              hard (0–2)
+            </div>
           </div>
-          <div>
-            <p className="text-3xl font-bold text-green-500">{easyCount}</p>
-            <p className="text-sm text-muted-foreground">Легких (3–5)</p>
+          <div style={{ textAlign: 'center' }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 40,
+                fontWeight: 700,
+                color: 'var(--success)',
+              }}
+            >
+              {easyCount}
+            </div>
+            <div className="ds-sm" style={{ color: 'var(--fg-3)', fontWeight: 600 }}>
+              easy (3–5)
+            </div>
           </div>
         </div>
-        <Link to={ROUTES.DASHBOARD}>
-          <Button>До дашборду</Button>
+        <Link to={ROUTES.DASHBOARD} style={{ textDecoration: 'none' }}>
+          <button className="lx-btn-primary">Back to dashboard</button>
         </Link>
       </div>
     )
@@ -62,7 +111,7 @@ export function ReviewSessionPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
         <Spinner size="lg" />
       </div>
     )
@@ -70,10 +119,23 @@ export function ReviewSessionPage() {
 
   if (isError) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Не вдалося завантажити слова для повторення.</p>
-        <Link to={ROUTES.DASHBOARD} className="text-sm text-primary hover:underline">
-          На головну
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 16,
+          padding: '80px 0',
+        }}
+      >
+        <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
+          Failed to load words for review.
+        </p>
+        <Link
+          to={ROUTES.DASHBOARD}
+          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
+        >
+          Back to dashboard
         </Link>
       </div>
     )
@@ -81,65 +143,215 @@ export function ReviewSessionPage() {
 
   if (!words || words.length === 0) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-2xl">🎉</p>
-        <p className="text-lg font-medium">Немає слів для повторення!</p>
-        <p className="text-sm text-muted-foreground">
-          Повертайтесь пізніше або додайте нові слова.
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '60vh',
+          gap: 16,
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ fontSize: 48 }}>📖</div>
+        <div className="ds-h3">No words due for review!</div>
+        <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
+          Come back later or add new words.
         </p>
-        <Link to={ROUTES.BLOCKS}>
-          <Button variant="outline">До блоків</Button>
+        <Link to={ROUTES.BLOCKS} style={{ textDecoration: 'none' }}>
+          <button className="lx-btn-secondary">Go to blocks</button>
         </Link>
       </div>
     )
   }
 
   const currentWord = words[currentIndex]
-
   if (!currentWord) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
         <Spinner size="lg" />
       </div>
     )
   }
 
+  const progress = (currentIndex / words.length) * 100
+  const remaining = words.length - currentIndex
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <Link
-            to={ROUTES.DASHBOARD}
-            className="mb-2 inline-block text-sm text-muted-foreground hover:underline"
+    <div style={{ maxWidth: 560, margin: '0 auto' }}>
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        }}
+      >
+        <div style={{ fontWeight: 700, color: 'var(--fg-2)', fontSize: 14 }}>Review 🔄</div>
+        <span style={{ color: 'var(--accent-color)', fontSize: 13, fontWeight: 700 }}>
+          {remaining} words remaining
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="lx-progress-track" style={{ marginBottom: 30 }}>
+        <div className="lx-progress-fill" style={{ width: `${progress}%` }} />
+      </div>
+
+      {/* Flashcard */}
+      <div className="review-card-wrap" style={{ marginBottom: 24, minHeight: 280 }}>
+        <div className={`review-card-inner${flipped ? ' flipped' : ''}`} style={{ minHeight: 280 }}>
+          {/* Front */}
+          <div
+            className="review-card-face"
+            style={{
+              background: 'var(--bg-2)',
+              border: '1px solid var(--line-2)',
+              borderRadius: 'var(--r-xl)',
+              padding: '46px 30px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 280,
+            }}
           >
-            ← Дашборд
-          </Link>
-          <h1 className="text-xl font-bold">Повторення слів</h1>
-        </div>
+            <div
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 600,
+                fontSize: 42,
+                color: 'var(--fg-1)',
+                letterSpacing: '-0.02em',
+                textAlign: 'center',
+              }}
+            >
+              {currentWord.term}
+            </div>
+            <button
+              className="lx-btn-secondary"
+              style={{ marginTop: 30 }}
+              onClick={() => setFlipped(true)}
+            >
+              Show translation ↻
+            </button>
+          </div>
 
-        {/* Progress */}
-        <div className="mb-6">
-          <TestProgressBar
-            current={currentIndex + 1}
-            total={words.length}
-            correctCount={ratings.filter((r) => r.quality >= 3).length}
-          />
-        </div>
-
-        {/* Card */}
-        <div className="mb-6">
-          <ReviewCard key={currentWord.id} word={currentWord} />
-        </div>
-
-        {/* Rating */}
-        <div>
-          <p className="mb-3 text-center text-sm text-muted-foreground">
-            Як добре ти пам'ятав це слово?
-          </p>
-          <QualityRater onRate={handleRate} disabled={rateWord.isPending} />
+          {/* Back */}
+          <div
+            className="review-card-back"
+            style={{
+              background: 'var(--bg-2)',
+              border: '1px solid var(--accent-line)',
+              borderRadius: 'var(--r-xl)',
+              padding: '36px 30px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: 'var(--glow-accent)',
+              minHeight: 280,
+            }}
+          >
+            <div style={{ color: 'var(--fg-4)', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
+              {currentWord.term}
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 600,
+                fontSize: 32,
+                color: 'var(--accent-color)',
+                letterSpacing: '-0.02em',
+                textAlign: 'center',
+              }}
+            >
+              {currentWord.translation}
+            </div>
+            {currentWord.notes && (
+              <p
+                className="ds-sm"
+                style={{ color: 'var(--fg-3)', margin: '12px 0 0', textAlign: 'center' }}
+              >
+                {currentWord.notes}
+              </p>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Quality rater */}
+      {flipped && (
+        <div>
+          <div
+            style={{
+              color: 'var(--fg-3)',
+              textAlign: 'center',
+              marginBottom: 12,
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            How well did you recall it?
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {[0, 1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                onClick={() => handleRate(n)}
+                disabled={rateWord.isPending}
+                style={{
+                  flex: 1,
+                  minWidth: 60,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '14px 8px',
+                  background: 'var(--bg-2)',
+                  border: '1px solid var(--line-2)',
+                  borderRadius: 'var(--r-md)',
+                  cursor: 'pointer',
+                  transition: 'transform 0.12s, border-color 0.12s',
+                }}
+                onMouseEnter={(e) => {
+                  const el = e.currentTarget
+                  el.style.transform = 'translateY(-2px)'
+                  el.style.borderColor = RATER_COLORS[n]
+                }}
+                onMouseLeave={(e) => {
+                  const el = e.currentTarget
+                  el.style.transform = 'none'
+                  el.style.borderColor = 'var(--line-2)'
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    fontSize: 22,
+                    color: RATER_COLORS[n],
+                  }}
+                >
+                  {n}
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 10,
+                    color: 'var(--fg-3)',
+                    fontWeight: 600,
+                  }}
+                >
+                  {RATER_LABELS[n]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

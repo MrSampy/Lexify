@@ -12,11 +12,41 @@ import {
 import { Spinner } from '@/shared/ui'
 import { useDashboardStats, useRegistrationsChart, useAiCallsChart } from '@/entities/admin'
 
+const chartTooltipStyle = {
+  backgroundColor: 'var(--bg-3)',
+  border: '1px solid var(--line-2)',
+  borderRadius: 6,
+  color: 'var(--fg-1)',
+  fontFamily: 'var(--font-body)',
+  fontSize: 11,
+}
+
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-lg border bg-card p-5 shadow-sm">
-      <p className="text-3xl font-bold">{value}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{label}</p>
+    <div
+      style={{
+        background: 'var(--bg-2)',
+        border: '1px solid var(--line-2)',
+        borderRadius: 'var(--r-md)',
+        padding: '18px 20px',
+      }}
+    >
+      <div
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontWeight: 700,
+          fontSize: 36,
+          color: 'var(--fg-1)',
+          letterSpacing: '-0.02em',
+          lineHeight: 1,
+          marginBottom: 6,
+        }}
+      >
+        {value}
+      </div>
+      <div className="ds-sm" style={{ color: 'var(--fg-3)', fontSize: 11, fontWeight: 600 }}>
+        {label}
+      </div>
     </div>
   )
 }
@@ -33,61 +63,97 @@ export function AdminDashboardPage() {
   }))
 
   return (
-    <div className="p-8">
-      <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
+    <div>
+      <h1 className="ds-h2" style={{ margin: '0 0 24px' }}>
+        Dashboard
+      </h1>
 
       {statsLoading ? (
-        <div className="flex justify-center py-16">
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
           <Spinner size="lg" />
         </div>
       ) : stats ? (
         <>
-          {/* Stat cards */}
-          <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3">
-            <StatCard label="Total users" value={stats.totalUsers} />
-            <StatCard label="Active (7d)" value={stats.activeUsersLast7Days} />
-            <StatCard label="Active (30d)" value={stats.activeUsersLast30Days} />
-            <StatCard label="Total words" value={stats.totalWords} />
-            <StatCard label="Total blocks" value={stats.totalWordBlocks} />
-            <StatCard label="Total tests" value={stats.totalTests} />
+          {/* Stat grid */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 12,
+              marginBottom: 12,
+            }}
+          >
+            <StatCard label="total users" value={stats.totalUsers} />
+            <StatCard label="active (7d)" value={stats.activeUsersLast7Days} />
+            <StatCard label="active (30d)" value={stats.activeUsersLast30Days} />
+            <StatCard label="total words" value={stats.totalWords} />
+            <StatCard label="total blocks" value={stats.totalWordBlocks} />
+            <StatCard label="total tests" value={stats.totalTests} />
           </div>
-
-          {/* AI calls summary */}
-          <div className="mb-6 grid grid-cols-2 gap-4">
-            <StatCard label="AI calls (24h)" value={stats.aiCallsLast24Hours} />
-            <StatCard label="AI calls (7d)" value={stats.aiCallsLast7Days} />
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}
+          >
+            <StatCard label="ai calls (24h)" value={stats.aiCallsLast24Hours} />
+            <StatCard label="ai calls (7d)" value={stats.aiCallsLast7Days} />
           </div>
         </>
       ) : null}
 
       {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Registrations */}
-        <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Registrations (30 days)
-          </h2>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div
+          style={{
+            background: 'var(--bg-2)',
+            border: '1px solid var(--line-2)',
+            borderRadius: 'var(--r-md)',
+            padding: '18px 20px',
+          }}
+        >
+          <div
+            style={{
+              color: 'var(--fg-3)',
+              fontSize: 11,
+              fontWeight: 700,
+              marginBottom: 16,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+            }}
+          >
+            Registrations — 30d
+          </div>
           {regLoading ? (
-            <div className="flex h-40 items-center justify-center">
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                height: 160,
+                alignItems: 'center',
+              }}
+            >
               <Spinner />
             </div>
           ) : regData.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No data</p>
+            <p className="ds-sm" style={{ color: 'var(--fg-4)' }}>
+              No data
+            </p>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={180}>
               <LineChart data={regData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--line-1)" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 10 }}
+                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-body)' }}
                   tickFormatter={(v: string) => v.slice(5)}
                 />
-                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                <Tooltip />
+                <YAxis
+                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-body)' }}
+                  allowDecimals={false}
+                />
+                <Tooltip contentStyle={chartTooltipStyle} />
                 <Line
                   type="monotone"
                   dataKey="count"
-                  stroke="hsl(var(--primary))"
+                  stroke="var(--accent-color)"
                   strokeWidth={2}
                   dot={false}
                 />
@@ -96,25 +162,60 @@ export function AdminDashboardPage() {
           )}
         </div>
 
-        {/* AI calls chart */}
-        <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            AI calls (last 24h)
-          </h2>
+        <div
+          style={{
+            background: 'var(--bg-2)',
+            border: '1px solid var(--line-2)',
+            borderRadius: 'var(--r-md)',
+            padding: '18px 20px',
+          }}
+        >
+          <div
+            style={{
+              color: 'var(--fg-3)',
+              fontSize: 11,
+              fontWeight: 700,
+              marginBottom: 16,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+            }}
+          >
+            AI calls — last 24h
+          </div>
           {aiLoading ? (
-            <div className="flex h-40 items-center justify-center">
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                height: 160,
+                alignItems: 'center',
+              }}
+            >
               <Spinner />
             </div>
           ) : aiData.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No data</p>
+            <p className="ds-sm" style={{ color: 'var(--fg-4)' }}>
+              No data
+            </p>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={180}>
               <BarChart data={aiData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="hour" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--line-1)" />
+                <XAxis
+                  dataKey="hour"
+                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-body)' }}
+                />
+                <YAxis
+                  tick={{ fontSize: 9, fill: 'var(--fg-4)', fontFamily: 'var(--font-body)' }}
+                  allowDecimals={false}
+                />
+                <Tooltip contentStyle={chartTooltipStyle} />
+                <Bar
+                  dataKey="count"
+                  fill="var(--accent-color)"
+                  radius={[3, 3, 0, 0]}
+                  opacity={0.8}
+                />
               </BarChart>
             </ResponsiveContainer>
           )}

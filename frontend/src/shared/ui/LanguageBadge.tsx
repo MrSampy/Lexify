@@ -1,5 +1,3 @@
-import { cn } from '@/lib/utils'
-
 interface LanguageBadgeProps {
   code: string
   className?: string
@@ -8,10 +6,21 @@ interface LanguageBadgeProps {
 export function LanguageBadge({ code, className }: LanguageBadgeProps) {
   return (
     <span
-      className={cn(
-        'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide',
-        className,
-      )}
+      className={className}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        padding: '2px 7px',
+        borderRadius: 'var(--r-sm)',
+        background: 'var(--bg-3)',
+        border: '1px solid var(--line-2)',
+        color: 'var(--fg-3)',
+      }}
     >
       {code}
     </span>

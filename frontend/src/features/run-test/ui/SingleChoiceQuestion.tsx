@@ -1,4 +1,3 @@
-import { Button } from '@/shared/ui'
 import type { Question } from '@/entities/test'
 
 interface SingleChoiceQuestionProps {
@@ -12,18 +11,54 @@ export function SingleChoiceQuestion({ question, onSubmit, disabled }: SingleCho
 
   return (
     <div>
-      <p className="mb-4 break-words text-base font-medium">{question.questionText}</p>
-      <div className="grid grid-cols-2 gap-2">
+      <p
+        style={{
+          fontSize: 16,
+          fontWeight: 500,
+          color: 'var(--fg-1)',
+          marginBottom: 20,
+          lineHeight: 1.5,
+        }}
+      >
+        {question.questionText}
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         {options.map((option) => (
-          <Button
+          <button
             key={option.id}
-            variant="outline"
-            className="h-auto min-h-[3rem] w-full whitespace-normal break-words py-3 text-sm"
             onClick={() => onSubmit(option.optionText)}
             disabled={disabled}
+            style={{
+              padding: '14px 16px',
+              background: 'var(--bg-3)',
+              border: '1px solid var(--line-2)',
+              borderRadius: 'var(--r-md)',
+              cursor: disabled ? 'default' : 'pointer',
+              fontFamily: 'var(--font-body)',
+              fontSize: 14,
+              color: 'var(--fg-1)',
+              textAlign: 'center',
+              lineHeight: 1.4,
+              transition: 'border-color 0.12s, background 0.12s',
+              wordBreak: 'break-word',
+            }}
+            onMouseEnter={(e) => {
+              if (!disabled) {
+                const el = e.currentTarget
+                el.style.borderColor = 'var(--accent-line)'
+                el.style.background = 'var(--accent-ghost)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!disabled) {
+                const el = e.currentTarget
+                el.style.borderColor = 'var(--line-2)'
+                el.style.background = 'var(--bg-3)'
+              }
+            }}
           >
-            <span className="block w-full break-words text-center">{option.optionText}</span>
-          </Button>
+            {option.optionText}
+          </button>
         ))}
       </div>
     </div>

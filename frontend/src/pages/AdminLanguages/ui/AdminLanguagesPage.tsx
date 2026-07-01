@@ -1,22 +1,15 @@
 import { useState } from 'react'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Badge,
-  Button,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  Input,
   Spinner,
 } from '@/shared/ui'
 import { useLanguages, useAddLanguageMutation, useToggleLanguageMutation } from '@/entities/admin'
+
+const COL_WIDTHS = ['70px', '1fr', '1fr', '60px', '80px', '90px']
 
 export function AdminLanguagesPage() {
   const { data: languages, isLoading } = useLanguages()
@@ -45,98 +38,172 @@ export function AdminLanguagesPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Languages</h1>
-        <Button onClick={() => setShowAdd(true)}>+ Add language</Button>
+    <div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 20,
+        }}
+      >
+        <h1 className="ds-h2" style={{ margin: 0 }}>
+          Languages
+        </h1>
+        <button className="lx-btn-primary" onClick={() => setShowAdd(true)}>
+          + Add language
+        </button>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
           <Spinner size="lg" />
         </div>
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-16">Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Native name</TableHead>
-                <TableHead className="w-16 text-right">Sort</TableHead>
-                <TableHead className="w-24">Status</TableHead>
-                <TableHead className="w-24" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(languages ?? []).map((lang) => (
-                <TableRow key={lang.id}>
-                  <TableCell className="font-mono font-medium">{lang.code}</TableCell>
-                  <TableCell>{lang.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{lang.nativeName}</TableCell>
-                  <TableCell className="text-right text-sm">{lang.sortOrder}</TableCell>
-                  <TableCell>
-                    <Badge variant={lang.isActive ? 'default' : 'outline'}>
-                      {lang.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => void toggleLanguage.mutateAsync(lang.code)}
-                      disabled={toggleLanguage.isPending}
-                    >
-                      {lang.isActive ? 'Disable' : 'Enable'}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div
+          style={{
+            background: 'var(--bg-2)',
+            border: '1px solid var(--line-2)',
+            borderRadius: 'var(--r-md)',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: COL_WIDTHS.join(' '),
+              gap: '0 16px',
+              padding: '10px 16px',
+              background: 'var(--bg-3)',
+              borderBottom: '1px solid var(--line-2)',
+            }}
+          >
+            {['Code', 'Name', 'Native', 'Sort', 'Status', ''].map((h) => (
+              <span
+                key={h}
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontWeight: 700,
+                  color: 'var(--fg-4)',
+                  fontSize: 10,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                {h}
+              </span>
+            ))}
+          </div>
+
+          {(languages ?? []).map((lang, i) => (
+            <div
+              key={lang.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: COL_WIDTHS.join(' '),
+                gap: '0 16px',
+                alignItems: 'center',
+                padding: '12px 16px',
+                borderBottom: i < (languages?.length ?? 0) - 1 ? '1px solid var(--line-1)' : 'none',
+              }}
+            >
+              <span style={{ color: 'var(--accent-color)', fontSize: 13, fontWeight: 700 }}>
+                {lang.code}
+              </span>
+              <span style={{ color: 'var(--fg-1)', fontSize: 14 }}>{lang.name}</span>
+              <span style={{ color: 'var(--fg-3)', fontSize: 13 }}>{lang.nativeName}</span>
+              <span style={{ color: 'var(--fg-4)', fontSize: 12 }}>{lang.sortOrder}</span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 10,
+                  padding: '3px 8px',
+                  borderRadius: 999,
+                  background: lang.isActive ? 'rgba(63,214,139,0.1)' : 'var(--bg-3)',
+                  border: `1px solid ${lang.isActive ? 'rgba(63,214,139,0.3)' : 'var(--line-2)'}`,
+                  color: lang.isActive ? 'var(--success)' : 'var(--fg-4)',
+                }}
+              >
+                {lang.isActive ? 'active' : 'inactive'}
+              </span>
+              <button
+                className="lx-btn-secondary"
+                style={{ padding: '4px 12px', fontSize: 11 }}
+                onClick={() => void toggleLanguage.mutateAsync(lang.code)}
+                disabled={toggleLanguage.isPending}
+              >
+                {lang.isActive ? 'Disable' : 'Enable'}
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Add language dialog */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="max-w-sm">
+        <DialogContent style={{ background: 'var(--bg-2)', border: '1px solid var(--line-2)' }}>
           <DialogHeader>
-            <DialogTitle>Add language</DialogTitle>
+            <DialogTitle className="ds-h4">Add language</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '8px 0' }}>
             <div>
-              <label className="mb-1 block text-sm font-medium">Code (e.g. "fr")</label>
-              <Input value={code} onChange={(e) => setCode(e.target.value)} maxLength={10} />
+              <label className="lx-label" style={{ display: 'block', marginBottom: 6 }}>
+                Code (e.g. "fr")
+              </label>
+              <input
+                className="lx-input"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                maxLength={10}
+                style={{ width: '100%' }}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Name (English)</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <label className="lx-label" style={{ display: 'block', marginBottom: 6 }}>
+                Name (English)
+              </label>
+              <input
+                className="lx-input"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                style={{ width: '100%' }}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Native name</label>
-              <Input value={nativeName} onChange={(e) => setNativeName(e.target.value)} />
+              <label className="lx-label" style={{ display: 'block', marginBottom: 6 }}>
+                Native name
+              </label>
+              <input
+                className="lx-input"
+                value={nativeName}
+                onChange={(e) => setNativeName(e.target.value)}
+                style={{ width: '100%' }}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Sort order</label>
-              <Input
+              <label className="lx-label" style={{ display: 'block', marginBottom: 6 }}>
+                Sort order
+              </label>
+              <input
+                className="lx-input"
                 type="number"
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
-                className="w-24"
+                style={{ width: 100 }}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>
+            <button className="lx-btn-secondary" onClick={() => setShowAdd(false)}>
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
+              className="lx-btn-primary"
               onClick={() => void handleAdd()}
               disabled={addLanguage.isPending || !code || !name || !nativeName}
             >
               Add
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
