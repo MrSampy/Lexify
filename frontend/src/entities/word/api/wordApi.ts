@@ -38,12 +38,15 @@ export function useWords(blockId: string, search?: string, page = 1) {
   })
 }
 
+// BlockDetailPage renders its word list from useBlock's ['blocks', 'detail', id] query,
+// not from useWords, so word mutations must also invalidate the 'blocks' tree to refresh it.
 export function useCreateWordMutation(blockId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateWordInput) => wordApi.createWord(blockId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: wordKeys.all(blockId) })
+      void queryClient.invalidateQueries({ queryKey: ['blocks'] })
     },
   })
 }
@@ -55,6 +58,7 @@ export function useUpdateWordMutation(blockId: string) {
       wordApi.updateWord(blockId, wordId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: wordKeys.all(blockId) })
+      void queryClient.invalidateQueries({ queryKey: ['blocks'] })
     },
   })
 }
@@ -65,6 +69,7 @@ export function useDeleteWordMutation(blockId: string) {
     mutationFn: (wordId: string) => wordApi.deleteWord(blockId, wordId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: wordKeys.all(blockId) })
+      void queryClient.invalidateQueries({ queryKey: ['blocks'] })
     },
   })
 }
@@ -75,6 +80,7 @@ export function useImportWordsMutation(blockId: string) {
     mutationFn: (words: CreateWordInput[]) => wordApi.importWords(blockId, words),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: wordKeys.all(blockId) })
+      void queryClient.invalidateQueries({ queryKey: ['blocks'] })
     },
   })
 }

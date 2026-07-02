@@ -15,7 +15,7 @@ import { useDashboardStats, useRegistrationsChart, useAiCallsChart } from '@/ent
 const chartTooltipStyle = {
   backgroundColor: 'var(--bg-3)',
   border: '1px solid var(--line-2)',
-  borderRadius: 6,
+  borderRadius: 'var(--r-xs)',
   color: 'var(--fg-1)',
   fontFamily: 'var(--font-body)',
   fontSize: 11,
@@ -23,30 +23,11 @@ const chartTooltipStyle = {
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
-    <div
-      style={{
-        background: 'var(--bg-2)',
-        border: '1px solid var(--line-2)',
-        borderRadius: 'var(--r-md)',
-        padding: '18px 20px',
-      }}
-    >
-      <div
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontWeight: 700,
-          fontSize: 36,
-          color: 'var(--fg-1)',
-          letterSpacing: '-0.02em',
-          lineHeight: 1,
-          marginBottom: 6,
-        }}
-      >
+    <div className="rounded-[var(--r-md)] border border-[var(--line-2)] bg-[var(--bg-2)] px-5 py-[18px]">
+      <div className="mb-1.5 text-4xl leading-none font-bold tracking-[-0.02em] text-[var(--fg-1)] [font-family:var(--font-display)]">
         {value}
       </div>
-      <div className="ds-sm" style={{ color: 'var(--fg-3)', fontSize: 11, fontWeight: 600 }}>
-        {label}
-      </div>
+      <div className="ds-sm text-[11px] font-semibold text-[var(--fg-3)]">{label}</div>
     </div>
   )
 }
@@ -75,14 +56,7 @@ export function AdminDashboardPage() {
       ) : stats ? (
         <>
           {/* Stat grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 12,
-              marginBottom: 12,
-            }}
-          >
+          <div className="mb-3 grid grid-cols-3 gap-3">
             <StatCard label="total users" value={stats.totalUsers} />
             <StatCard label="active (7d)" value={stats.activeUsersLast7Days} />
             <StatCard label="active (30d)" value={stats.activeUsersLast30Days} />
@@ -90,9 +64,7 @@ export function AdminDashboardPage() {
             <StatCard label="total blocks" value={stats.totalWordBlocks} />
             <StatCard label="total tests" value={stats.totalTests} />
           </div>
-          <div
-            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}
-          >
+          <div className="mb-6 grid grid-cols-2 gap-3">
             <StatCard label="ai calls (24h)" value={stats.aiCallsLast24Hours} />
             <StatCard label="ai calls (7d)" value={stats.aiCallsLast7Days} />
           </div>

@@ -63,16 +63,30 @@ lexify/
 ### 1. Запустить инфраструктуру
 
 ```bash
-docker-compose up -d
+docker-compose up -d postgres redis
 ```
 
-Запускает: PostgreSQL 16 (порт 5432), Redis 7 (порт 6379), Ollama (порт 11434).
+Запускает: PostgreSQL 16 (порт 5432), Redis 7 (порт 6379). Ollama запускается нативно (см. ниже), не в Docker.
 
-### 2. Скачать AI-модель
+### 2. Установить Ollama и скачать AI-модель
+
+**Основной способ (локальная разработка): нативный Ollama на Windows**, а не в Docker — меньше накладных расходов и прямой доступ к GPU-ускорению. NPU из Task Manager пока не используется Ollama (нет backend'а под NPU) — ускорение будет только CPU/GPU.
 
 ```bash
+# Установка: https://ollama.com/download/windows, или winget install Ollama.Ollama
+ollama pull qwen3:8b
+```
+
+`Ollama__BaseUrl` в `appsettings.Development.json` уже указывает на `http://localhost:11434`, поэтому `dotnet run` подхватит нативный Ollama без правок конфига.
+
+**Запасной способ: Ollama в Docker** (старый способ, по-прежнему работает):
+
+```bash
+docker-compose up -d          # поднимет также контейнер ollama на порту 11434
 docker exec -it lexify-ollama ollama pull qwen3:8b
 ```
+
+Нативный и Docker-Ollama не могут одновременно занимать порт 11434 — перед переключением остановите один из них.
 
 ### 3. Запустить Backend
 

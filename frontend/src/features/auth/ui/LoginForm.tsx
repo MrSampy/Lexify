@@ -43,12 +43,11 @@ export function LoginForm() {
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
       <div>
-        <label className="lx-label" htmlFor="email">
-          email
-        </label>
         <input
           id="email"
           type="email"
+          placeholder="Email"
+          aria-label="Email"
           autoComplete="email"
           className="lx-input"
           {...register('email')}
@@ -61,12 +60,11 @@ export function LoginForm() {
       </div>
 
       <div>
-        <label className="lx-label" htmlFor="password">
-          password
-        </label>
         <input
           id="password"
           type="password"
+          placeholder="Password"
+          aria-label="Password"
           autoComplete="current-password"
           className="lx-input"
           {...register('password')}

@@ -1,13 +1,8 @@
-const TYPE_STYLES: Record<string, { bg: string; color: string; border: string; label: string }> = {
-  word: { bg: '#1e3a5f', color: '#60a5fa', border: 'rgba(96,165,250,0.3)', label: 'Word' },
-  phrase: { bg: '#2e1065', color: '#c084fc', border: 'rgba(192,132,252,0.3)', label: 'Phrase' },
-  expression: {
-    bg: '#431407',
-    color: '#fb923c',
-    border: 'rgba(251,146,60,0.3)',
-    label: 'Expression',
-  },
-  idiom: { bg: '#14532d', color: '#4ade80', border: 'rgba(74,222,128,0.3)', label: 'Idiom' },
+const TYPE_STYLES: Record<string, { className: string; label: string }> = {
+  word: { className: 'badge-word', label: 'Word' },
+  phrase: { className: 'badge-phrase', label: 'Phrase' },
+  expression: { className: 'badge-expression', label: 'Expression' },
+  idiom: { className: 'badge-idiom', label: 'Idiom' },
 }
 
 interface WordTypeBadgeProps {
@@ -16,28 +11,13 @@ interface WordTypeBadgeProps {
 }
 
 export function WordTypeBadge({ type }: WordTypeBadgeProps) {
-  const s = TYPE_STYLES[type.toLowerCase()] ?? {
-    bg: 'var(--bg-3)',
-    color: 'var(--fg-2)',
-    border: 'var(--line-2)',
-    label: type,
+  const s = TYPE_STYLES[type.toLowerCase()]
+  if (s) {
+    return <span className={`${s.className} whitespace-nowrap`}>{s.label}</span>
   }
   return (
-    <span
-      style={{
-        display: 'inline-block',
-        fontFamily: 'var(--font-body)',
-        fontWeight: 700,
-        fontSize: 11,
-        padding: '3px 9px',
-        borderRadius: 'var(--r-pill)',
-        background: s.bg,
-        color: s.color,
-        border: `1px solid ${s.border}`,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {s.label}
+    <span className="inline-block whitespace-nowrap rounded-[var(--r-pill)] border border-[var(--line-2)] bg-[var(--bg-3)] px-[9px] py-[3px] text-[11px] font-bold text-[var(--fg-2)] [font-family:var(--font-body)]">
+      {type}
     </span>
   )
 }

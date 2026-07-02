@@ -13,14 +13,16 @@ export function ReviewCard({ word }: ReviewCardProps) {
     <div className="rounded-xl border bg-card p-8 shadow-sm">
       {!isFlipped ? (
         <div className="flex min-h-40 flex-col items-center justify-center gap-6 text-center">
-          <p className="text-3xl font-bold tracking-tight">{word.term}</p>
+          <p className="ds-h2">{word.term}</p>
           <Button variant="outline" onClick={() => setIsFlipped(true)}>
             Показати переклад
           </Button>
         </div>
       ) : (
         <div className="flex min-h-40 flex-col gap-4 text-center">
-          <p className="text-3xl font-bold text-primary">{word.translation}</p>
+          <p className="ds-h2" style={{ color: 'var(--accent-color)' }}>
+            {word.translation}
+          </p>
           {word.notes && <p className="text-sm text-muted-foreground">{word.notes}</p>}
           {word.exampleSentence && (
             <p className="text-sm italic text-muted-foreground">"{word.exampleSentence}"</p>

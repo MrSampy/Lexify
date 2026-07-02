@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button } from '@/shared/ui'
 import { useUpdateWordMutation, useDeleteWordMutation } from '../api/wordApi'
 import type { Word } from '../model/types'
 import { WordTypeBadge } from './WordTypeBadge'
@@ -6,16 +7,6 @@ import { WordTypeBadge } from './WordTypeBadge'
 interface WordRowProps {
   word: Word
   blockId: string
-}
-
-const rowBase: React.CSSProperties = {
-  display: 'grid',
-  minWidth: 560,
-  gridTemplateColumns: '1.4fr 1.4fr 0.9fr 1.6fr 60px',
-  gap: 12,
-  padding: '14px 18px',
-  borderBottom: '1px solid var(--line-1)',
-  alignItems: 'center',
 }
 
 export function WordRow({ word, blockId }: WordRowProps) {
@@ -52,10 +43,9 @@ export function WordRow({ word, blockId }: WordRowProps) {
 
   return (
     <div
-      style={{
-        ...rowBase,
-        borderLeft: word.confidenceFlag ? '2px solid var(--warning)' : '2px solid transparent',
-      }}
+      className={`grid min-w-[560px] grid-cols-[1.4fr_1.4fr_0.9fr_1.6fr_60px] items-center gap-3 border-b border-b-[var(--line-1)] border-l-2 px-[18px] py-3.5 ${
+        word.confidenceFlag ? 'border-l-[var(--warning)]' : 'border-l-transparent'
+      }`}
     >
       {/* Term */}
       <div style={{ color: 'var(--fg-1)', fontWeight: 500, fontSize: 14 }}>{word.term}</div>
@@ -88,20 +78,13 @@ export function WordRow({ word, blockId }: WordRowProps) {
             </button>
           </div>
         ) : (
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setEditField('translation')}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--fg-2)',
-              fontSize: 14,
-              padding: 0,
-              textAlign: 'left',
-            }}
+            className="h-auto cursor-pointer justify-start rounded-none border-none p-0 text-left text-sm font-normal whitespace-normal text-[var(--fg-2)] hover:bg-transparent"
           >
             {word.translation}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -138,44 +121,24 @@ export function WordRow({ word, blockId }: WordRowProps) {
             </button>
           </div>
         ) : (
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setEditField('notes')}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: word.notes ? 'var(--fg-3)' : 'var(--fg-4)',
-              fontSize: 13,
-              padding: 0,
-              textAlign: 'left',
-              fontStyle: word.notes ? 'normal' : 'italic',
-            }}
+            className={`h-auto cursor-pointer justify-start rounded-none border-none p-0 text-left text-[13px] font-normal whitespace-normal hover:bg-transparent ${
+              word.notes ? 'text-[var(--fg-3)]' : 'italic text-[var(--fg-4)]'
+            }`}
           >
             {word.notes ?? 'add note'}
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Delete */}
-      <div style={{ textAlign: 'right' }}>
+      <div className="text-right">
         <button
           onClick={handleDelete}
           disabled={deleteWord.isPending}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'var(--fg-4)',
-            fontFamily: 'var(--font-body)',
-            fontSize: 13,
-            transition: 'color 0.12s',
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--danger)'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--fg-4)'
-          }}
+          className="cursor-pointer border-none bg-transparent text-[13px] text-[var(--fg-4)] transition-colors duration-100 hover:text-[var(--danger)] [font-family:var(--font-body)]"
         >
           ✕
         </button>

@@ -17,8 +17,8 @@ export function AnswerFeedback({
     <div
       style={{
         padding: '16px 18px',
-        background: isCorrect ? 'rgba(63,214,139,0.06)' : 'rgba(255,92,108,0.06)',
-        border: `1px solid ${isCorrect ? 'rgba(63,214,139,0.3)' : 'rgba(255,92,108,0.3)'}`,
+        background: isCorrect ? 'var(--success-ghost)' : 'var(--danger-ghost)',
+        border: `1px solid ${isCorrect ? 'var(--accent-line)' : 'var(--danger)'}`,
         borderRadius: 'var(--r-md)',
         borderLeft: `3px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'}`,
       }}

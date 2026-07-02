@@ -62,7 +62,7 @@ export function AiMetricsChart({ stats }: AiMetricsChartProps) {
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
-              <Bar dataKey="count" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="count" fill="var(--primary)" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
