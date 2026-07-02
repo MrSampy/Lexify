@@ -43,12 +43,30 @@ npm run preview    # preview production build
 ### Infrastructure (Docker)
 
 ```bash
-# Start PostgreSQL 16, Redis 7, Ollama
-docker compose up -d
-
-# After first start, pull the AI model manually
-docker exec -it <ollama-container> ollama pull qwen3:8b
+# Start PostgreSQL 16 and Redis only — Ollama runs natively (see below)
+docker compose up -d postgres redis
 ```
+
+### AI — Ollama
+
+**Primary (local dev): run Ollama natively on Windows**, not in Docker — avoids container virtualization overhead and lets Ollama use GPU acceleration directly if available. The NPU shown in Task Manager is not currently used by Ollama (no NPU backend yet); this only gets you CPU/GPU inference without the Docker layer.
+
+```bash
+# Install: https://ollama.com/download/windows, or `winget install Ollama.Ollama`
+ollama serve            # if not already running as a background service
+ollama pull qwen3:8b    # first-time model download
+```
+
+`Ollama__BaseUrl` in `appsettings.Development.json` already points at `http://localhost:11434`, so `dotnet run` picks up the native instance with no config change.
+
+**Fallback: run Ollama in Docker** (original method, still supported):
+
+```bash
+docker compose up -d          # also starts the ollama container on port 11434
+docker exec -it lexify-ollama ollama pull qwen3:8b
+```
+
+Only one of the two (native or Docker) can bind port 11434 at a time — stop the other before switching.
 
 ---
 

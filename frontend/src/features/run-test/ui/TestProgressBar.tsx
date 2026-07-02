@@ -8,11 +8,11 @@ export function TestProgressBar({ current, total, correctCount }: TestProgressBa
   const percent = Math.round((current / total) * 100)
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+      <div className="ds-sm mb-1 flex items-center justify-between">
         <span>
           Question {current} of {total}
         </span>
-        <span className="text-green-600">{correctCount} correct</span>
+        <span className="text-[var(--success)]">{correctCount} correct</span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div

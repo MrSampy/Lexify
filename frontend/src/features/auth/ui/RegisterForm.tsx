@@ -41,15 +41,13 @@ export function RegisterForm() {
       style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
     >
       <div>
-        <label className="lx-label" htmlFor="displayName">
-          display name <span style={{ color: 'var(--fg-4)' }}>— optional</span>
-        </label>
         <input
           id="displayName"
           type="text"
           autoComplete="name"
           className="lx-input"
-          placeholder="Your name"
+          placeholder="Your name (optional)"
+          aria-label="Display name (optional)"
           {...register('displayName')}
         />
         {errors.displayName && (
@@ -60,12 +58,11 @@ export function RegisterForm() {
       </div>
 
       <div>
-        <label className="lx-label" htmlFor="email">
-          email
-        </label>
         <input
           id="email"
           type="email"
+          placeholder="Email"
+          aria-label="Email"
           autoComplete="email"
           className="lx-input"
           {...register('email')}
@@ -78,12 +75,11 @@ export function RegisterForm() {
       </div>
 
       <div>
-        <label className="lx-label" htmlFor="password">
-          password
-        </label>
         <input
           id="password"
           type="password"
+          placeholder="Password"
+          aria-label="Password"
           autoComplete="new-password"
           className="lx-input"
           {...register('password')}

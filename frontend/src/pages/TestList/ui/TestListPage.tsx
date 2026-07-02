@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
-import { Spinner } from '@/shared/ui'
+import { Spinner, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui'
 import { useTests, useDeleteTestMutation } from '@/entities/test'
 import type { TestStatus } from '@/entities/test'
 import { formatDate } from '@/shared/lib'
@@ -13,13 +13,13 @@ const STATUS_STYLES: Record<
   generating: {
     bg: 'var(--warning-ghost)',
     color: 'var(--warning)',
-    border: 'rgba(245,181,61,0.3)',
+    border: 'var(--warning-ghost)',
     label: 'Generating',
   },
   ready: {
     bg: 'var(--success-ghost)',
     color: 'var(--success)',
-    border: 'rgba(63,214,139,0.3)',
+    border: 'var(--accent-line)',
     label: 'Ready',
   },
   archived: { bg: 'var(--bg-3)', color: 'var(--fg-3)', border: 'var(--line-2)', label: 'Archived' },
@@ -62,29 +62,24 @@ export function TestListPage() {
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           {/* Status filter */}
-          <select
+          <Select
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value)
+            onValueChange={(value) => {
+              if (!value) return
+              setStatusFilter(value)
               setPage(1)
             }}
-            style={{
-              padding: '9px 14px',
-              background: 'var(--bg-2)',
-              border: '1px solid var(--line-2)',
-              borderRadius: 'var(--r-md)',
-              color: 'var(--fg-1)',
-              fontSize: 13,
-              fontFamily: 'var(--font-body)',
-              cursor: 'pointer',
-              outline: 'none',
-            }}
           >
-            <option value="all">all ▾</option>
-            <option value="generating">generating</option>
-            <option value="ready">ready</option>
-            <option value="archived">archived</option>
-          </select>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">all</SelectItem>
+              <SelectItem value="generating">generating</SelectItem>
+              <SelectItem value="ready">ready</SelectItem>
+              <SelectItem value="archived">archived</SelectItem>
+            </SelectContent>
+          </Select>
           <button className="lx-btn-primary" onClick={() => navigate(ROUTES.TEST_CREATE)}>
             + New test
           </button>

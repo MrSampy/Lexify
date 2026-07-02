@@ -32,7 +32,7 @@ public sealed partial class OpenAIProvider(
             Model = _settings.Model,
             Messages =
             [
-                new OpenAIMessage { Role = "system", Content = BuildFormatSystemPrompt() },
+                new OpenAIMessage { Role = "system", Content = BuildFormatSystemPrompt(nativeLanguage) },
                 new OpenAIMessage { Role = "user", Content = BuildFormatUserPrompt(rawText, targetLanguage, nativeLanguage) }
             ],
             Temperature = 0.1,
@@ -140,8 +140,8 @@ public sealed partial class OpenAIProvider(
     public Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
         Task.FromResult(!string.IsNullOrEmpty(_settings.ApiKey));
 
-    private static string BuildFormatSystemPrompt() =>
-        """
+    private static string BuildFormatSystemPrompt(string nativeLanguage) =>
+        $$"""
         Return ONLY a valid JSON object — no markdown, no explanation.
         Schema:
         {
@@ -160,6 +160,8 @@ public sealed partial class OpenAIProvider(
         }
         Rules:
         - Parse each non-empty line as one entry
+        - "translation" must ALWAYS be an actual {{nativeLanguage}} translation of the term, never an English definition, synonym, or explanation
+        - If a line has no translation given, translate the term into {{nativeLanguage}} yourself
         - confidenceFlag=true if translation is uncertain (user marked with ?)
         - Suggest a 2-4 word block title based on the content theme
         """;

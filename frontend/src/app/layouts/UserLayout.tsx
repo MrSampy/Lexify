@@ -2,6 +2,7 @@ import { useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { useAuthStore } from '@/entities/user'
 import { authApi } from '@/features/auth'
+import { SearchBar } from '@/widgets/SearchBar'
 
 const RT_KEY = 'lexify_rt'
 
@@ -199,6 +200,7 @@ export function UserLayout() {
           }}
         >
           <div style={{ flex: 1 }} />
+          <SearchBar />
           {user && (
             <div
               style={{

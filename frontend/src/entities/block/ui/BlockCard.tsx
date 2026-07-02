@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES, LANGUAGES } from '@/shared/config'
+import { Button } from '@/shared/ui'
 import { useDeleteBlockMutation } from '../api/blockApi'
 import type { WordBlock } from '../model/types'
 import { EditBlockModal } from './EditBlockModal'
@@ -13,7 +14,6 @@ export function BlockCard({ block }: BlockCardProps) {
   const navigate = useNavigate()
   const deleteBlock = useDeleteBlockMutation()
   const [editing, setEditing] = useState(false)
-  const [hovered, setHovered] = useState(false)
   const langCode = LANGUAGES[block.languageId]?.code ?? String(block.languageId)
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -29,55 +29,20 @@ export function BlockCard({ block }: BlockCardProps) {
 
   return (
     <>
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={() => navigate(ROUTES.BLOCK_DETAIL(block.id))}
-        onKeyDown={(e) => e.key === 'Enter' && navigate(ROUTES.BLOCK_DETAIL(block.id))}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
-          padding: 20,
-          background: 'var(--bg-2)',
-          border: `1px solid ${hovered ? 'var(--accent-line)' : 'var(--line-2)'}`,
-          borderRadius: 'var(--r-lg)',
-          cursor: 'pointer',
-          transition: 'border-color 0.15s, box-shadow 0.15s',
-          boxShadow: hovered ? 'var(--glow-accent)' : 'none',
-          outline: 'none',
-        }}
+        className="group w-full cursor-pointer rounded-[var(--r-lg)] border border-[var(--line-2)] bg-[var(--bg-2)] p-5 text-left outline-none transition-[border-color,box-shadow] duration-150 hover:border-[var(--accent-line)] hover:shadow-[var(--glow-accent)]"
       >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'start',
-            gap: 10,
-            marginBottom: 18,
-          }}
-        >
-          <div className="ds-h4" style={{ color: 'var(--fg-1)', fontSize: 16 }}>
-            {block.title}
-          </div>
-          <span
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontWeight: 700,
-              fontSize: 11,
-              padding: '3px 10px',
-              borderRadius: 'var(--r-pill)',
-              background: 'var(--accent-ghost)',
-              border: '1px solid var(--accent-line)',
-              color: 'var(--accent-dim)',
-              flexShrink: 0,
-            }}
-          >
+        <div className="mb-[18px] flex items-start justify-between gap-2.5">
+          <div className="ds-h4 text-[var(--fg-1)]">{block.title}</div>
+          <span className="shrink-0 rounded-[var(--r-pill)] border border-[var(--accent-line)] bg-[var(--accent-ghost)] px-2.5 py-[3px] text-[11px] font-bold text-[var(--accent-dim)] [font-family:var(--font-body)]">
             {langCode.toUpperCase()}
           </span>
         </div>
 
         {block.tags.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+          <div className="mb-3.5 flex flex-wrap gap-1.5">
             {block.tags.map((tag) => (
               <span key={tag} className="lx-tag">
                 {tag}
@@ -86,18 +51,9 @@ export function BlockCard({ block }: BlockCardProps) {
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-            {block.wordCount} words
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              gap: 8,
-              opacity: hovered ? 1 : 0,
-              transition: 'opacity 0.15s',
-            }}
-          >
+        <div className="flex items-center justify-between">
+          <div className="ds-sm text-[var(--fg-3)]">{block.wordCount} words</div>
+          <div className="flex gap-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
             <button
               onClick={handleEdit}
               className="lx-btn-secondary"
@@ -105,39 +61,20 @@ export function BlockCard({ block }: BlockCardProps) {
             >
               Edit
             </button>
-            <button
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleDelete}
               disabled={deleteBlock.isPending}
-              style={{
-                padding: '5px 12px',
-                fontSize: 12,
-                fontFamily: 'var(--font-body)',
-                fontWeight: 600,
-                borderRadius: 'var(--r-md)',
-                cursor: 'pointer',
-                border: '1px solid rgba(255,92,108,0.3)',
-                background: 'transparent',
-                color: 'var(--danger)',
-                transition: 'all 0.12s',
-              }}
             >
               Delete
-            </button>
+            </Button>
           </div>
-          {!hovered && (
-            <span
-              style={{
-                color: 'var(--accent-color)',
-                fontFamily: 'var(--font-body)',
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              →
-            </span>
-          )}
+          <span className="text-[13px] font-bold text-[var(--accent-color)] [font-family:var(--font-body)] group-hover:hidden">
+            →
+          </span>
         </div>
-      </div>
+      </button>
 
       {editing && <EditBlockModal block={block} open={editing} onClose={() => setEditing(false)} />}
     </>

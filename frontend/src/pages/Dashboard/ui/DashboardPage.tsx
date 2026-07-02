@@ -16,32 +16,22 @@ function StatCard({
   emoji: string
 }) {
   return (
-    <div className="lx-card" style={{ padding: '20px 24px', textAlign: 'center' }}>
-      <div style={{ fontSize: 28, marginBottom: 6 }}>{emoji}</div>
-      <div
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontWeight: 800,
-          fontSize: 30,
-          color: 'var(--fg-1)',
-          lineHeight: 1,
-        }}
-      >
+    <div className="lx-card px-6 py-5 text-center">
+      <div className="mb-1.5 text-[28px]">{emoji}</div>
+      <div className="text-[30px] leading-none font-extrabold text-[var(--fg-1)] [font-family:var(--font-display)]">
         {value ?? '—'}
       </div>
-      <div className="ds-sm" style={{ color: 'var(--fg-3)', marginTop: 4, fontWeight: 600 }}>
-        {label}
-      </div>
+      <div className="ds-sm mt-1 font-semibold text-[var(--fg-3)]">{label}</div>
     </div>
   )
 }
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  ready: { bg: 'var(--success-ghost)', color: 'var(--success)', border: 'rgba(22,185,129,0.3)' },
+  ready: { bg: 'var(--success-ghost)', color: 'var(--success)', border: 'var(--accent-line)' },
   generating: {
     bg: 'var(--warning-ghost)',
     color: 'var(--warning)',
-    border: 'rgba(224,153,42,0.3)',
+    border: 'var(--warning-ghost)',
   },
   archived: { bg: 'var(--bg-3)', color: 'var(--fg-3)', border: 'var(--line-2)' },
 }
@@ -72,14 +62,7 @@ export function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-          gap: 14,
-          marginBottom: 36,
-        }}
-      >
+      <div className="mb-9 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3.5">
         <StatCard emoji="📚" label="blocks" value={stats?.totalBlocks} />
         <StatCard emoji="🔤" label="words total" value={stats?.totalWords} />
         <StatCard emoji="✅" label="answers this week" value={stats?.wordsAnsweredThisWeek} />
@@ -87,14 +70,7 @@ export function DashboardPage() {
       </div>
 
       {/* CTA cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 16,
-          marginBottom: 36,
-        }}
-      >
+      <div className="mb-9 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
         <Link to={ROUTES.BLOCKS} style={{ textDecoration: 'none' }}>
           <div className="lx-card" style={{ padding: 24, cursor: 'pointer' }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>📚</div>
@@ -123,19 +99,7 @@ export function DashboardPage() {
       {/* Recent blocks */}
       <div style={{ marginBottom: 32 }}>
         <div className="lx-section-head">
-          <h2
-            style={{
-              margin: 0,
-              fontFamily: 'var(--font-body)',
-              fontWeight: 700,
-              fontSize: 14,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              color: 'var(--fg-2)',
-            }}
-          >
-            Recent blocks
-          </h2>
+          <h2 className="ds-h4 m-0">Recent blocks</h2>
           <div className="lx-rule" />
           <Link
             to={ROUTES.BLOCKS}
@@ -220,19 +184,7 @@ export function DashboardPage() {
       {/* Recent tests */}
       <div>
         <div className="lx-section-head">
-          <h2
-            style={{
-              margin: 0,
-              fontFamily: 'var(--font-body)',
-              fontWeight: 700,
-              fontSize: 14,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              color: 'var(--fg-2)',
-            }}
-          >
-            Recent tests
-          </h2>
+          <h2 className="ds-h4 m-0">Recent tests</h2>
           <div className="lx-rule" />
           <Link
             to={ROUTES.TESTS}

@@ -11,20 +11,12 @@ export function ConfidenceBadge({ flag, showLabel = false, className }: Confiden
 
   return (
     <span
-      className={className}
+      className={`inline-flex items-center gap-1 text-[var(--warning)] ${className ?? ''}`}
       title="Low confidence"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 4,
-        color: 'var(--warning)',
-      }}
     >
-      <AlertTriangle style={{ width: 13, height: 13 }} />
+      <AlertTriangle className="h-[13px] w-[13px]" />
       {showLabel && (
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700 }}>
-          review
-        </span>
+        <span className="text-[10px] font-bold [font-family:var(--font-body)]">review</span>
       )}
     </span>
   )

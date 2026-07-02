@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { Spinner } from '@/shared/ui'
 import { useDueWords, useRateWordMutation } from '@/features/review-word'
+import type { Word } from '@/entities/word'
 
 const RATER_LABELS: Record<number, string> = {
   0: 'Blackout',
@@ -14,12 +15,12 @@ const RATER_LABELS: Record<number, string> = {
 }
 
 const RATER_COLORS = [
-  '#FF5C6C', // 0
-  '#FF7A4D', // 1
-  '#F5B53D', // 2
-  '#9FC65A', // 3
-  '#4FCA7A', // 4
-  '#3FD68B', // 5
+  'var(--danger)', // 0
+  'var(--danger)', // 1
+  'var(--warning)', // 2
+  'var(--blue)', // 3
+  'var(--success)', // 4
+  'var(--accent-bright)', // 5
 ]
 
 interface RatingEntry {
@@ -27,14 +28,33 @@ interface RatingEntry {
   quality: number
 }
 
+// Matches .review-card-inner's transition duration in index.css — the card must
+// finish flipping back to front before the next word's data is swapped in,
+// otherwise the next word's translation briefly shows on the still-visible back face.
+const FLIP_ANIMATION_MS = 420
+
 export function ReviewSessionPage() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [ratings, setRatings] = useState<RatingEntry[]>([])
   const [isFinished, setIsFinished] = useState(false)
   const [flipped, setFlipped] = useState(false)
+  const [isAdvancing, setIsAdvancing] = useState(false)
+  const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  const { data: words, isLoading, isError } = useDueWords()
+  const { data: dueWords, isLoading, isError } = useDueWords()
   const rateWord = useRateWordMutation()
+
+  // Rating a word invalidates the due-words query, which would otherwise reshuffle
+  // `words` mid-session (the just-rated word drops out of "due"). Freeze the list
+  // once on load so `words[currentIndex]` always points at the intended word.
+  // Adjusting state during render (rather than in an effect) avoids an extra
+  // render pass — see https://react.dev/learn/you-might-not-need-an-effect.
+  const [words, setWords] = useState<Word[] | null>(null)
+  if (dueWords && words === null) {
+    setWords(dueWords)
+  }
+
+  useEffect(() => () => clearTimeout(advanceTimeoutRef.current), [])
 
   const handleRate = (quality: number) => {
     const word = words![currentIndex]
@@ -42,67 +62,41 @@ export function ReviewSessionPage() {
     const newRatings = [...ratings, { wordId: word.id, quality }]
     setRatings(newRatings)
     setFlipped(false)
+    setIsAdvancing(true)
 
-    if (currentIndex + 1 === words!.length) {
-      setIsFinished(true)
-    } else {
-      setCurrentIndex((i) => i + 1)
-    }
+    advanceTimeoutRef.current = setTimeout(() => {
+      setIsAdvancing(false)
+      if (currentIndex + 1 === words!.length) {
+        setIsFinished(true)
+      } else {
+        setCurrentIndex((i) => i + 1)
+      }
+    }, FLIP_ANIMATION_MS)
   }
 
   if (isFinished) {
     const hardCount = ratings.filter((r) => r.quality < 3).length
     const easyCount = ratings.filter((r) => r.quality >= 3).length
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '60vh',
-          gap: 24,
-          textAlign: 'center',
-        }}
-      >
-        <div style={{ fontSize: 48 }}>🎉</div>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center">
+        <div className="text-5xl">🎉</div>
         <div className="ds-h2">Session complete!</div>
-        <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
-          Reviewed {ratings.length} words
-        </p>
-        <div style={{ display: 'flex', gap: 32 }}>
-          <div style={{ textAlign: 'center' }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 40,
-                fontWeight: 700,
-                color: 'var(--danger)',
-              }}
-            >
+        <p className="ds-body text-[var(--fg-3)]">Reviewed {ratings.length} words</p>
+        <div className="flex gap-8">
+          <div className="text-center">
+            <div className="text-[40px] font-bold text-[var(--danger)] [font-family:var(--font-display)]">
               {hardCount}
             </div>
-            <div className="ds-sm" style={{ color: 'var(--fg-3)', fontWeight: 600 }}>
-              hard (0–2)
-            </div>
+            <div className="ds-sm font-semibold text-[var(--fg-3)]">hard (0–2)</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 40,
-                fontWeight: 700,
-                color: 'var(--success)',
-              }}
-            >
+          <div className="text-center">
+            <div className="text-[40px] font-bold text-[var(--success)] [font-family:var(--font-display)]">
               {easyCount}
             </div>
-            <div className="ds-sm" style={{ color: 'var(--fg-3)', fontWeight: 600 }}>
-              easy (3–5)
-            </div>
+            <div className="ds-sm font-semibold text-[var(--fg-3)]">easy (3–5)</div>
           </div>
         </div>
-        <Link to={ROUTES.DASHBOARD} style={{ textDecoration: 'none' }}>
+        <Link to={ROUTES.DASHBOARD} className="no-underline">
           <button className="lx-btn-primary">Back to dashboard</button>
         </Link>
       </div>
@@ -141,25 +135,21 @@ export function ReviewSessionPage() {
     )
   }
 
-  if (!words || words.length === 0) {
+  if (words === null) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '60vh',
-          gap: 16,
-          textAlign: 'center',
-        }}
-      >
-        <div style={{ fontSize: 48 }}>📖</div>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+        <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  if (words.length === 0) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+        <div className="text-5xl">📖</div>
         <div className="ds-h3">No words due for review!</div>
-        <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
-          Come back later or add new words.
-        </p>
-        <Link to={ROUTES.BLOCKS} style={{ textDecoration: 'none' }}>
+        <p className="ds-body text-[var(--fg-3)]">Come back later or add new words.</p>
+        <Link to={ROUTES.BLOCKS} className="no-underline">
           <button className="lx-btn-secondary">Go to blocks</button>
         </Link>
       </div>
@@ -301,7 +291,7 @@ export function ReviewSessionPage() {
               <button
                 key={n}
                 onClick={() => handleRate(n)}
-                disabled={rateWord.isPending}
+                disabled={rateWord.isPending || isAdvancing}
                 style={{
                   flex: 1,
                   minWidth: 60,

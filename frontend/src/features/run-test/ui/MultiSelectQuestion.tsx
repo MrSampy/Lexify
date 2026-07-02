@@ -38,26 +38,22 @@ export function MultiSelectQuestion({ question, onSubmit, disabled }: MultiSelec
           return (
             <label
               key={option.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '11px 14px',
-                background: isSelected ? 'var(--accent-ghost)' : 'var(--bg-3)',
-                border: `1px solid ${isSelected ? 'var(--accent-line)' : 'var(--line-2)'}`,
-                borderRadius: 'var(--r-md)',
-                cursor: disabled ? 'default' : 'pointer',
-                transition: 'border-color 0.12s, background 0.12s',
-              }}
+              className={`flex items-center gap-3 rounded-[var(--r-md)] border px-3.5 py-[11px] transition-colors duration-100 ${
+                disabled ? 'cursor-default' : 'cursor-pointer'
+              } ${
+                isSelected
+                  ? 'border-[var(--accent-line)] bg-[var(--accent-ghost)]'
+                  : 'border-[var(--line-2)] bg-[var(--bg-3)]'
+              }`}
             >
               <input
                 type="checkbox"
                 checked={isSelected}
                 onChange={() => !disabled && toggle(option.optionText)}
                 disabled={disabled}
-                style={{ accentColor: 'var(--accent-color)', width: 14, height: 14, flexShrink: 0 }}
+                className="h-3.5 w-3.5 shrink-0 accent-[var(--accent-color)]"
               />
-              <span style={{ fontSize: 14, color: 'var(--fg-1)' }}>{option.optionText}</span>
+              <span className="text-sm text-[var(--fg-1)]">{option.optionText}</span>
             </label>
           )
         })}

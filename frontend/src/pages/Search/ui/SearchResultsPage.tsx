@@ -1,13 +1,31 @@
+import { useCallback, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Spinner } from '@/shared/ui'
 import { ROUTES } from '@/shared/config'
+import { debounce } from '@/shared/lib/debounce'
 import { useSearchWords } from '@/entities/word/api/searchApi'
 import { WordTypeBadge } from '@/entities/word'
 
 export function SearchResultsPage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const q = searchParams.get('q') ?? ''
   const { data, isLoading, isError } = useSearchWords(q)
+
+  const [inputValue, setInputValue] = useState(q)
+
+  const debouncedSetQuery = useRef(
+    debounce((value: string) => {
+      setSearchParams(value.trim() ? { q: value.trim() } : {})
+    }, 300),
+  ).current
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setInputValue(e.target.value)
+      debouncedSetQuery(e.target.value)
+    },
+    [debouncedSetQuery],
+  )
 
   // Group results by block
   const grouped = (data ?? []).reduce<
@@ -23,7 +41,7 @@ export function SearchResultsPage() {
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto' }}>
-      {/* Search bar display */}
+      {/* Search input */}
       <div
         style={{
           display: 'flex',
@@ -31,16 +49,28 @@ export function SearchResultsPage() {
           gap: 12,
           padding: '14px 18px',
           background: 'var(--bg-2)',
-          border: `1px solid ${q ? 'var(--accent-line)' : 'var(--line-2)'}`,
+          border: `1px solid ${inputValue ? 'var(--accent-line)' : 'var(--line-2)'}`,
           borderRadius: 'var(--r-md)',
           marginBottom: 8,
-          boxShadow: q ? '0 0 0 3px var(--accent-ghost)' : 'none',
+          boxShadow: inputValue ? '0 0 0 3px var(--accent-ghost)' : 'none',
         }}
       >
         <span style={{ color: 'var(--accent-color)', fontSize: 16 }}>🔍</span>
-        <span style={{ flex: 1, color: 'var(--fg-1)', fontSize: 15 }}>
-          {q || 'type to search…'}
-        </span>
+        <input
+          autoFocus
+          value={inputValue}
+          onChange={handleChange}
+          placeholder="type to search…"
+          style={{
+            flex: 1,
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            color: 'var(--fg-1)',
+            fontSize: 15,
+            fontFamily: 'var(--font-body)',
+          }}
+        />
         {isLoading && <Spinner />}
       </div>
 

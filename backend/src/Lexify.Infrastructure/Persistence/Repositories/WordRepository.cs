@@ -121,13 +121,30 @@ public sealed class WordRepository(AppDbContext context) : IWordRepository
         }
 
         // Full-text search via raw SQL to leverage idx_words_fts GIN index
+        var prefixQuery = BuildPrefixTsQueryInput(trimmed);
+        if (prefixQuery.Length == 0)
+            return [];
+
         return languageId.HasValue
-            ? await SearchFtsAsync(trimmed, userId, cappedLimit, languageId.Value, ct)
-            : await SearchFtsAsync(trimmed, userId, cappedLimit, null, ct);
+            ? await SearchFtsAsync(prefixQuery, userId, cappedLimit, languageId.Value, ct)
+            : await SearchFtsAsync(prefixQuery, userId, cappedLimit, null, ct);
     }
 
+    // Converts free-text user input into a prefix-matching tsquery expression (e.g. "ven blo" -> "ven:* & blo:*")
+    // so that typing the start of a word (as a live-search UI does) matches, instead of requiring a whole lexeme
+    // like plainto_tsquery does. Tokens are stripped to letters/digits since to_tsquery syntax errors on stray
+    // punctuation/operators — unlike plainto_tsquery, it doesn't treat arbitrary input as plain text.
+    private static string BuildPrefixTsQueryInput(string rawQuery) =>
+        string.Join(
+            " & ",
+            rawQuery
+                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                .Select(token => new string(token.Where(char.IsLetterOrDigit).ToArray()))
+                .Where(token => token.Length > 0)
+                .Select(token => $"{token}:*"));
+
     private async Task<IReadOnlyList<WordSearchResult>> SearchFtsAsync(
-        string query, Guid userId, int limit, short? languageId, CancellationToken ct)
+        string prefixQuery, Guid userId, int limit, short? languageId, CancellationToken ct)
     {
         IQueryable<WordSearchResult> q;
         if (languageId.HasValue)
@@ -142,14 +159,14 @@ public sealed class WordRepository(AppDbContext context) : IWordRepository
                        w.word_type AS "WordType",
                        ts_rank(
                            to_tsvector('simple', immutable_unaccent(w.term) || ' ' || immutable_unaccent(w.translation)),
-                           plainto_tsquery('simple', immutable_unaccent({query}))
+                           to_tsquery('simple', immutable_unaccent({prefixQuery}))
                        ) AS "Rank"
                 FROM words w
                 JOIN word_blocks wb ON wb.id = w.block_id
                 WHERE wb.user_id = {userId}
                   AND wb.language_id = {lang}
                   AND to_tsvector('simple', immutable_unaccent(w.term) || ' ' || immutable_unaccent(w.translation))
-                      @@ plainto_tsquery('simple', immutable_unaccent({query}))
+                      @@ to_tsquery('simple', immutable_unaccent({prefixQuery}))
                 ORDER BY "Rank" DESC
                 LIMIT {limit}
                 """);
@@ -165,13 +182,13 @@ public sealed class WordRepository(AppDbContext context) : IWordRepository
                        w.word_type AS "WordType",
                        ts_rank(
                            to_tsvector('simple', immutable_unaccent(w.term) || ' ' || immutable_unaccent(w.translation)),
-                           plainto_tsquery('simple', immutable_unaccent({query}))
+                           to_tsquery('simple', immutable_unaccent({prefixQuery}))
                        ) AS "Rank"
                 FROM words w
                 JOIN word_blocks wb ON wb.id = w.block_id
                 WHERE wb.user_id = {userId}
                   AND to_tsvector('simple', immutable_unaccent(w.term) || ' ' || immutable_unaccent(w.translation))
-                      @@ plainto_tsquery('simple', immutable_unaccent({query}))
+                      @@ to_tsquery('simple', immutable_unaccent({prefixQuery}))
                 ORDER BY "Rank" DESC
                 LIMIT {limit}
                 """);

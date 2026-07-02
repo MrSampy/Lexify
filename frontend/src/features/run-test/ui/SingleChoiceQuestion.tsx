@@ -28,34 +28,7 @@ export function SingleChoiceQuestion({ question, onSubmit, disabled }: SingleCho
             key={option.id}
             onClick={() => onSubmit(option.optionText)}
             disabled={disabled}
-            style={{
-              padding: '14px 16px',
-              background: 'var(--bg-3)',
-              border: '1px solid var(--line-2)',
-              borderRadius: 'var(--r-md)',
-              cursor: disabled ? 'default' : 'pointer',
-              fontFamily: 'var(--font-body)',
-              fontSize: 14,
-              color: 'var(--fg-1)',
-              textAlign: 'center',
-              lineHeight: 1.4,
-              transition: 'border-color 0.12s, background 0.12s',
-              wordBreak: 'break-word',
-            }}
-            onMouseEnter={(e) => {
-              if (!disabled) {
-                const el = e.currentTarget
-                el.style.borderColor = 'var(--accent-line)'
-                el.style.background = 'var(--accent-ghost)'
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!disabled) {
-                const el = e.currentTarget
-                el.style.borderColor = 'var(--line-2)'
-                el.style.background = 'var(--bg-3)'
-              }
-            }}
+            className="rounded-[var(--r-md)] border border-[var(--line-2)] bg-[var(--bg-3)] px-4 py-3.5 text-center text-sm leading-[1.4] break-words text-[var(--fg-1)] transition-colors duration-100 [font-family:var(--font-body)] enabled:cursor-pointer enabled:hover:border-[var(--accent-line)] enabled:hover:bg-[var(--accent-ghost)] disabled:cursor-default"
           >
             {option.optionText}
           </button>
