@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Button } from '@/shared/ui'
+import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
+import { Button, useConfirm } from '@/shared/ui'
 import { useUpdateWordMutation, useDeleteWordMutation } from '../api/wordApi'
 import type { Word } from '../model/types'
 import { WordTypeBadge } from './WordTypeBadge'
@@ -10,11 +12,13 @@ interface WordRowProps {
 }
 
 export function WordRow({ word, blockId }: WordRowProps) {
+  const { t } = useTranslation()
   const [editField, setEditField] = useState<'translation' | 'notes' | null>(null)
   const [draftTranslation, setDraftTranslation] = useState(word.translation)
   const [draftNotes, setDraftNotes] = useState(word.notes ?? '')
   const updateWord = useUpdateWordMutation(blockId)
   const deleteWord = useDeleteWordMutation(blockId)
+  const { confirm, confirmDialog } = useConfirm()
 
   const handleSave = async () => {
     await updateWord.mutateAsync({
@@ -36,9 +40,12 @@ export function WordRow({ word, blockId }: WordRowProps) {
     setEditField(null)
   }
 
-  const handleDelete = () => {
-    if (!confirm(`Delete "${word.term}"?`)) return
-    deleteWord.mutate(word.id)
+  const handleDelete = async () => {
+    if (!(await confirm({ title: t('words.deleteConfirm', { term: word.term }) }))) return
+    deleteWord.mutate(word.id, {
+      onSuccess: () => toast.success(t('words.deleted')),
+      onError: () => toast.error(t('words.deleteFailed')),
+    })
   }
 
   return (
@@ -86,6 +93,11 @@ export function WordRow({ word, blockId }: WordRowProps) {
             {word.translation}
           </Button>
         )}
+        {word.alternativeTranslations && word.alternativeTranslations.length > 0 && (
+          <div style={{ fontSize: 12, color: 'var(--fg-4)', marginTop: 2 }}>
+            {t('words.also')} {word.alternativeTranslations.join(', ')}
+          </div>
+        )}
       </div>
 
       {/* Type */}
@@ -128,7 +140,7 @@ export function WordRow({ word, blockId }: WordRowProps) {
               word.notes ? 'text-[var(--fg-3)]' : 'italic text-[var(--fg-4)]'
             }`}
           >
-            {word.notes ?? 'add note'}
+            {word.notes ?? t('words.addNote')}
           </Button>
         )}
       </div>
@@ -136,13 +148,14 @@ export function WordRow({ word, blockId }: WordRowProps) {
       {/* Delete */}
       <div className="text-right">
         <button
-          onClick={handleDelete}
+          onClick={() => void handleDelete()}
           disabled={deleteWord.isPending}
           className="cursor-pointer border-none bg-transparent text-[13px] text-[var(--fg-4)] transition-colors duration-100 hover:text-[var(--danger)] [font-family:var(--font-body)]"
         >
           ✕
         </button>
       </div>
+      {confirmDialog}
     </div>
   )
 }

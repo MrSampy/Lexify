@@ -37,6 +37,7 @@ export { Toaster } from '@/components/ui/sonner'
 // Custom components
 export { Spinner } from './Spinner'
 export { ConfidenceBadge } from './ConfidenceBadge'
+export { useConfirm } from './ConfirmDialog'
 export { LanguageBadge } from './LanguageBadge'
 
 // Hooks

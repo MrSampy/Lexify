@@ -51,7 +51,7 @@ public sealed class TestConfiguration : IEntityTypeConfiguration<Test>
             .HasConstraintName("fk_questions_test");
 
         builder.ToTable(t => t.HasCheckConstraint(
-            "chk_tests_status", "status IN ('generating', 'ready', 'archived')"));
+            "chk_tests_status", "status IN ('generating', 'ready', 'failed', 'archived')"));
 
         builder.HasIndex(t => t.UserId)
             .HasDatabaseName("idx_tests_user_id");

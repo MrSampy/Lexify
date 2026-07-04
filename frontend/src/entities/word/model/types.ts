@@ -5,6 +5,7 @@ export interface Word {
   blockId: string
   term: string
   translation: string
+  alternativeTranslations?: string[] | null
   wordType: string
   notes: string | null
   exampleSentence: string | null
@@ -21,6 +22,7 @@ export interface Word {
 export interface CreateWordInput {
   term: string
   translation: string
+  alternativeTranslations?: string[]
   wordType: string
   notes?: string
   exampleSentence?: string
@@ -31,6 +33,7 @@ export interface CreateWordInput {
 
 export interface UpdateWordInput {
   translation: string
+  alternativeTranslations?: string[]
   notes?: string
   exampleSentence?: string
   confidenceFlag?: boolean

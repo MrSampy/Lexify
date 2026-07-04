@@ -1,3 +1,4 @@
+using Lexify.Application.Behaviors;
 using Lexify.Application.Common;
 using MediatR;
 
@@ -7,4 +8,4 @@ public sealed record UpdateBlockCommand(
     Guid BlockId,
     string Title,
     string? Description
-) : IRequest<Result>;
+) : IRequest<Result>, IInvalidatesBlocksCache;

@@ -26,6 +26,16 @@ builder.Host.UseSerilog((ctx, services, cfg) => cfg
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 14));
 
+// ── Config sanity: refuse to boot production with dev secrets ─────────────────
+if (builder.Environment.IsProduction())
+{
+    var jwtSecret = builder.Configuration["Jwt:SecretKey"] ?? string.Empty;
+    if (jwtSecret.Length < 32 || jwtSecret.Contains("dev-secret", StringComparison.OrdinalIgnoreCase))
+        throw new InvalidOperationException(
+            "Jwt:SecretKey is missing, shorter than 32 characters, or a known dev value. " +
+            "Set a strong secret via environment variables (Jwt__SecretKey) before running in Production.");
+}
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -41,6 +51,10 @@ if (!string.IsNullOrEmpty(connString))
     healthBuilder.AddNpgSql(connString, name: "postgres", tags: ["db"]);
 if (!string.IsNullOrEmpty(redisString))
     healthBuilder.AddRedis(redisString, name: "redis", tags: ["cache"]);
+// Degraded (not Unhealthy) so a dead LLM doesn't take the whole /health endpoint red —
+// the rest of the app works without AI.
+healthBuilder.AddCheck<Lexify.Infrastructure.Health.AiProviderHealthCheck>(
+    "ai", failureStatus: HealthStatus.Degraded, tags: ["ai"]);
 
 // ── Swagger ───────────────────────────────────────────────────────────────────
 builder.Services.AddSwaggerGen(options =>

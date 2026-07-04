@@ -99,42 +99,28 @@ public static class DependencyInjection
         services.Configure<SmtpSettings>(configuration.GetSection("Smtp"));
         services.AddScoped<IEmailService, SmtpEmailService>();
 
-        // AI settings
-        services.Configure<OllamaSettings>(configuration.GetSection("Ollama"));
-        services.Configure<OpenAISettings>(configuration.GetSection("OpenAI"));
+        // AI providers — an ordered list, tried in turn until one succeeds (see AIOrchestrator)
+        var aiProviders = configuration.GetSection("AiProviders").Get<List<AiProviderSettings>>()
+            ?? [];
+        services.Configure<List<AiProviderSettings>>(configuration.GetSection("AiProviders"));
 
-        // AI HTTP clients with Polly: 2 retries on transient errors, 120s timeout
+        // AI HTTP clients with Polly: 2 retries on transient errors
         var retryPolicy = HttpPolicyExtensions
             .HandleTransientHttpError()
             .WaitAndRetryAsync(2, attempt => TimeSpan.FromSeconds(attempt * 2));
 
-        var ollamaTimeout = TimeSpan.FromSeconds(
-            configuration.GetSection("Ollama").GetValue<int>("TimeoutSeconds", 120));
+        foreach (var providerSettings in aiProviders)
+        {
+            services.AddHttpClient($"ai:{providerSettings.Name}", client =>
+                {
+                    client.BaseAddress = new Uri(providerSettings.BaseUrl);
+                    client.Timeout = TimeSpan.FromSeconds(providerSettings.TimeoutSeconds);
+                    if (!string.IsNullOrEmpty(providerSettings.ApiKey))
+                        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {providerSettings.ApiKey}");
+                })
+                .AddPolicyHandler(retryPolicy);
+        }
 
-        var openAiTimeout = TimeSpan.FromSeconds(
-            configuration.GetSection("OpenAI").GetValue<int>("TimeoutSeconds", 120));
-
-        services.AddHttpClient("ollama", (sp, client) =>
-            {
-                var settings = configuration.GetSection("Ollama").Get<OllamaSettings>() ?? new OllamaSettings();
-                client.BaseAddress = new Uri(settings.BaseUrl);
-                client.Timeout = ollamaTimeout;
-            })
-            .AddPolicyHandler(retryPolicy);
-
-        services.AddHttpClient("openai", (sp, client) =>
-            {
-                var settings = configuration.GetSection("OpenAI").Get<OpenAISettings>() ?? new OpenAISettings();
-                client.BaseAddress = new Uri(settings.BaseUrl);
-                client.Timeout = openAiTimeout;
-                if (!string.IsNullOrEmpty(settings.ApiKey))
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {settings.ApiKey}");
-            })
-            .AddPolicyHandler(retryPolicy);
-
-        // AI providers
-        services.AddScoped<OllamaProvider>();
-        services.AddScoped<OpenAIProvider>();
         services.AddScoped<IAIProvider, AIOrchestrator>();
 
         // Redis connection and cache service (optional — falls back to no-op when not configured)

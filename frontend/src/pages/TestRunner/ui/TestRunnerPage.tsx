@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { ROUTES } from '@/shared/config'
@@ -61,6 +62,7 @@ function QuestionView({
 }
 
 export function TestRunnerPage() {
+  const { t } = useTranslation()
   const { id: testId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -158,13 +160,13 @@ export function TestRunnerPage() {
         }}
       >
         <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
-          Test not found.
+          {t('testRunner.notFound')}
         </p>
         <Link
           to={ROUTES.TESTS}
           style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
         >
-          ← Back to tests
+          {t('testRunner.backToTests')}
         </Link>
       </div>
     )
@@ -183,14 +185,14 @@ export function TestRunnerPage() {
         }}
       >
         <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
-          This test is not ready yet{' '}
+          {t('testRunner.notReady')}{' '}
           <span style={{ color: 'var(--warning)', fontWeight: 700 }}>({test.status})</span>
         </p>
         <Link
           to={ROUTES.TESTS}
           style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
         >
-          ← Back to tests
+          {t('testRunner.backToTests')}
         </Link>
       </div>
     )
@@ -230,10 +232,10 @@ export function TestRunnerPage() {
       {questions.length > 0 && (
         <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
           <span style={{ color: 'var(--success)', fontSize: 11, fontWeight: 700 }}>
-            ✓ {correctCount} correct
+            {t('testRunner.correct', { count: correctCount })}
           </span>
           <span style={{ color: 'var(--danger)', fontSize: 11, fontWeight: 700 }}>
-            ✕ {currentQuestionIndex - correctCount} incorrect
+            {t('testRunner.incorrect', { count: currentQuestionIndex - correctCount })}
           </span>
         </div>
       )}
@@ -304,7 +306,9 @@ export function TestRunnerPage() {
             {finishAttempt.isPending && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
                 <Spinner size="sm" />
-                <span style={{ color: 'var(--fg-3)', fontSize: 13 }}>finishing…</span>
+                <span style={{ color: 'var(--fg-3)', fontSize: 13 }}>
+                  {t('testRunner.finishing')}
+                </span>
               </div>
             )}
           </div>
@@ -326,7 +330,7 @@ export function TestRunnerPage() {
           }}
           onClick={() => navigate(ROUTES.TESTS)}
         >
-          quit test
+          {t('testRunner.quit')}
         </button>
       </div>
     </div>

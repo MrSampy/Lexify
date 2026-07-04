@@ -11,10 +11,12 @@ public interface IAIProvider
         string nativeLanguage,
         CancellationToken ct = default);
 
+    /// <param name="englishLevel">Learner's CEFR level (A1..C2); null = no difficulty targeting.</param>
     Task<TestGenerationResult> GenerateTestQuestionsAsync(
         IReadOnlyList<WordDto> words,
         IReadOnlyList<string> questionTypes,
         int count,
+        string? englishLevel = null,
         CancellationToken ct = default);
 
     Task<string?> SuggestBlockTitleAsync(

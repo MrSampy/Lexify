@@ -10,4 +10,5 @@ public sealed record ImportWordItemRequest(
     string? ExampleSentence,
     bool ConfidenceFlag,
     string? ConfidenceNote,
-    int SortOrder = 0);
+    int SortOrder = 0,
+    IReadOnlyList<string>? AlternativeTranslations = null);

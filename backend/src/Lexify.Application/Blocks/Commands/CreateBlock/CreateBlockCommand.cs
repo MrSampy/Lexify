@@ -1,3 +1,4 @@
+using Lexify.Application.Behaviors;
 using Lexify.Application.Common;
 using MediatR;
 
@@ -7,4 +8,4 @@ public sealed record CreateBlockCommand(
     short LanguageId,
     string Title,
     string? Description
-) : IRequest<Result<Guid>>;
+) : IRequest<Result<Guid>>, IInvalidatesBlocksCache;

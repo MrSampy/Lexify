@@ -7,4 +7,5 @@ public sealed record FormatWordItem(
     string? Notes,
     string? ExampleSentence,
     bool ConfidenceFlag,
-    string? ConfidenceNote);
+    string? ConfidenceNote,
+    IReadOnlyList<string>? AlternativeTranslations = null);

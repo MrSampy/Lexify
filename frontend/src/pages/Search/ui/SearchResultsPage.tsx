@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Spinner } from '@/shared/ui'
 import { ROUTES } from '@/shared/config'
@@ -7,6 +8,7 @@ import { useSearchWords } from '@/entities/word/api/searchApi'
 import { WordTypeBadge } from '@/entities/word'
 
 export function SearchResultsPage() {
+  const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const q = searchParams.get('q') ?? ''
   const { data, isLoading, isError } = useSearchWords(q)
@@ -60,7 +62,7 @@ export function SearchResultsPage() {
           autoFocus
           value={inputValue}
           onChange={handleChange}
-          placeholder="type to search…"
+          placeholder={t('search.placeholder')}
           style={{
             flex: 1,
             border: 'none',
@@ -76,26 +78,26 @@ export function SearchResultsPage() {
 
       {q && data && (
         <div className="ds-sm" style={{ color: 'var(--fg-4)', marginBottom: 24, fontWeight: 600 }}>
-          {data.length} match{data.length !== 1 ? 'es' : ''} across {Object.keys(grouped).length}{' '}
-          block{Object.keys(grouped).length !== 1 ? 's' : ''}
+          {t('search.matches', { count: data.length })}{' '}
+          {t('search.inBlocks', { count: Object.keys(grouped).length })}
         </div>
       )}
 
       {q.trim().length < 2 && (
         <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-          Type at least 2 characters to search.
+          {t('search.minChars')}
         </p>
       )}
 
       {isError && (
         <p style={{ color: 'var(--danger)', fontFamily: 'var(--font-body)', fontSize: 13 }}>
-          Search failed. Please try again.
+          {t('search.failed')}
         </p>
       )}
 
       {!isLoading && !isError && data?.length === 0 && q.trim().length >= 2 && (
         <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-          Nothing found for "{q}".
+          {t('search.nothing', { query: q })}
         </p>
       )}
 

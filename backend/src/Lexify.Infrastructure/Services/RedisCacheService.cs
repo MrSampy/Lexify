@@ -50,4 +50,24 @@ public sealed class RedisCacheService(IConnectionMultiplexer redis) : ICacheServ
             // fail-open
         }
     }
+
+    public async Task RemoveByPrefixAsync(string prefix, CancellationToken ct = default)
+    {
+        try
+        {
+            foreach (var endpoint in redis.GetEndPoints())
+            {
+                var server = redis.GetServer(endpoint);
+                if (server.IsReplica) continue;
+
+                // SCAN-based enumeration (non-blocking, unlike KEYS)
+                await foreach (var key in server.KeysAsync(pattern: $"{prefix}*").WithCancellation(ct))
+                    await Db.KeyDeleteAsync(key);
+            }
+        }
+        catch
+        {
+            // fail-open: stale cache expires via TTL anyway
+        }
+    }
 }

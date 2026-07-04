@@ -5,78 +5,92 @@ using Lexify.Application.AI.Dtos;
 using Lexify.Application.Words.Dtos;
 using Lexify.Domain.Entities;
 using Lexify.Domain.Repositories;
+using Lexify.Infrastructure.Settings;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Lexify.Infrastructure.AI;
 
+/// <summary>
+/// Tries each configured AI provider in order (config section "AiProviders") and falls back to the
+/// next one when a provider fails. Every entry speaks the OpenAI-compatible chat completions protocol
+/// (Ollama, Lemonade, OpenAI itself, etc. all support it), so a single client implementation is reused.
+/// </summary>
 public sealed partial class AIOrchestrator(
-    OllamaProvider ollama,
-    OpenAIProvider openai,
+    IHttpClientFactory httpClientFactory,
+    IOptions<List<AiProviderSettings>> providersOptions,
     IAiCallLogRepository logRepository,
     IUnitOfWork unitOfWork,
     ICurrentUserService currentUser,
     ILogger<AIOrchestrator> logger)
     : IAIProvider
 {
+    private List<AiProviderSettings> Providers => providersOptions.Value;
+
     public async IAsyncEnumerable<string> StreamFormatWordsAsync(
         string rawText,
         string targetLanguage,
         string nativeLanguage,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var useOllama = await ollama.IsAvailableAsync(ct);
-        var provider = useOllama ? (IAIProvider)ollama : openai;
-        var providerName = useOllama ? AiCallLog.Providers.Ollama : AiCallLog.Providers.OpenAI;
-
-        if (!useOllama)
-            LogFallback(logger, "StreamFormatWords");
-
-        var sw = Stopwatch.StartNew();
-
-        IAsyncEnumerable<string> source;
-        try
+        foreach (var settings in Providers)
         {
-            source = provider.StreamFormatWordsAsync(rawText, targetLanguage, nativeLanguage, ct);
-        }
-        catch (Exception ex)
-        {
-            LogProviderError(logger, ex, "StreamFormatWords");
-            await WriteLogAsync(AiCallLog.CallTypes.FormatWords, providerName, sw, false, ex.Message, ct);
+            var client = CreateClient(settings);
+            var sw = Stopwatch.StartNew();
+            HttpResponseMessage response;
+            try
+            {
+                response = await client.OpenFormatStreamAsync(rawText, targetLanguage, nativeLanguage, ct);
+            }
+            catch (Exception ex)
+            {
+                LogProviderError(logger, ex, "StreamFormatWords", settings.Name);
+                await WriteLogAsync(AiCallLog.CallTypes.FormatWords, settings, sw, false, ex.Message, ct);
+                continue;
+            }
+
+            using (response)
+            {
+                await foreach (var chunk in OpenAiCompatibleClient.EnumerateFormatStreamAsync(response, ct))
+                    yield return chunk;
+            }
+
+            await WriteLogAsync(AiCallLog.CallTypes.FormatWords, settings, sw, true, null, ct);
             yield break;
         }
 
-        var success = true;
-        string? errorMessage = null;
-
-        await foreach (var chunk in source.WithCancellation(ct))
-            yield return chunk;
-
-        await WriteLogAsync(AiCallLog.CallTypes.FormatWords, providerName, sw, success, errorMessage, ct);
+        LogAllProvidersFailed(logger, "StreamFormatWords");
     }
 
     public async Task<TestGenerationResult> GenerateTestQuestionsAsync(
         IReadOnlyList<WordDto> words,
         IReadOnlyList<string> questionTypes,
         int count,
+        string? englishLevel = null,
         CancellationToken ct = default)
     {
-        var useOllama = await ollama.IsAvailableAsync(ct);
-        var provider = useOllama ? (IAIProvider)ollama : openai;
-        var providerName = useOllama ? AiCallLog.Providers.Ollama : AiCallLog.Providers.OpenAI;
+        Exception? lastError = null;
 
-        var sw = Stopwatch.StartNew();
-        try
+        foreach (var settings in Providers)
         {
-            var result = await provider.GenerateTestQuestionsAsync(words, questionTypes, count, ct);
-            await WriteLogAsync(AiCallLog.CallTypes.GenerateTest, providerName, sw, true, null, ct);
-            return result;
+            var client = CreateClient(settings);
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                var result = await client.GenerateTestQuestionsAsync(words, questionTypes, count, englishLevel, ct);
+                await WriteLogAsync(AiCallLog.CallTypes.GenerateTest, settings, sw, true, null, ct);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
+                LogProviderError(logger, ex, "GenerateTestQuestions", settings.Name);
+                await WriteLogAsync(AiCallLog.CallTypes.GenerateTest, settings, sw, false, ex.Message, ct);
+            }
         }
-        catch (Exception ex)
-        {
-            LogProviderError(logger, ex, "GenerateTestQuestions");
-            await WriteLogAsync(AiCallLog.CallTypes.GenerateTest, providerName, sw, false, ex.Message, ct);
-            throw;
-        }
+
+        LogAllProvidersFailed(logger, "GenerateTestQuestions");
+        throw lastError ?? new InvalidOperationException("No AI providers are configured.");
     }
 
     public async Task<string?> SuggestBlockTitleAsync(
@@ -84,31 +98,38 @@ public sealed partial class AIOrchestrator(
         string language,
         CancellationToken ct = default)
     {
-        var useOllama = await ollama.IsAvailableAsync(ct);
-        var provider = useOllama ? (IAIProvider)ollama : openai;
-        var providerName = useOllama ? AiCallLog.Providers.Ollama : AiCallLog.Providers.OpenAI;
+        foreach (var settings in Providers)
+        {
+            var client = CreateClient(settings);
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                var title = await client.SuggestBlockTitleAsync(terms, language, ct);
+                await WriteLogAsync(AiCallLog.CallTypes.SuggestTitle, settings, sw, true, null, ct);
+                if (title is not null) return title;
+            }
+            catch (Exception ex)
+            {
+                LogTitleSuggestionWarning(logger, ex, settings.Name);
+                await WriteLogAsync(AiCallLog.CallTypes.SuggestTitle, settings, sw, false, ex.Message, ct);
+            }
+        }
 
-        var sw = Stopwatch.StartNew();
-        try
-        {
-            var title = await provider.SuggestBlockTitleAsync(terms, language, ct);
-            await WriteLogAsync(AiCallLog.CallTypes.SuggestTitle, providerName, sw, true, null, ct);
-            return title;
-        }
-        catch (Exception ex)
-        {
-            LogTitleSuggestionWarning(logger, ex);
-            await WriteLogAsync(AiCallLog.CallTypes.SuggestTitle, providerName, sw, false, ex.Message, ct);
-            return null;
-        }
+        return null;
     }
 
-    public async Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
-        await ollama.IsAvailableAsync(ct) || await openai.IsAvailableAsync(ct);
+    public Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
+        Task.FromResult(Providers.Count > 0);
+
+    private OpenAiCompatibleClient CreateClient(AiProviderSettings settings)
+    {
+        var http = httpClientFactory.CreateClient($"ai:{settings.Name}");
+        return new OpenAiCompatibleClient(http, settings, logger);
+    }
 
     private async Task WriteLogAsync(
         string callType,
-        string providerName,
+        AiProviderSettings settings,
         Stopwatch sw,
         bool success,
         string? errorMessage,
@@ -120,8 +141,8 @@ public sealed partial class AIOrchestrator(
             var log = new AiCallLog(
                 userId: currentUser.IsAuthenticated ? currentUser.UserId : null,
                 callType: callType,
-                provider: providerName,
-                model: providerName == AiCallLog.Providers.Ollama ? "qwen3:8b" : "gpt-4o-mini",
+                provider: settings.Name,
+                model: settings.Model,
                 durationMs: (int)sw.ElapsedMilliseconds,
                 success: success,
                 errorMessage: errorMessage);
@@ -135,14 +156,14 @@ public sealed partial class AIOrchestrator(
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Ollama unavailable, falling back to OpenAI for {Operation}")]
-    private static partial void LogFallback(ILogger logger, string operation);
+    [LoggerMessage(Level = LogLevel.Error, Message = "AI provider {ProviderName} failed on {Operation}")]
+    private static partial void LogProviderError(ILogger logger, Exception ex, string operation, string providerName);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "AI provider failed on {Operation}")]
-    private static partial void LogProviderError(ILogger logger, Exception ex, string operation);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "AI provider {ProviderName} failed to suggest block title")]
+    private static partial void LogTitleSuggestionWarning(ILogger logger, Exception ex, string providerName);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "AI provider failed to suggest block title")]
-    private static partial void LogTitleSuggestionWarning(ILogger logger, Exception ex);
+    [LoggerMessage(Level = LogLevel.Error, Message = "All configured AI providers failed on {Operation}")]
+    private static partial void LogAllProvidersFailed(ILogger logger, string operation);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to write AI call log")]
     private static partial void LogCallLogError(ILogger logger, Exception ex);

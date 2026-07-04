@@ -1,9 +1,11 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ROUTES } from '@/shared/config'
 import { Spinner } from '@/shared/ui'
 import { useAttemptResults } from '@/entities/test'
 
 export function TestResultsPage() {
+  const { t } = useTranslation()
   const { id: attemptId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
@@ -29,13 +31,13 @@ export function TestResultsPage() {
         }}
       >
         <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-          Results not available yet.
+          {t('testResults.notAvailable')}
         </p>
         <Link
           to={ROUTES.TESTS}
           style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
         >
-          ← Back to tests
+          {t('testResults.backToTests')}
         </Link>
       </div>
     )
@@ -45,9 +47,9 @@ export function TestResultsPage() {
   const wrongAnswers = data.answers.filter((a) => !a.isCorrect)
 
   const getMessage = () => {
-    if (scorePercent >= 90) return 'Excellent session!'
-    if (scorePercent >= 60) return 'Good work!'
-    return 'Keep practicing!'
+    if (scorePercent >= 90) return t('testResults.excellent')
+    if (scorePercent >= 60) return t('testResults.good')
+    return t('testResults.keepPracticing')
   }
 
   return (
@@ -104,8 +106,8 @@ export function TestResultsPage() {
         </h1>
         <p className="ds-body" style={{ margin: 0, color: 'var(--fg-3)' }}>
           {wrongAnswers.length > 0
-            ? `${wrongAnswers.length} words moved to shorter review interval.`
-            : 'All answers correct — great job!'}
+            ? t('testResults.moved', { count: wrongAnswers.length })
+            : t('testResults.allCorrect')}
         </p>
       </div>
 
@@ -158,10 +160,10 @@ export function TestResultsPage() {
           className="lx-btn-secondary"
           onClick={() => navigate(ROUTES.TEST_RUNNER(data.testId))}
         >
-          ↺ Try again
+          {t('testResults.tryAgain')}
         </button>
         <button className="lx-btn-primary" onClick={() => navigate(ROUTES.TESTS)}>
-          Back to tests
+          {t('testResults.backToTestsBtn')}
         </button>
       </div>
     </div>

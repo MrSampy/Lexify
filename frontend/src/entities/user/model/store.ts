@@ -2,7 +2,8 @@ import { create } from 'zustand'
 import { setAuthHandlers, apiClient } from '@/shared/api'
 import { type User, type AuthResponse, userFromJwt } from './types'
 
-const RT_KEY = 'lexify_rt'
+// The refresh token lives in an HttpOnly cookie managed by the backend — JS never sees it.
+// Only the short-lived access token is kept here, in memory.
 
 interface AuthStore {
   user: User | null
@@ -21,26 +22,21 @@ export const useAuthStore = create<AuthStore>()((set) => ({
 
   setAuth: (response: AuthResponse) => {
     const user = userFromJwt(response.accessToken)
-    sessionStorage.setItem(RT_KEY, response.refreshToken)
     set({ user, accessToken: response.accessToken, isAuthenticated: true })
   },
 
   logout: () => {
-    sessionStorage.removeItem(RT_KEY)
     set({ user: null, accessToken: null, isAuthenticated: false })
   },
 
   refreshToken: async () => {
-    const token = sessionStorage.getItem(RT_KEY)
-    if (!token) return false
     try {
-      const { data } = await apiClient.post<AuthResponse>('/api/auth/refresh', { token })
+      // Refresh token cookie is attached automatically (withCredentials)
+      const { data } = await apiClient.post<AuthResponse>('/api/auth/refresh')
       const user = userFromJwt(data.accessToken)
-      sessionStorage.setItem(RT_KEY, data.refreshToken)
       set({ user, accessToken: data.accessToken, isAuthenticated: true })
       return true
     } catch {
-      sessionStorage.removeItem(RT_KEY)
       set({ user: null, accessToken: null, isAuthenticated: false })
       return false
     }

@@ -1,3 +1,4 @@
+using Lexify.Application.Behaviors;
 using Lexify.Application.Common;
 using MediatR;
 
@@ -7,4 +8,4 @@ public sealed record ImportBlockFromCsvCommand(
     string Title,
     short LanguageId,
     string CsvContent
-) : IRequest<Result<Guid>>;
+) : IRequest<Result<Guid>>, IInvalidatesBlocksCache;

@@ -1,33 +1,36 @@
 import { useNavigate, NavLink, Outlet } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ROUTES } from '@/shared/config'
 import { useAuthStore } from '@/entities/user'
 import { authApi } from '@/features/auth'
 import { SearchBar } from '@/widgets/SearchBar'
 
-const RT_KEY = 'lexify_rt'
-
 const APP_NAV = [
-  { label: 'Dashboard', to: ROUTES.DASHBOARD, emoji: '🏠' },
-  { label: 'Word blocks', to: ROUTES.BLOCKS, emoji: '📚' },
-  { label: 'Tests', to: ROUTES.TESTS, emoji: '📝' },
-  { label: 'Review', to: ROUTES.REVIEW, emoji: '🔄' },
-  { label: 'Search', to: ROUTES.SEARCH, emoji: '🔍' },
+  { labelKey: 'nav.dashboard', to: ROUTES.DASHBOARD, emoji: '🏠' },
+  { labelKey: 'nav.blocks', to: ROUTES.BLOCKS, emoji: '📚' },
+  { labelKey: 'nav.tests', to: ROUTES.TESTS, emoji: '📝' },
+  { labelKey: 'nav.review', to: ROUTES.REVIEW, emoji: '🔄' },
+  { labelKey: 'nav.search', to: ROUTES.SEARCH, emoji: '🔍' },
+  { labelKey: 'nav.profile', to: ROUTES.PROFILE, emoji: '👤' },
+]
+
+const LANG_OPTIONS = [
+  { code: 'en', label: 'EN' },
+  { code: 'uk', label: 'УК' },
 ]
 
 export function UserLayout() {
+  const { t, i18n } = useTranslation()
   const logout = useAuthStore((s) => s.logout)
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
   const isAdmin = user?.role === 'admin'
 
   async function handleLogout() {
-    const token = sessionStorage.getItem(RT_KEY)
-    if (token) {
-      try {
-        await authApi.logout(token)
-      } catch {
-        /* ignore */
-      }
+    try {
+      await authApi.logout()
+    } catch {
+      /* ignore */
     }
     logout()
     navigate(ROUTES.LOGIN, { replace: true })
@@ -100,12 +103,12 @@ export function UserLayout() {
             color: 'var(--fg-4)',
           }}
         >
-          Menu
+          {t('nav.menu')}
         </div>
 
         {/* Nav items */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
-          {APP_NAV.map(({ label, to, emoji }) => (
+          {APP_NAV.map(({ labelKey, to, emoji }) => (
             <NavLink
               key={to}
               to={to}
@@ -113,7 +116,7 @@ export function UserLayout() {
               className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
             >
               <span style={{ fontSize: 16 }}>{emoji}</span>
-              <span>{label}</span>
+              <span>{t(labelKey)}</span>
             </NavLink>
           ))}
         </nav>
@@ -131,7 +134,7 @@ export function UserLayout() {
                 color: 'var(--fg-4)',
               }}
             >
-              Admin
+              {t('nav.admin')}
             </div>
             <NavLink
               to={ROUTES.ADMIN.DASHBOARD}
@@ -139,7 +142,7 @@ export function UserLayout() {
               style={({ isActive }) => ({ color: isActive ? 'var(--warning)' : 'var(--fg-3)' })}
             >
               <span style={{ fontSize: 16 }}>⚙️</span>
-              <span>Admin panel</span>
+              <span>{t('nav.adminPanel')}</span>
             </NavLink>
           </>
         )}
@@ -169,7 +172,7 @@ export function UserLayout() {
             style={{ color: 'var(--danger)', width: '100%' }}
           >
             <span style={{ fontSize: 16 }}>👋</span>
-            <span>Sign out</span>
+            <span>{t('nav.signOut')}</span>
           </button>
         </div>
       </aside>
@@ -201,6 +204,42 @@ export function UserLayout() {
         >
           <div style={{ flex: 1 }} />
           <SearchBar />
+          {/* Language switcher */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 4,
+              padding: 3,
+              borderRadius: 'var(--r-pill)',
+              border: '1.5px solid var(--line-2)',
+              background: 'var(--bg-1)',
+            }}
+          >
+            {LANG_OPTIONS.map(({ code, label }) => {
+              const active = i18n.resolvedLanguage === code
+              return (
+                <button
+                  key={code}
+                  onClick={() => void i18n.changeLanguage(code)}
+                  style={{
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    letterSpacing: '0.04em',
+                    padding: '4px 10px',
+                    borderRadius: 'var(--r-pill)',
+                    background: active ? 'var(--accent-color)' : 'transparent',
+                    color: active ? '#fff' : 'var(--fg-3)',
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
           {user && (
             <div
               style={{

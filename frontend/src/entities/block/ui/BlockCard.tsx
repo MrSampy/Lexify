@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES, LANGUAGES } from '@/shared/config'
-import { Button } from '@/shared/ui'
+import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
+import { Button, useConfirm } from '@/shared/ui'
 import { useDeleteBlockMutation } from '../api/blockApi'
 import type { WordBlock } from '../model/types'
 import { EditBlockModal } from './EditBlockModal'
@@ -11,15 +13,26 @@ interface BlockCardProps {
 }
 
 export function BlockCard({ block }: BlockCardProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const deleteBlock = useDeleteBlockMutation()
+  const { confirm, confirmDialog } = useConfirm()
   const [editing, setEditing] = useState(false)
   const langCode = LANGUAGES[block.languageId]?.code ?? String(block.languageId)
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm(`Delete "${block.title}"?`)) return
-    deleteBlock.mutate(block.id)
+    if (
+      !(await confirm({
+        title: t('blocks.deleteConfirm', { title: block.title }),
+        description: t('blocks.deleteDesc'),
+      }))
+    )
+      return
+    deleteBlock.mutate(block.id, {
+      onSuccess: () => toast.success(t('blocks.deleted')),
+      onError: () => toast.error(t('blocks.deleteFailed')),
+    })
   }
 
   const handleEdit = (e: React.MouseEvent) => {
@@ -52,22 +65,24 @@ export function BlockCard({ block }: BlockCardProps) {
         )}
 
         <div className="flex items-center justify-between">
-          <div className="ds-sm text-[var(--fg-3)]">{block.wordCount} words</div>
+          <div className="ds-sm text-[var(--fg-3)]">
+            {t('blocks.wordCount', { count: block.wordCount })}
+          </div>
           <div className="flex gap-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
             <button
               onClick={handleEdit}
               className="lx-btn-secondary"
               style={{ padding: '5px 12px', fontSize: 12 }}
             >
-              Edit
+              {t('common.edit')}
             </button>
             <Button
               variant="destructive"
               size="sm"
-              onClick={handleDelete}
+              onClick={(e) => void handleDelete(e)}
               disabled={deleteBlock.isPending}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
           <span className="text-[13px] font-bold text-[var(--accent-color)] [font-family:var(--font-body)] group-hover:hidden">
@@ -77,6 +92,7 @@ export function BlockCard({ block }: BlockCardProps) {
       </button>
 
       {editing && <EditBlockModal block={block} open={editing} onClose={() => setEditing(false)} />}
+      {confirmDialog}
     </>
   )
 }

@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { toast } from 'sonner'
 import { ROUTES, LANGUAGES } from '@/shared/config'
-import { Spinner } from '@/shared/ui'
+import { Spinner, useConfirm } from '@/shared/ui'
 import { useBlock, useDeleteBlockMutation, useExportBlock } from '@/entities/block'
 import { useCreateWordMutation } from '@/entities/word'
 import { WordRow } from '@/entities/word'
@@ -22,6 +24,7 @@ const addWordSchema = z.object({
 type AddWordForm = z.infer<typeof addWordSchema>
 
 export function BlockDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [wordsPage, setWordsPage] = useState(1)
@@ -29,6 +32,7 @@ export function BlockDetailPage() {
   const [showAddWord, setShowAddWord] = useState(false)
 
   const { data, isLoading, isError } = useBlock(id ?? '', wordsPage)
+  const { confirm, confirmDialog } = useConfirm()
   const deleteBlock = useDeleteBlockMutation()
   const exportBlock = useExportBlock()
   const createWord = useCreateWordMutation(id ?? '')
@@ -48,9 +52,21 @@ export function BlockDetailPage() {
   const wordType = watch('wordType')
 
   const handleDeleteBlock = async () => {
-    if (!data || !confirm(`Delete block "${data.block.title}"?`)) return
-    await deleteBlock.mutateAsync(data.block.id)
-    navigate(ROUTES.BLOCKS)
+    if (!data) return
+    if (
+      !(await confirm({
+        title: t('blocks.deleteBlockConfirm', { title: data.block.title }),
+        description: t('blocks.deleteDesc'),
+      }))
+    )
+      return
+    try {
+      await deleteBlock.mutateAsync(data.block.id)
+      toast.success(t('blocks.deleted'))
+      navigate(ROUTES.BLOCKS)
+    } catch {
+      toast.error(t('blocks.deleteFailed'))
+    }
   }
 
   const onAddWord = async (values: AddWordForm) => {
@@ -86,14 +102,14 @@ export function BlockDetailPage() {
         }}
       >
         <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-          Block not found or failed to load.
+          {t('blockDetail.notFound')}
         </p>
         <Link
           to={ROUTES.BLOCKS}
           className="ds-code"
           style={{ color: 'var(--accent-color)', textDecoration: 'none' }}
         >
-          ← Back to blocks
+          {t('blockDetail.backToBlocks')}
         </Link>
       </div>
     )
@@ -117,7 +133,7 @@ export function BlockDetailPage() {
           fontWeight: 700,
         }}
       >
-        ← Back to blocks
+        {t('blockDetail.backToBlocks')}
       </Link>
 
       {/* Header */}
@@ -152,9 +168,15 @@ export function BlockDetailPage() {
             </span>
           </div>
           <p className="ds-body" style={{ margin: 0, color: 'var(--fg-3)' }}>
-            {block.wordCount} words
+            {t('blocks.wordCount', { count: block.wordCount })}
             {words.items.filter((w) => w.confidenceFlag).length > 0 && (
-              <> · {words.items.filter((w) => w.confidenceFlag).length} flagged</>
+              <>
+                {' '}
+                ·{' '}
+                {t('blockDetail.flagged', {
+                  count: words.items.filter((w) => w.confidenceFlag).length,
+                })}
+              </>
             )}
           </p>
         </div>
@@ -164,7 +186,7 @@ export function BlockDetailPage() {
             onClick={() => exportBlock.mutate(block.id)}
             disabled={exportBlock.isPending}
           >
-            Export CSV
+            {t('blockDetail.exportCsv')}
           </button>
           <button
             onClick={handleDeleteBlock}
@@ -182,7 +204,7 @@ export function BlockDetailPage() {
               transition: 'all 0.12s',
             }}
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       </div>
@@ -230,12 +252,12 @@ export function BlockDetailPage() {
           >
             {confidenceOnly ? '✓' : ''}
           </span>
-          Confidence flagged only
+          {t('blockDetail.confidenceOnly')}
         </label>
         <div style={{ flex: 1 }} />
         <Link to={ROUTES.WORD_IMPORT(block.id)} style={{ textDecoration: 'none' }}>
           <button className="lx-btn-secondary" style={{ padding: '8px 14px' }}>
-            AI import
+            {t('blockDetail.aiImport')}
           </button>
         </Link>
         <button
@@ -243,7 +265,7 @@ export function BlockDetailPage() {
           style={{ padding: '8px 14px' }}
           onClick={() => setShowAddWord((v) => !v)}
         >
-          {showAddWord ? 'Cancel' : '+ Add word'}
+          {showAddWord ? t('common.cancel') : t('blockDetail.addWord')}
         </button>
       </div>
 
@@ -267,7 +289,7 @@ export function BlockDetailPage() {
             }}
           >
             <div>
-              <input className="lx-input" placeholder="Term" {...register('term')} />
+              <input className="lx-input" placeholder={t('words.term')} {...register('term')} />
               {errors.term && (
                 <p style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>
                   {errors.term.message}
@@ -275,7 +297,11 @@ export function BlockDetailPage() {
               )}
             </div>
             <div>
-              <input className="lx-input" placeholder="Translation" {...register('translation')} />
+              <input
+                className="lx-input"
+                placeholder={t('words.translation')}
+                {...register('translation')}
+              />
               {errors.translation && (
                 <p style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>
                   {errors.translation.message}
@@ -297,7 +323,11 @@ export function BlockDetailPage() {
               </select>
             </div>
             <div>
-              <input className="lx-input" placeholder="Notes (optional)" {...register('notes')} />
+              <input
+                className="lx-input"
+                placeholder={t('blockDetail.notesOptional')}
+                {...register('notes')}
+              />
             </div>
           </div>
           <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
@@ -307,7 +337,7 @@ export function BlockDetailPage() {
               disabled={isSubmitting || createWord.isPending}
               style={{ padding: '8px 20px' }}
             >
-              Add
+              {t('blockDetail.add')}
             </button>
           </div>
         </form>
@@ -339,10 +369,10 @@ export function BlockDetailPage() {
             color: 'var(--fg-3)',
           }}
         >
-          <div>Term</div>
-          <div>Translation</div>
-          <div>Type</div>
-          <div>Notes</div>
+          <div>{t('words.term')}</div>
+          <div>{t('words.translation')}</div>
+          <div>{t('words.type')}</div>
+          <div>{t('words.notes')}</div>
           <div />
         </div>
 
@@ -356,7 +386,7 @@ export function BlockDetailPage() {
               fontSize: 13,
             }}
           >
-            {confidenceOnly ? 'No flagged words on this page' : 'No words yet — add some above'}
+            {confidenceOnly ? t('blockDetail.noFlagged') : t('blockDetail.noWords')}
           </div>
         ) : (
           displayedWords.map((word) => <WordRow key={word.id} word={word} blockId={block.id} />)
@@ -395,6 +425,7 @@ export function BlockDetailPage() {
           </button>
         </div>
       )}
+      {confirmDialog}
     </div>
   )
 }

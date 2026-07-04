@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { Spinner } from '@/shared/ui'
@@ -6,12 +7,12 @@ import { useDueWords, useRateWordMutation } from '@/features/review-word'
 import type { Word } from '@/entities/word'
 
 const RATER_LABELS: Record<number, string> = {
-  0: 'Blackout',
-  1: 'Barely',
-  2: 'Effort',
-  3: 'Hesitant',
-  4: 'Easy',
-  5: 'Perfect',
+  0: 'review.rate0',
+  1: 'review.rate1',
+  2: 'review.rate2',
+  3: 'review.rate3',
+  4: 'review.rate4',
+  5: 'review.rate5',
 }
 
 const RATER_COLORS = [
@@ -34,6 +35,7 @@ interface RatingEntry {
 const FLIP_ANIMATION_MS = 420
 
 export function ReviewSessionPage() {
+  const { t } = useTranslation()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [ratings, setRatings] = useState<RatingEntry[]>([])
   const [isFinished, setIsFinished] = useState(false)
@@ -80,24 +82,26 @@ export function ReviewSessionPage() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center">
         <div className="text-5xl">🎉</div>
-        <div className="ds-h2">Session complete!</div>
-        <p className="ds-body text-[var(--fg-3)]">Reviewed {ratings.length} words</p>
+        <div className="ds-h2">{t('review.complete')}</div>
+        <p className="ds-body text-[var(--fg-3)]">
+          {t('review.reviewed', { count: ratings.length })}
+        </p>
         <div className="flex gap-8">
           <div className="text-center">
             <div className="text-[40px] font-bold text-[var(--danger)] [font-family:var(--font-display)]">
               {hardCount}
             </div>
-            <div className="ds-sm font-semibold text-[var(--fg-3)]">hard (0–2)</div>
+            <div className="ds-sm font-semibold text-[var(--fg-3)]">{t('review.hard')}</div>
           </div>
           <div className="text-center">
             <div className="text-[40px] font-bold text-[var(--success)] [font-family:var(--font-display)]">
               {easyCount}
             </div>
-            <div className="ds-sm font-semibold text-[var(--fg-3)]">easy (3–5)</div>
+            <div className="ds-sm font-semibold text-[var(--fg-3)]">{t('review.easy')}</div>
           </div>
         </div>
         <Link to={ROUTES.DASHBOARD} className="no-underline">
-          <button className="lx-btn-primary">Back to dashboard</button>
+          <button className="lx-btn-primary">{t('review.backToDashboard')}</button>
         </Link>
       </div>
     )
@@ -123,13 +127,13 @@ export function ReviewSessionPage() {
         }}
       >
         <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-          Failed to load words for review.
+          {t('review.loadFailed')}
         </p>
         <Link
           to={ROUTES.DASHBOARD}
           style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
         >
-          Back to dashboard
+          {t('review.backToDashboard')}
         </Link>
       </div>
     )
@@ -147,10 +151,10 @@ export function ReviewSessionPage() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
         <div className="text-5xl">📖</div>
-        <div className="ds-h3">No words due for review!</div>
-        <p className="ds-body text-[var(--fg-3)]">Come back later or add new words.</p>
+        <div className="ds-h3">{t('review.noneDue')}</div>
+        <p className="ds-body text-[var(--fg-3)]">{t('review.comeBack')}</p>
         <Link to={ROUTES.BLOCKS} className="no-underline">
-          <button className="lx-btn-secondary">Go to blocks</button>
+          <button className="lx-btn-secondary">{t('review.goToBlocks')}</button>
         </Link>
       </div>
     )
@@ -179,9 +183,11 @@ export function ReviewSessionPage() {
           marginBottom: 8,
         }}
       >
-        <div style={{ fontWeight: 700, color: 'var(--fg-2)', fontSize: 14 }}>Review 🔄</div>
+        <div style={{ fontWeight: 700, color: 'var(--fg-2)', fontSize: 14 }}>
+          {t('review.title')}
+        </div>
         <span style={{ color: 'var(--accent-color)', fontSize: 13, fontWeight: 700 }}>
-          {remaining} words remaining
+          {t('review.remaining', { count: remaining })}
         </span>
       </div>
 
@@ -225,7 +231,7 @@ export function ReviewSessionPage() {
               style={{ marginTop: 30 }}
               onClick={() => setFlipped(true)}
             >
-              Show translation ↻
+              {t('review.showTranslationFlip')}
             </button>
           </div>
 
@@ -284,7 +290,7 @@ export function ReviewSessionPage() {
               fontWeight: 600,
             }}
           >
-            How well did you recall it?
+            {t('review.howWell')}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {[0, 1, 2, 3, 4, 5].map((n) => (
@@ -335,7 +341,7 @@ export function ReviewSessionPage() {
                     fontWeight: 600,
                   }}
                 >
-                  {RATER_LABELS[n]}
+                  {t(RATER_LABELS[n])}
                 </span>
               </button>
             ))}

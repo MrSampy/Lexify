@@ -27,17 +27,24 @@ public sealed class AddTagToBlockCommandHandler(
         if (!ValidTagName.IsMatch(normalized))
             return Result.Failure("Tag name must be 1-50 lowercase alphanumeric characters, underscores, or hyphens.");
 
-        var tag = await tagRepository.GetByUserAndNameAsync(currentUser.UserId, normalized, cancellationToken);
-        if (tag is null)
+        // One transaction: the intermediate flush (needed for the DB-generated SERIAL Id)
+        // must not leave an orphan Tag behind if attaching it to the block fails.
+        await unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
-            tag = new Tag(currentUser.UserId, normalized);
-            await tagRepository.AddAsync(tag, cancellationToken);
-            // Flush to get the DB-generated SERIAL Id before creating BlockTag
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-        }
+            var tag = await tagRepository.GetByUserAndNameAsync(currentUser.UserId, normalized, ct);
+            if (tag is null)
+            {
+                tag = new Tag(currentUser.UserId, normalized);
+                await tagRepository.AddAsync(tag, ct);
+                await unitOfWork.SaveChangesAsync(ct);
+            }
 
-        if (!await tagRepository.BlockTagExistsAsync(request.BlockId, tag.Id, cancellationToken))
-            await tagRepository.AddBlockTagAsync(new BlockTag(request.BlockId, tag.Id), cancellationToken);
+            if (!await tagRepository.BlockTagExistsAsync(request.BlockId, tag.Id, ct))
+            {
+                await tagRepository.AddBlockTagAsync(new BlockTag(request.BlockId, tag.Id), ct);
+                await unitOfWork.SaveChangesAsync(ct);
+            }
+        }, cancellationToken);
 
         return Result.Ok();
     }

@@ -35,6 +35,9 @@ public sealed class ImportWordsCommandHandler(
             if (item.ConfidenceFlag)
                 word.SetConfidence(item.ConfidenceFlag, item.ConfidenceNote);
 
+            if (item.AlternativeTranslations is { Count: > 0 })
+                word.SetAlternativeTranslations(item.AlternativeTranslations);
+
             return word;
         }).ToList();
 

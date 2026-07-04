@@ -15,6 +15,14 @@ internal sealed class OpenAIChatRequest
 
     [JsonPropertyName("stream")]
     public bool Stream { get; init; }
+
+    /// <summary>
+    /// Hard cap on generated tokens. Some local models (notably smaller/quantized Llama builds) don't
+    /// reliably stop at the end of the requested JSON and keep rambling on with chatty filler text —
+    /// this bounds the damage and the cost in latency.
+    /// </summary>
+    [JsonPropertyName("max_tokens")]
+    public int? MaxTokens { get; init; }
 }
 
 internal sealed class OpenAIMessage

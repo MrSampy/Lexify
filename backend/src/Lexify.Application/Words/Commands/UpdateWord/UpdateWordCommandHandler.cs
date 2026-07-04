@@ -23,6 +23,8 @@ public sealed class UpdateWordCommandHandler(
 
         word.UpdateDetails(request.Translation, request.Notes, request.ExampleSentence);
         word.SetConfidence(request.ConfidenceFlag, request.ConfidenceNote);
+        if (request.AlternativeTranslations is not null)
+            word.SetAlternativeTranslations(request.AlternativeTranslations);
         await wordRepository.UpdateAsync(word, cancellationToken);
 
         return Result.Ok();

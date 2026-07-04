@@ -1,4 +1,5 @@
 import { Trash2, Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import {
   Button,
   Input,
@@ -26,13 +27,14 @@ interface RowProps {
 }
 
 function WordPreviewRow({ word, onUpdate, onRemove }: RowProps) {
+  const { t } = useTranslation()
   return (
     <TableRow className={word.confidenceFlag ? 'bg-amber-500/10' : undefined}>
       <td className="p-0">
         <Input
           value={word.term}
           onChange={(e) => onUpdate({ term: e.target.value })}
-          placeholder="Term"
+          placeholder={t('words.term')}
           className="h-9 rounded-none border-0 bg-transparent px-3 focus-visible:ring-inset"
         />
       </td>
@@ -40,9 +42,14 @@ function WordPreviewRow({ word, onUpdate, onRemove }: RowProps) {
         <Input
           value={word.translation}
           onChange={(e) => onUpdate({ translation: e.target.value })}
-          placeholder="Translation"
+          placeholder={t('words.translation')}
           className="h-9 rounded-none border-0 bg-transparent px-3 focus-visible:ring-inset"
         />
+        {word.alternativeTranslations && word.alternativeTranslations.length > 0 && (
+          <div className="px-3 pb-1 text-xs text-muted-foreground">
+            {t('words.also')} {word.alternativeTranslations.join(', ')}
+          </div>
+        )}
       </td>
       <td className="w-36 p-1">
         <Select value={word.wordType} onValueChange={(v) => v && onUpdate({ wordType: v })}>
@@ -76,6 +83,7 @@ function WordPreviewRow({ word, onUpdate, onRemove }: RowProps) {
 }
 
 export function WordPreviewTable() {
+  const { t } = useTranslation()
   const formattedWords = useImportWordsStore((s) => s.formattedWords)
   const updateWord = useImportWordsStore((s) => s.updateWord)
   const removeWord = useImportWordsStore((s) => s.removeWord)
@@ -87,9 +95,9 @@ export function WordPreviewTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Term</TableHead>
-              <TableHead>Translation</TableHead>
-              <TableHead className="w-36">Type</TableHead>
+              <TableHead>{t('words.term')}</TableHead>
+              <TableHead>{t('words.translation')}</TableHead>
+              <TableHead className="w-36">{t('words.type')}</TableHead>
               <TableHead className="w-8" />
               <TableHead className="w-8" />
             </TableRow>
@@ -98,7 +106,7 @@ export function WordPreviewTable() {
             {formattedWords.length === 0 ? (
               <TableRow>
                 <td colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
-                  No words yet — add one below.
+                  {t('import.noRows')}
                 </td>
               </TableRow>
             ) : (
@@ -117,7 +125,7 @@ export function WordPreviewTable() {
 
       <Button variant="outline" size="sm" onClick={addWord} className="flex items-center gap-1.5">
         <Plus className="h-3.5 w-3.5" />
-        Add row
+        {t('import.addRow')}
       </Button>
     </div>
   )
