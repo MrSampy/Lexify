@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { debounce } from '@/shared/lib'
+import { useConfirm } from '@/shared/ui'
 import {
   useAdminUsers,
   useSuspendUserMutation,
@@ -38,10 +40,22 @@ export function AdminUsersPage() {
   const restore = useRestoreUserMutation()
   const deleteUser = useDeleteUserMutation()
   const changeRole = useChangeRoleMutation()
+  const { confirm, confirmDialog } = useConfirm()
 
-  const handleDelete = (id: string, userEmail: string) => {
-    if (!confirm(`Delete user "${userEmail}"? This cannot be undone.`)) return
-    void deleteUser.mutateAsync(id)
+  const handleDelete = async (id: string, userEmail: string) => {
+    if (
+      !(await confirm({
+        title: `Delete user "${userEmail}"?`,
+        description: 'This cannot be undone.',
+      }))
+    )
+      return
+    try {
+      await deleteUser.mutateAsync(id)
+      toast.success('User deleted')
+    } catch {
+      toast.error('Failed to delete user')
+    }
   }
 
   return (
@@ -97,7 +111,7 @@ export function AdminUsersPage() {
         isLoading={isLoading}
         onSuspend={(id) => void suspend.mutateAsync(id)}
         onRestore={(id) => void restore.mutateAsync(id)}
-        onDelete={handleDelete}
+        onDelete={(id, email) => void handleDelete(id, email)}
         onRoleChange={(id, r) => void changeRole.mutateAsync({ id, role: r })}
         onView={(user) => setSelectedUser(user)}
       />
@@ -141,8 +155,9 @@ export function AdminUsersPage() {
         onClose={() => setSelectedUser(null)}
         onSuspend={(id) => void suspend.mutateAsync(id)}
         onRestore={(id) => void restore.mutateAsync(id)}
-        onDelete={handleDelete}
+        onDelete={(id, email) => void handleDelete(id, email)}
       />
+      {confirmDialog}
     </div>
   )
 }

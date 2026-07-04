@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ROUTES, LANGUAGES } from '@/shared/config'
 import { Spinner } from '@/shared/ui'
 import { useAuthStore, useUserStats } from '@/entities/user'
@@ -37,6 +38,7 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; border: string 
 }
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const { data: stats } = useUserStats()
   const { data: blocksPage, isLoading: blocksLoading } = useBlocks({ page: 1, pageSize: 3 })
@@ -44,16 +46,16 @@ export function DashboardPage() {
 
   const recentBlocks = blocksPage?.items ?? []
   const recentTests = (testsPage?.items ?? []).slice(0, 3)
-  const displayName = user?.displayName ?? user?.email?.split('@')[0] ?? 'there'
+  const displayName = user?.displayName ?? user?.email?.split('@')[0] ?? t('dashboard.fallbackName')
 
   return (
     <div>
       {/* Greeting */}
       <h1 className="ds-h2" style={{ margin: '0 0 6px' }}>
-        Hi, {displayName}! 🌱
+        {t('dashboard.greeting', { name: displayName })}
       </h1>
       <p className="ds-body" style={{ margin: '0 0 24px', color: 'var(--fg-3)' }}>
-        Here's where your vocabulary stands today.
+        {t('dashboard.subtitle')}
       </p>
 
       {/* Review banner */}
@@ -63,10 +65,18 @@ export function DashboardPage() {
 
       {/* Stats */}
       <div className="mb-9 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3.5">
-        <StatCard emoji="📚" label="blocks" value={stats?.totalBlocks} />
-        <StatCard emoji="🔤" label="words total" value={stats?.totalWords} />
-        <StatCard emoji="✅" label="answers this week" value={stats?.wordsAnsweredThisWeek} />
-        <StatCard emoji="📝" label="tests this week" value={stats?.testsCompletedThisWeek} />
+        <StatCard emoji="📚" label={t('dashboard.statBlocks')} value={stats?.totalBlocks} />
+        <StatCard emoji="🔤" label={t('dashboard.statWords')} value={stats?.totalWords} />
+        <StatCard
+          emoji="✅"
+          label={t('dashboard.statAnswers')}
+          value={stats?.wordsAnsweredThisWeek}
+        />
+        <StatCard
+          emoji="📝"
+          label={t('dashboard.statTests')}
+          value={stats?.testsCompletedThisWeek}
+        />
       </div>
 
       {/* CTA cards */}
@@ -75,10 +85,10 @@ export function DashboardPage() {
           <div className="lx-card" style={{ padding: 24, cursor: 'pointer' }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>📚</div>
             <div className="ds-h3" style={{ marginBottom: 6 }}>
-              Word blocks
+              {t('nav.blocks')}
             </div>
             <p className="ds-sm" style={{ color: 'var(--fg-3)', margin: 0 }}>
-              Organize and import vocabulary →
+              {t('dashboard.ctaBlocksDesc')}
             </p>
           </div>
         </Link>
@@ -87,10 +97,10 @@ export function DashboardPage() {
           <div className="lx-card" style={{ padding: 24, cursor: 'pointer' }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>📝</div>
             <div className="ds-h3" style={{ marginBottom: 6 }}>
-              Tests
+              {t('nav.tests')}
             </div>
             <p className="ds-sm" style={{ color: 'var(--fg-3)', margin: 0 }}>
-              AI-generated quizzes, 4 question types →
+              {t('dashboard.ctaTestsDesc')}
             </p>
           </div>
         </Link>
@@ -99,7 +109,7 @@ export function DashboardPage() {
       {/* Recent blocks */}
       <div style={{ marginBottom: 32 }}>
         <div className="lx-section-head">
-          <h2 className="ds-h4 m-0">Recent blocks</h2>
+          <h2 className="ds-h4 m-0">{t('dashboard.recentBlocks')}</h2>
           <div className="lx-rule" />
           <Link
             to={ROUTES.BLOCKS}
@@ -111,7 +121,7 @@ export function DashboardPage() {
               textDecoration: 'none',
             }}
           >
-            All blocks →
+            {t('dashboard.allBlocks')}
           </Link>
         </div>
 
@@ -121,9 +131,9 @@ export function DashboardPage() {
           </div>
         ) : recentBlocks.length === 0 ? (
           <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-            No blocks yet.{' '}
+            {t('dashboard.noBlocks')}{' '}
             <Link to={ROUTES.BLOCKS} style={{ color: 'var(--accent-color)', fontWeight: 700 }}>
-              Create your first block →
+              {t('dashboard.createFirstBlock')}
             </Link>
           </p>
         ) : (
@@ -171,7 +181,7 @@ export function DashboardPage() {
                       </span>
                     </div>
                     <div className="ds-sm" style={{ color: 'var(--fg-4)' }}>
-                      {block.wordCount} words
+                      {t('blocks.wordCount', { count: block.wordCount })}
                     </div>
                   </div>
                 </Link>
@@ -184,7 +194,7 @@ export function DashboardPage() {
       {/* Recent tests */}
       <div>
         <div className="lx-section-head">
-          <h2 className="ds-h4 m-0">Recent tests</h2>
+          <h2 className="ds-h4 m-0">{t('dashboard.recentTests')}</h2>
           <div className="lx-rule" />
           <Link
             to={ROUTES.TESTS}
@@ -196,7 +206,7 @@ export function DashboardPage() {
               textDecoration: 'none',
             }}
           >
-            All tests →
+            {t('dashboard.allTests')}
           </Link>
         </div>
 
@@ -206,9 +216,9 @@ export function DashboardPage() {
           </div>
         ) : recentTests.length === 0 ? (
           <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-            No tests yet.{' '}
+            {t('dashboard.noTests')}{' '}
             <Link to={ROUTES.TEST_CREATE} style={{ color: 'var(--accent-color)', fontWeight: 700 }}>
-              Create your first test →
+              {t('dashboard.createFirstTest')}
             </Link>
           </p>
         ) : (
@@ -243,7 +253,7 @@ export function DashboardPage() {
                       fontWeight: 700,
                     }}
                   >
-                    {test.status}
+                    {t(`tests.status.${test.status}`, { defaultValue: test.status })}
                   </span>
                   {test.status === 'ready' && (
                     <Link to={ROUTES.TEST_RUNNER(test.id)} style={{ textDecoration: 'none' }}>
@@ -251,7 +261,7 @@ export function DashboardPage() {
                         className="lx-btn-primary"
                         style={{ padding: '8px 18px', fontSize: 13 }}
                       >
-                        Run →
+                        {t('dashboard.run')}
                       </button>
                     </Link>
                   )}

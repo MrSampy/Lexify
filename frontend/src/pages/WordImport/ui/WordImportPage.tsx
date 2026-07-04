@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ROUTES, LANGUAGES } from '@/shared/config'
 import { Spinner } from '@/shared/ui'
@@ -16,6 +17,7 @@ import {
 import type { EditableWord } from '@/features/import-words'
 
 export function WordImportPage() {
+  const { t } = useTranslation()
   const { id: blockId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const abortRef = useRef<AbortController | null>(null)
@@ -72,15 +74,15 @@ export function WordImportPage() {
             }))
             setPreview(words, evt.result.suggestedTitle ?? '')
           } else if (evt.type === 'error') {
-            setError(evt.message ?? 'AI formatting failed. Please try again.')
+            setError(evt.message ?? t('wordImport.errFormat'))
           }
         },
       })
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
-        setError('Connection failed. Please check your network and try again.')
+        setError(t('wordImport.errConnection'))
       } else if (!(err instanceof Error)) {
-        setError('An unexpected error occurred.')
+        setError(t('wordImport.errUnexpected'))
       }
     }
   }, [
@@ -91,6 +93,7 @@ export function WordImportPage() {
     appendChunk,
     setPreview,
     setError,
+    t,
   ])
 
   const handleAbort = () => {
@@ -108,6 +111,7 @@ export function WordImportPage() {
       const words = formattedWords.map((w, i) => ({
         term: w.term.trim(),
         translation: w.translation.trim(),
+        alternativeTranslations: w.alternativeTranslations?.filter((t) => t.trim().length > 0),
         wordType: w.wordType,
         notes: w.notes ?? undefined,
         exampleSentence: w.exampleSentence ?? undefined,
@@ -134,10 +138,10 @@ export function WordImportPage() {
   const hasDraft = step === 'input' && storedBlockId === blockId && formattedWords.length > 0
 
   const STEPS = [
-    { idx: '1', label: 'Input' },
-    { idx: '2', label: 'Formatting' },
-    { idx: '3', label: 'Preview' },
-    { idx: '4', label: 'Save' },
+    { idx: '1', label: t('wordImport.stepInput') },
+    { idx: '2', label: t('wordImport.stepFormatting') },
+    { idx: '3', label: t('wordImport.stepPreview') },
+    { idx: '4', label: t('wordImport.stepSave') },
   ]
   const STEP_INDEX: Record<string, number> = { input: 0, formatting: 1, preview: 2, saving: 3 }
   const stepIndex = STEP_INDEX[step] ?? 0
@@ -155,17 +159,17 @@ export function WordImportPage() {
           display: 'inline-block',
         }}
       >
-        ← Back to block
+        {t('wordImport.backToBlock')}
       </Link>
 
       {/* Page title */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 24 }}>
         <h1 className="ds-h2" style={{ margin: 0 }}>
-          AI Word Import
+          {t('wordImport.title')}
         </h1>
         {blockData && (
           <span className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-            into &ldquo;{blockData.block.title}&rdquo;
+            {t('wordImport.into', { title: blockData.block.title })}
           </span>
         )}
       </div>
@@ -241,7 +245,7 @@ export function WordImportPage() {
           }}
         >
           <span style={{ color: 'var(--fg-2)', fontSize: 13, fontWeight: 600 }}>
-            Draft saved — {formattedWords.length} words. Restore?
+            {t('wordImport.draftSaved', { count: formattedWords.length })}
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
@@ -249,14 +253,14 @@ export function WordImportPage() {
               style={{ padding: '6px 14px', fontSize: 12 }}
               onClick={resetAll}
             >
-              Discard
+              {t('wordImport.discard')}
             </button>
             <button
               className="lx-btn-primary"
               style={{ padding: '6px 14px', fontSize: 12 }}
               onClick={restoreDraft}
             >
-              Restore
+              {t('wordImport.restore')}
             </button>
           </div>
         </div>
@@ -302,14 +306,14 @@ export function WordImportPage() {
                 ))}
               </div>
               <span style={{ color: 'var(--fg-4)', fontSize: 11, flex: 1, fontWeight: 600 }}>
-                AI formatting — streaming…
+                {t('wordImport.streamingHeader')}
               </span>
               <button
                 className="lx-btn-secondary"
                 style={{ padding: '4px 12px', fontSize: 11 }}
                 onClick={handleAbort}
               >
-                ✕ cancel
+                {t('wordImport.cancelStream')}
               </button>
             </div>
             <div style={{ padding: '20px 24px' }}>
@@ -348,7 +352,7 @@ export function WordImportPage() {
                   onClick={() => void handleSave()}
                   disabled={formattedWords.length === 0 || importWords.isPending}
                 >
-                  Save to block
+                  {t('wordImport.saveToBlock')}
                 </button>
               </div>
             </div>
@@ -368,7 +372,7 @@ export function WordImportPage() {
           >
             <Spinner size="sm" />
             <span style={{ color: 'var(--fg-3)', fontWeight: 600, fontSize: 14 }}>
-              Saving words to block…
+              {t('wordImport.saving')}
             </span>
           </div>
         )}

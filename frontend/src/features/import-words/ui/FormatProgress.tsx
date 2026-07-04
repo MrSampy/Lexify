@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/shared/ui'
 import { useImportWordsStore } from '../model/store'
 
 export function FormatProgress() {
+  const { t } = useTranslation()
   const streamingText = useImportWordsStore((s) => s.streamingText)
 
   return (
@@ -9,7 +11,7 @@ export function FormatProgress() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <Spinner size="sm" />
         <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
-          AI is formatting your words…
+          {t('import.formatting')}
         </span>
       </div>
 

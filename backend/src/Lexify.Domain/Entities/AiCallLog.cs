@@ -41,10 +41,4 @@ public sealed class AiCallLog
         public const string GenerateTest = "generate_test";
         public const string SuggestTitle = "suggest_title";
     }
-
-    public static class Providers
-    {
-        public const string Ollama = "ollama";
-        public const string OpenAI = "openai";
-    }
 }

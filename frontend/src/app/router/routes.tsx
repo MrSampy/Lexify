@@ -12,6 +12,7 @@ import { TestResultsPage } from '@/pages/TestResults/ui/TestResultsPage'
 import { ReviewSessionPage } from '@/pages/ReviewSession/ui/ReviewSessionPage'
 import { DashboardPage } from '@/pages/Dashboard/ui/DashboardPage'
 import { SearchResultsPage } from '@/pages/Search/ui/SearchResultsPage'
+import { ProfilePage } from '@/pages/Profile/ui/ProfilePage'
 import { AdminDashboardPage } from '@/pages/AdminDashboard/ui/AdminDashboardPage'
 import { AdminUsersPage } from '@/pages/AdminUsers/ui/AdminUsersPage'
 import { AdminAiMonitorPage } from '@/pages/AdminAiMonitor/ui/AdminAiMonitorPage'
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
           { path: '/tests/:id/results', element: <TestResultsPage /> },
           { path: ROUTES.REVIEW, element: <ReviewSessionPage /> },
           { path: ROUTES.SEARCH, element: <SearchResultsPage /> },
+          { path: ROUTES.PROFILE, element: <ProfilePage /> },
         ],
       },
       {

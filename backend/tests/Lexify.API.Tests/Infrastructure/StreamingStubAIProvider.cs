@@ -20,7 +20,7 @@ public sealed class StreamingStubAIProvider : IAIProvider
 
     public Task<TestGenerationResult> GenerateTestQuestionsAsync(
         IReadOnlyList<WordDto> words, IReadOnlyList<string> questionTypes,
-        int count, CancellationToken ct = default)
+        int count, string? englishLevel = null, CancellationToken ct = default)
         => Task.FromResult(new TestGenerationResult([]));
 
     public Task<string?> SuggestBlockTitleAsync(

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/shared/ui'
 import type { Word } from '@/entities/word'
 
@@ -7,6 +8,7 @@ interface ReviewCardProps {
 }
 
 export function ReviewCard({ word }: ReviewCardProps) {
+  const { t } = useTranslation()
   const [isFlipped, setIsFlipped] = useState(false)
 
   return (
@@ -15,7 +17,7 @@ export function ReviewCard({ word }: ReviewCardProps) {
         <div className="flex min-h-40 flex-col items-center justify-center gap-6 text-center">
           <p className="ds-h2">{word.term}</p>
           <Button variant="outline" onClick={() => setIsFlipped(true)}>
-            Показати переклад
+            {t('review.showTranslation')}
           </Button>
         </div>
       ) : (
@@ -29,7 +31,7 @@ export function ReviewCard({ word }: ReviewCardProps) {
           )}
           <div className="mt-2">
             <Button variant="ghost" size="sm" onClick={() => setIsFlipped(false)}>
-              Сховати
+              {t('review.hide')}
             </Button>
           </div>
         </div>

@@ -10,7 +10,8 @@ export function useTestStatusPoller(testId: string | null) {
     enabled: !!testId,
     refetchInterval: (query) => {
       const status = query.state.data?.status
-      return status === 'ready' || status === 'archived' ? false : 2000
+      // Stop polling on every terminal status — 'failed' included, otherwise the poller runs forever
+      return status === 'ready' || status === 'archived' || status === 'failed' ? false : 2000
     },
     select: (data) => data.status,
   })

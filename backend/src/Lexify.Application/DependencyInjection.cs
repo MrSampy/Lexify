@@ -18,6 +18,8 @@ public static class DependencyInjection
             cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
             cfg.AddOpenBehavior(typeof(CachingBehavior<,>));
+            // Outside TransactionBehavior: cache is cleared only after SaveChanges succeeds
+            cfg.AddOpenBehavior(typeof(BlocksCacheInvalidationBehavior<,>));
             cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
         });
 

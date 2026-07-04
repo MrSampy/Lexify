@@ -7,9 +7,9 @@ export interface User {
   role: UserRole
 }
 
+// Refresh token is delivered via HttpOnly cookie, never in the response body
 export interface AuthResponse {
   accessToken: string
-  refreshToken: string
   expiresAt: string
 }
 

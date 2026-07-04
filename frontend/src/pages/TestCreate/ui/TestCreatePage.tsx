@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { Spinner } from '@/shared/ui'
@@ -8,9 +9,11 @@ import {
   useTestStatusPoller,
   BlockSelector,
   QuestionTypeSelector,
+  EnglishLevelSelect,
 } from '@/features/generate-test'
 
 export function TestCreatePage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const selectedBlockIds = useGenerateTestStore((s) => s.selectedBlockIds)
@@ -30,7 +33,8 @@ export function TestCreatePage() {
     }
   }, [polledStatus, generatingTestId, navigate, reset])
 
-  const isGenerating = !!generatingTestId
+  const generationFailed = polledStatus === 'failed'
+  const isGenerating = !!generatingTestId && !generationFailed
 
   const canGenerate =
     selectedBlockIds.length > 0 &&
@@ -57,10 +61,10 @@ export function TestCreatePage() {
       >
         <Spinner size="lg" />
         <div className="ds-h3" style={{ color: 'var(--accent-color)' }}>
-          Generating your test…
+          {t('testCreate.generating')}
         </div>
         <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
-          AI is building questions — this may take a moment
+          {t('testCreate.generatingDesc')}
         </p>
       </div>
     )
@@ -80,13 +84,13 @@ export function TestCreatePage() {
           fontWeight: 700,
         }}
       >
-        ← Back to tests
+        {t('testCreate.backToTests')}
       </Link>
       <h1 className="ds-h2" style={{ margin: '0 0 6px' }}>
-        Create a test
+        {t('testCreate.title')}
       </h1>
       <p className="ds-body" style={{ margin: '0 0 24px', color: 'var(--fg-3)' }}>
-        Pick blocks and question types — AI generates the quiz.
+        {t('testCreate.subtitle')}
       </p>
 
       <div
@@ -111,7 +115,7 @@ export function TestCreatePage() {
                 color: 'var(--fg-2)',
               }}
             >
-              Blocks
+              {t('testCreate.blocks')}
             </h2>
           </div>
           <BlockSelector />
@@ -131,7 +135,7 @@ export function TestCreatePage() {
                 color: 'var(--fg-2)',
               }}
             >
-              Question types
+              {t('testCreate.questionTypes')}
             </h2>
           </div>
           <QuestionTypeSelector />
@@ -139,7 +143,7 @@ export function TestCreatePage() {
           {/* Question count */}
           <div style={{ marginTop: 16 }}>
             <label className="lx-label" style={{ marginBottom: 6, display: 'block' }}>
-              Number of questions
+              {t('testCreate.questionCount')}
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <input
@@ -157,6 +161,8 @@ export function TestCreatePage() {
             </div>
           </div>
 
+          <EnglishLevelSelect />
+
           {/* Info banner */}
           {selectedBlockIds.length > 0 && (
             <div
@@ -173,8 +179,25 @@ export function TestCreatePage() {
             >
               <span style={{ color: 'var(--accent-color)', fontSize: 15 }}>ℹ️</span>
               <span className="ds-sm" style={{ color: 'var(--fg-2)' }}>
-                {selectedBlockIds.length} block{selectedBlockIds.length !== 1 ? 's' : ''} selected.
+                {t('testCreate.selected', { count: selectedBlockIds.length })}
               </span>
+            </div>
+          )}
+
+          {generationFailed && (
+            <div
+              style={{
+                padding: '10px 14px',
+                background: 'var(--danger-ghost)',
+                border: '1px solid rgba(255,92,108,0.3)',
+                borderRadius: 'var(--r-md)',
+                color: 'var(--danger)',
+                fontSize: 13,
+                fontFamily: 'var(--font-body)',
+                marginTop: 12,
+              }}
+            >
+              {t('testCreate.genFailed')}
             </div>
           )}
 
@@ -191,7 +214,7 @@ export function TestCreatePage() {
                 marginTop: 12,
               }}
             >
-              Failed to create test. Make sure selected blocks have at least 5 words.
+              {t('testCreate.createFailed')}
             </div>
           )}
 
@@ -201,7 +224,7 @@ export function TestCreatePage() {
             onClick={() => void handleGenerate()}
             disabled={!canGenerate || generateTest.isPending}
           >
-            ⚡ Generate
+            {t('testCreate.generate')}
           </button>
         </div>
       </div>

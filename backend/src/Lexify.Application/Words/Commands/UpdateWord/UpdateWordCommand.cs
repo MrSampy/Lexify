@@ -9,5 +9,6 @@ public sealed record UpdateWordCommand(
     string? Notes,
     string? ExampleSentence,
     bool ConfidenceFlag,
-    string? ConfidenceNote
+    string? ConfidenceNote,
+    IReadOnlyList<string>? AlternativeTranslations = null
 ) : IRequest<Result>;

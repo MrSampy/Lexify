@@ -13,4 +13,7 @@ public sealed class NullCacheService : ICacheService
 
     public Task RemoveAsync(string key, CancellationToken ct = default) =>
         Task.CompletedTask;
+
+    public Task RemoveByPrefixAsync(string prefix, CancellationToken ct = default) =>
+        Task.CompletedTask;
 }

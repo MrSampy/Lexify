@@ -39,19 +39,35 @@ public class AuthControllerTests(LexifyWebApplicationFactory factory)
     }
 
     [Fact]
-    public async Task RefreshToken_ReturnsNewAccessToken()
+    public async Task RefreshToken_FromCookie_ReturnsNewAccessToken()
     {
         var (_, oldAccessToken, refreshToken) = await factory.CreateAuthenticatedClientAsync();
         var client = factory.CreateClient();
 
-        var resp = await client.PostAsJsonAsync("/api/auth/refresh",
-            new { token = refreshToken });
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/refresh");
+        request.Headers.Add("Cookie", $"lexify_rt={refreshToken}");
+        var resp = await client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
         var newToken = json.GetProperty("accessToken").GetString()!;
         Assert.NotEmpty(newToken);
         Assert.NotEqual(oldAccessToken, newToken);
+
+        // Rotated refresh token must be delivered as a fresh HttpOnly cookie
+        var setCookie = resp.Headers.GetValues("Set-Cookie")
+            .First(c => c.StartsWith("lexify_rt=", StringComparison.Ordinal));
+        Assert.Contains("httponly", setCookie, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RefreshToken_WithoutCookie_ReturnsBadRequest()
+    {
+        var client = factory.CreateClient();
+
+        var resp = await client.PostAsync("/api/auth/refresh", null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
     private static string CreateExpiredToken()

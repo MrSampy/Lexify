@@ -10,8 +10,8 @@ export const authApi = {
       .post<string>('/api/auth/register', { email, password, displayName })
       .then((r) => r.data),
 
-  logout: (token: string) => apiClient.post('/api/auth/logout', { token }).then((r) => r.data),
+  // Refresh token travels in an HttpOnly cookie — no body needed
+  logout: () => apiClient.post('/api/auth/logout').then((r) => r.data),
 
-  refresh: (token: string) =>
-    apiClient.post<AuthResponse>('/api/auth/refresh', { token }).then((r) => r.data),
+  refresh: () => apiClient.post<AuthResponse>('/api/auth/refresh').then((r) => r.data),
 }

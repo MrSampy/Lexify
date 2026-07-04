@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BlockList } from '@/widgets/BlockList'
 import { BlockFilters } from '@/widgets/BlockList'
 import { CreateBlockModal } from '@/features/create-block'
 import { CsvImportModal } from '@/features/csv-import'
 
 export function BlockListPage() {
+  const { t } = useTranslation()
   const [page, setPage] = useState(1)
   const [languageId, setLanguageId] = useState<number | undefined>()
   const [tag, setTag] = useState('')
@@ -38,18 +40,18 @@ export function BlockListPage() {
       >
         <div>
           <h1 className="ds-h2" style={{ margin: '0 0 4px' }}>
-            Word blocks
+            {t('blocks.title')}
           </h1>
           <p className="ds-body" style={{ margin: 0, color: 'var(--fg-3)' }}>
-            Your vocabulary collections
+            {t('blocks.subtitle')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="lx-btn-secondary" onClick={() => setShowImport(true)}>
-            Import CSV
+            {t('blocks.importCsv')}
           </button>
           <button className="lx-btn-primary" onClick={() => setShowCreate(true)}>
-            + New block
+            {t('blocks.newBlock')}
           </button>
         </div>
       </div>

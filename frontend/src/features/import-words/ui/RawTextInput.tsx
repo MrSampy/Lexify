@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '@/shared/config'
 import {
   Button,
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function RawTextInput({ onSubmit }: Props) {
+  const { t } = useTranslation()
   const rawText = useImportWordsStore((s) => s.rawText)
   const targetLanguageId = useImportWordsStore((s) => s.targetLanguageId)
   const nativeLanguageId = useImportWordsStore((s) => s.nativeLanguageId)
@@ -29,7 +31,7 @@ export function RawTextInput({ onSubmit }: Props) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1 block text-sm font-medium">Target language (words to learn)</label>
+          <label className="mb-1 block text-sm font-medium">{t('import.targetLanguage')}</label>
           <Select
             value={String(targetLanguageId)}
             onValueChange={(v) => v && setTargetLanguageId(Number(v))}
@@ -47,7 +49,7 @@ export function RawTextInput({ onSubmit }: Props) {
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Native language (translations)</label>
+          <label className="mb-1 block text-sm font-medium">{t('import.nativeLanguage')}</label>
           <Select
             value={String(nativeLanguageId)}
             onValueChange={(v) => v && setNativeLanguageId(Number(v))}
@@ -67,19 +69,21 @@ export function RawTextInput({ onSubmit }: Props) {
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">Your vocabulary text</label>
+        <label className="mb-1 block text-sm font-medium">{t('import.vocabText')}</label>
         <Textarea
           value={rawText}
           onChange={(e) => setRawText(e.target.value)}
-          placeholder="Paste any text containing words you want to learn — a list, a paragraph, notes from a lesson..."
+          placeholder={t('import.vocabPlaceholder')}
           className="min-h-[220px] resize-y font-mono text-sm"
           maxLength={10_000}
         />
-        <p className="mt-1 text-xs text-muted-foreground">{rawText.length} / 10 000 characters</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t('import.charCount', { count: rawText.length })}
+        </p>
       </div>
 
       <Button onClick={onSubmit} disabled={!!validationError} className="w-full">
-        Format with AI
+        {t('import.formatWithAI')}
       </Button>
     </div>
   )

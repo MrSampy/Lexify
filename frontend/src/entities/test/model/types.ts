@@ -5,7 +5,7 @@ export type QuestionType =
   | 'multi_select_theme'
   | 'open_answer'
 
-export type TestStatus = 'generating' | 'ready' | 'archived'
+export type TestStatus = 'generating' | 'ready' | 'failed' | 'archived'
 
 export interface QuestionOption {
   id: string

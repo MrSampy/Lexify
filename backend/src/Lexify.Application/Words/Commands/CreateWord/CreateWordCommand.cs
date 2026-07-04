@@ -1,3 +1,4 @@
+using Lexify.Application.Behaviors;
 using Lexify.Application.Common;
 using MediatR;
 
@@ -11,4 +12,4 @@ public sealed record CreateWordCommand(
     string? Notes,
     string? ExampleSentence,
     int SortOrder = 0
-) : IRequest<Result<Guid>>;
+) : IRequest<Result<Guid>>, IInvalidatesBlocksCache;

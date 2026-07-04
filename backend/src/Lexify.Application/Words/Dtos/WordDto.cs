@@ -15,4 +15,5 @@ public sealed record WordDto(
     double EaseFactor,
     int IntervalDays,
     int Repetitions,
-    DateTimeOffset NextReviewAt);
+    DateTimeOffset NextReviewAt,
+    IReadOnlyList<string>? AlternativeTranslations = null);

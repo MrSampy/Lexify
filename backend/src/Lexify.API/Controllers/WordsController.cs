@@ -83,7 +83,8 @@ public sealed class WordsController(ISender sender, ICurrentUserService currentU
             request.Notes,
             request.ExampleSentence,
             request.ConfidenceFlag,
-            request.ConfidenceNote);
+            request.ConfidenceNote,
+            request.AlternativeTranslations);
 
         return ToActionResult(await sender.Send(command, cancellationToken));
     }
@@ -158,7 +159,8 @@ public sealed class WordsController(ISender sender, ICurrentUserService currentU
             .Select(w => new ImportWordItem(
                 w.Term, w.Translation, w.WordType,
                 w.Notes, w.ExampleSentence,
-                w.ConfidenceFlag, w.ConfidenceNote, w.SortOrder))
+                w.ConfidenceFlag, w.ConfidenceNote, w.SortOrder,
+                w.AlternativeTranslations))
             .ToList();
 
         var command = new ImportWordsCommand(blockId, items);

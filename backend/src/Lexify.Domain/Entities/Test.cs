@@ -48,10 +48,19 @@ public sealed class Test : BaseEntity
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public void MarkFailed()
+    {
+        if (Status != Statuses.Generating)
+            throw new DomainException("Only a generating test can be marked as failed.");
+        Status = Statuses.Failed;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public static class Statuses
     {
         public const string Generating = "generating";
         public const string Ready = "ready";
+        public const string Failed = "failed";
         public const string Archived = "archived";
     }
 }

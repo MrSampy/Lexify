@@ -104,7 +104,8 @@ public sealed class LexifyWebApplicationFactory : WebApplicationFactory<Program>
 
     /// <summary>
     /// Registers a unique user, logs them in, and returns an HttpClient pre-configured
-    /// with their Bearer token plus the raw access and refresh tokens.
+    /// with their Bearer token plus the raw access token and the refresh token extracted
+    /// from the HttpOnly "lexify_rt" cookie.
     /// </summary>
     public async Task<(HttpClient Client, string AccessToken, string RefreshToken)>
         CreateAuthenticatedClientAsync(string? email = null, string password = "Password1!")
@@ -122,12 +123,19 @@ public sealed class LexifyWebApplicationFactory : WebApplicationFactory<Program>
         loginResp.EnsureSuccessStatusCode();
 
         var json = await loginResp.Content.ReadFromJsonAsync<JsonElement>();
-        var accessToken  = json.GetProperty("accessToken").GetString()!;
-        var refreshToken = json.GetProperty("refreshToken").GetString()!;
+        var accessToken = json.GetProperty("accessToken").GetString()!;
+        var refreshToken = ExtractRefreshCookie(loginResp);
 
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
         return (client, accessToken, refreshToken);
+    }
+
+    private static string ExtractRefreshCookie(HttpResponseMessage response)
+    {
+        var setCookie = response.Headers.GetValues("Set-Cookie")
+            .First(c => c.StartsWith("lexify_rt=", StringComparison.Ordinal));
+        return setCookie["lexify_rt=".Length..].Split(';')[0];
     }
 }

@@ -12,10 +12,16 @@ public static class AIResponseValidator
         if (string.IsNullOrWhiteSpace(rawJson))
             return AIValidationResult.Fail("AI returned an empty response.");
 
+        // Some models keep rambling with chatty filler text after the JSON object is complete.
+        // Extract just the first balanced {...} object and ignore anything trailing it.
+        var jsonObject = ExtractFirstJsonObject(rawJson);
+        if (jsonObject is null)
+            return AIValidationResult.Fail("AI response does not contain a JSON object.");
+
         FormatWordsResult? parsed;
         try
         {
-            parsed = JsonSerializer.Deserialize<FormatWordsResult>(rawJson, JsonOptions);
+            parsed = JsonSerializer.Deserialize<FormatWordsResult>(jsonObject, JsonOptions);
         }
         catch (JsonException ex)
         {
@@ -51,6 +57,42 @@ public static class AIResponseValidator
                 $"AI recognized only {recognized}/{inputLines.Count} input lines ({ratio:P0}). Minimum is 50%.");
 
         return AIValidationResult.Ok(parsed);
+    }
+
+    /// <summary>Finds the first balanced top-level {...} object in text and ignores anything before/after it.</summary>
+    public static string? ExtractFirstJsonObject(string text)
+    {
+        var start = text.IndexOf('{');
+        if (start < 0) return null;
+
+        var depth = 0;
+        var inString = false;
+        var escaped = false;
+
+        for (var i = start; i < text.Length; i++)
+        {
+            var c = text[i];
+
+            if (inString)
+            {
+                if (escaped) escaped = false;
+                else if (c == '\\') escaped = true;
+                else if (c == '"') inString = false;
+                continue;
+            }
+
+            switch (c)
+            {
+                case '"': inString = true; break;
+                case '{': depth++; break;
+                case '}':
+                    depth--;
+                    if (depth == 0) return text[start..(i + 1)];
+                    break;
+            }
+        }
+
+        return null;
     }
 }
 

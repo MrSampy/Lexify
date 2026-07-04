@@ -20,8 +20,13 @@ public sealed class GetAiStatsQueryHandler(IAiCallLogRepository aiCallLogReposit
         var errorRate = total > 0 ? Math.Round((double)failed / total * 100, 2) : 0.0;
         var avgDuration = total > 0 ? Math.Round(logs.Average(l => l.DurationMs), 2) : 0.0;
 
-        // "fallback" = OpenAI calls (secondary provider used when Ollama is unavailable)
-        var fallbackCount = logs.Count(l => l.Provider == AiCallLog.Providers.OpenAI);
+        // "fallback" = calls handled by anything other than the most-used (primary) configured provider
+        var primaryProvider = logs
+            .GroupBy(l => l.Provider)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .FirstOrDefault();
+        var fallbackCount = logs.Count(l => l.Provider != primaryProvider);
 
         var byCallType = logs
             .GroupBy(l => l.CallType)

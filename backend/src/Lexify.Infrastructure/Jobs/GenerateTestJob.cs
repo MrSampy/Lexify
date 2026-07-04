@@ -12,6 +12,7 @@ public sealed partial class GenerateTestJob(
     IWordRepository wordRepository,
     ITestRepository testRepository,
     IQuestionRepository questionRepository,
+    IUserRepository userRepository,
     IAIProvider aiProvider,
     IUnitOfWork unitOfWork,
     ILogger<GenerateTestJob> logger)
@@ -36,6 +37,7 @@ public sealed partial class GenerateTestJob(
         if (words.Count < 5)
         {
             LogInsufficientWords(logger, testId, words.Count);
+            await MarkFailedAsync(test, cancellationToken);
             return;
         }
 
@@ -63,22 +65,27 @@ public sealed partial class GenerateTestJob(
             .Distinct()
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+        // Difficulty targeting: pass the user's CEFR level to the prompt when set
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+
         // Call AI provider
         TestGenerationResult aiResult;
         try
         {
             aiResult = await aiProvider.GenerateTestQuestionsAsync(
-                wordDtos, questionTypes, questionCount, cancellationToken);
+                wordDtos, questionTypes, questionCount, user?.EnglishLevel, cancellationToken);
         }
         catch (Exception ex)
         {
             LogAiError(logger, ex, testId);
+            await MarkFailedAsync(test, cancellationToken);
             return;
         }
 
         if (aiResult.Questions.Count == 0)
         {
             LogNoQuestionsGenerated(logger, testId);
+            await MarkFailedAsync(test, cancellationToken);
             return;
         }
 
@@ -149,6 +156,7 @@ public sealed partial class GenerateTestJob(
         if (questions.Count == 0)
         {
             LogNoQuestionsGenerated(logger, testId);
+            await MarkFailedAsync(test, cancellationToken);
             return;
         }
 
@@ -160,6 +168,17 @@ public sealed partial class GenerateTestJob(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         LogTestReady(logger, testId, questions.Count);
+    }
+
+    /// <summary>
+    /// Moves the test to 'failed' so the frontend poller stops instead of waiting forever
+    /// on a test that will never become ready.
+    /// </summary>
+    private async Task MarkFailedAsync(Test test, CancellationToken cancellationToken)
+    {
+        test.MarkFailed();
+        await testRepository.UpdateAsync(test, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     private static string MapToDomainType(string aiType) => aiType switch

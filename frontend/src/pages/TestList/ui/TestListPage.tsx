@@ -1,31 +1,53 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
-import { Spinner, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui'
+import { toast } from 'sonner'
+import {
+  Spinner,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  useConfirm,
+} from '@/shared/ui'
 import { useTests, useDeleteTestMutation } from '@/entities/test'
 import type { TestStatus } from '@/entities/test'
 import { formatDate } from '@/shared/lib'
 
 const STATUS_STYLES: Record<
   TestStatus,
-  { bg: string; color: string; border: string; label: string }
+  { bg: string; color: string; border: string; labelKey: string }
 > = {
   generating: {
     bg: 'var(--warning-ghost)',
     color: 'var(--warning)',
     border: 'var(--warning-ghost)',
-    label: 'Generating',
+    labelKey: 'tests.status.generating',
   },
   ready: {
     bg: 'var(--success-ghost)',
     color: 'var(--success)',
     border: 'var(--accent-line)',
-    label: 'Ready',
+    labelKey: 'tests.status.ready',
   },
-  archived: { bg: 'var(--bg-3)', color: 'var(--fg-3)', border: 'var(--line-2)', label: 'Archived' },
+  failed: {
+    bg: 'var(--danger-ghost)',
+    color: 'var(--danger)',
+    border: 'var(--danger-ghost)',
+    labelKey: 'tests.status.failed',
+  },
+  archived: {
+    bg: 'var(--bg-3)',
+    color: 'var(--fg-3)',
+    border: 'var(--line-2)',
+    labelKey: 'tests.status.archived',
+  },
 }
 
 export function TestListPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [page, setPage] = useState(1)
@@ -33,10 +55,16 @@ export function TestListPage() {
   const status = statusFilter === 'all' ? undefined : statusFilter
   const { data, isLoading, isError } = useTests(status, page)
   const deleteTest = useDeleteTestMutation()
+  const { confirm, confirmDialog } = useConfirm()
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Delete test "${title}"?`)) return
-    await deleteTest.mutateAsync(id)
+    if (!(await confirm({ title: t('tests.deleteConfirm', { title }) }))) return
+    try {
+      await deleteTest.mutateAsync(id)
+      toast.success(t('tests.deleted'))
+    } catch {
+      toast.error(t('tests.deleteFailed'))
+    }
   }
 
   return (
@@ -54,10 +82,10 @@ export function TestListPage() {
       >
         <div>
           <h1 className="ds-h2" style={{ margin: '0 0 4px' }}>
-            Tests
+            {t('tests.title')}
           </h1>
           <p className="ds-body" style={{ margin: 0, color: 'var(--fg-3)' }}>
-            AI-generated quizzes across your blocks.
+            {t('tests.subtitle')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -81,7 +109,7 @@ export function TestListPage() {
             </SelectContent>
           </Select>
           <button className="lx-btn-primary" onClick={() => navigate(ROUTES.TEST_CREATE)}>
-            + New test
+            {t('tests.newTest')}
           </button>
         </div>
       </div>
@@ -98,17 +126,17 @@ export function TestListPage() {
           className="ds-sm"
           style={{ textAlign: 'center', padding: '32px 0', color: 'var(--fg-3)' }}
         >
-          Failed to load tests.
+          {t('tests.loadFailed')}
         </p>
       )}
 
       {data && data.items.length === 0 && (
         <div style={{ textAlign: 'center', padding: '64px 0' }}>
           <p className="ds-body" style={{ color: 'var(--fg-3)', marginBottom: 16 }}>
-            No tests yet.
+            {t('tests.noTests')}
           </p>
           <button className="lx-btn-primary" onClick={() => navigate(ROUTES.TEST_CREATE)}>
-            Create your first test
+            {t('tests.createFirst')}
           </button>
         </div>
       )}
@@ -139,7 +167,9 @@ export function TestListPage() {
                     {test.title}
                   </div>
                   <div className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-                    {test.questionCount != null ? `${test.questionCount} questions · ` : ''}
+                    {test.questionCount != null
+                      ? `${t('tests.questions', { count: test.questionCount })} · `
+                      : ''}
                     {formatDate(test.createdAt)}
                   </div>
                 </div>
@@ -170,14 +200,14 @@ export function TestListPage() {
                       ⟳
                     </span>
                   )}
-                  {s.label}
+                  {t(s.labelKey)}
                 </span>
 
                 <div style={{ display: 'flex', gap: 8 }}>
                   {test.status === 'ready' && (
                     <Link to={ROUTES.TEST_RUNNER(test.id)} style={{ textDecoration: 'none' }}>
                       <button className="lx-btn-primary" style={{ padding: '9px 18px' }}>
-                        Run →
+                        {t('tests.run')}
                       </button>
                     </Link>
                   )}
@@ -187,7 +217,7 @@ export function TestListPage() {
                     onClick={() => void handleDelete(test.id, test.title)}
                     disabled={deleteTest.isPending}
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>
@@ -228,6 +258,7 @@ export function TestListPage() {
           </button>
         </div>
       )}
+      {confirmDialog}
     </div>
   )
 }

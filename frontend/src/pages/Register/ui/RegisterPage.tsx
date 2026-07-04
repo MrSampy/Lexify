@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ROUTES } from '@/shared/config'
 import { RegisterForm } from '@/features/auth'
 
 export function RegisterPage() {
+  const { t } = useTranslation()
   return (
     <div
       style={{
@@ -63,18 +65,18 @@ export function RegisterPage() {
         {/* Card */}
         <div className="lx-card" style={{ padding: 32, boxShadow: 'var(--shadow-2)' }}>
           <h1 className="ds-h3" style={{ margin: '0 0 6px', textAlign: 'center' }}>
-            Create your account ✨
+            {t('auth.createTitle')}
           </h1>
           <p
             className="ds-sm"
             style={{ margin: '0 0 24px', color: 'var(--fg-3)', textAlign: 'center' }}
           >
-            Already registered?{' '}
+            {t('auth.alreadyRegistered')}{' '}
             <Link
               to={ROUTES.LOGIN}
               style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
             >
-              Sign in
+              {t('auth.signIn')}
             </Link>
           </p>
 

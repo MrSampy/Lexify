@@ -11,7 +11,10 @@ public sealed class Word
     public Guid Id { get; private set; }
     public Guid BlockId { get; private set; }
     public string Term { get; private set; } = default!;
+    /// <summary>The primary translation — used in search, tests, and review.</summary>
     public string Translation { get; private set; } = default!;
+    /// <summary>Extra translation variants beyond the primary one (may be empty).</summary>
+    public List<string> AlternativeTranslations { get; private set; } = [];
     public string WordType { get; private set; } = default!;
     public string? Notes { get; private set; }
     public string? ExampleSentence { get; private set; }
@@ -100,6 +103,16 @@ public sealed class Word
     {
         ConfidenceFlag = flag;
         ConfidenceNote = note;
+    }
+
+    /// <summary>Replaces alternative translations; blanks, duplicates, and copies of the primary are dropped.</summary>
+    public void SetAlternativeTranslations(IEnumerable<string>? translations)
+    {
+        AlternativeTranslations = (translations ?? [])
+            .Select(t => t.Trim())
+            .Where(t => t.Length > 0 && !string.Equals(t, Translation, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     public void ClearDomainEvents() => _domainEvents.Clear();

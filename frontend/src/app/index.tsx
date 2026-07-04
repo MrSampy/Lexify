@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/entities/user'
 import { Spinner, Toaster } from '@/shared/ui'
+import { ErrorBoundary } from './providers/ErrorBoundary'
 import { QueryProvider } from './providers/QueryProvider'
 import { ThemeProvider } from './providers/ThemeProvider'
 import { AppRouter } from './router/routes'
@@ -11,8 +12,9 @@ function BootLoader({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
-      const rt = sessionStorage.getItem('lexify_rt')
-      if (rt) await refreshToken()
+      // The HttpOnly refresh cookie isn't readable from JS, so just attempt a refresh:
+      // it silently fails when the user has no session.
+      await refreshToken()
       setReady(true)
     }
     void init()
@@ -31,13 +33,15 @@ function BootLoader({ children }: { children: React.ReactNode }) {
 
 export function AppRoot() {
   return (
-    <ThemeProvider>
-      <QueryProvider>
-        <BootLoader>
-          <AppRouter />
-          <Toaster />
-        </BootLoader>
-      </QueryProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <QueryProvider>
+          <BootLoader>
+            <AppRouter />
+            <Toaster />
+          </BootLoader>
+        </QueryProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 }
