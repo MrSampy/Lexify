@@ -5,41 +5,37 @@ namespace Lexify.API.Tests.AI;
 public class OllamaPromptTests
 {
     [Fact]
-    public void TestSystemPrompt_UsesNoThinkDirective()
+    public void EnrichSystemPrompt_DoesNotUseQwen3ThinkingDirective()
     {
-        var prompt = OpenAiCompatibleClient.BuildTestSystemPrompt(5, ["single_choice", "multi_select"]);
+        // /no_think is a Qwen3-only control token; Qwen3-*-Instruct-2507 variants are non-thinking
+        // by default and have no mode to disable, so the prompt must not reference it.
+        var prompt = OpenAiCompatibleClient.BuildEnrichSystemPrompt("English", "Ukrainian");
 
-        Assert.StartsWith("/no_think", prompt.TrimStart());
-        Assert.DoesNotContain("/think", prompt.Replace("/no_think", string.Empty));
+        Assert.DoesNotContain("think", prompt, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void TestSystemPrompt_WithEnglishLevel_MentionsCefrLevel()
+    public void EnrichSystemPrompt_MentionsTargetAndNativeLanguage()
     {
-        var prompt = OpenAiCompatibleClient.BuildTestSystemPrompt(5, ["single_choice"], "B2");
+        var prompt = OpenAiCompatibleClient.BuildEnrichSystemPrompt("English", "Ukrainian");
 
-        Assert.Contains("CEFR B2", prompt);
+        Assert.Contains("English", prompt);
+        Assert.Contains("Ukrainian", prompt);
     }
 
     [Fact]
-    public void TestSystemPrompt_WithoutEnglishLevel_OmitsCefrRule()
+    public void EnrichSystemPrompt_InstructsToPreserveParsedTermAndTranslationExactly()
     {
-        var prompt = OpenAiCompatibleClient.BuildTestSystemPrompt(5, ["single_choice"]);
+        var prompt = OpenAiCompatibleClient.BuildEnrichSystemPrompt("English", "Ukrainian");
 
-        Assert.DoesNotContain("CEFR", prompt);
+        Assert.Contains("EXACTLY", prompt);
     }
 
     [Fact]
-    public void TestSystemPrompt_ContainsFewShotExamplesForAllQuestionTypes()
+    public void EnrichSystemPrompt_RequiresEchoingTheSameIdValues()
     {
-        var prompt = OpenAiCompatibleClient.BuildTestSystemPrompt(
-            10, ["single_choice", "multi_select", "fill_blank", "open_answer"]);
+        var prompt = OpenAiCompatibleClient.BuildEnrichSystemPrompt("English", "Ukrainian");
 
-        Assert.Contains("\"questionType\":\"single_choice\"", prompt);
-        Assert.Contains("\"questionType\":\"multi_select\"", prompt);
-        Assert.Contains("\"questionType\":\"fill_blank\"", prompt);
-        Assert.Contains("\"questionType\":\"open_answer\"", prompt);
-        Assert.Contains("___", prompt);
-        Assert.Contains("exactly 10", prompt);
+        Assert.Contains("SAME \"id\" values", prompt);
     }
 }

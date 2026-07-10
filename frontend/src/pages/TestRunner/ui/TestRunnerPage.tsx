@@ -86,24 +86,51 @@ export function TestRunnerPage() {
     reset,
   } = useTestRunnerStore()
 
+  const beginAttempt = (readyTest: Test) => {
+    startAttempt.mutate(readyTest.id, {
+      // `readyTest.questions` are already the final ones (a ready test's questions never change
+      // afterward), so there's normally nothing "stale" left to re-fetch. The one exception: the
+      // poller on TestCreatePage may have cached a ready test whose `questions` came back empty —
+      // init with an empty list would leave the loading spinner below spinning forever, so only
+      // that case falls back to a fresh fetch.
+      onSuccess: async ({ attemptId: aid }) => {
+        let questionsToUse = readyTest.questions
+        if (!questionsToUse?.length) {
+          const freshTest = await queryClient.fetchQuery<Test>({
+            queryKey: testKeys.detail(readyTest.id),
+            queryFn: () => testApi.getTestById(readyTest.id),
+          })
+          questionsToUse = freshTest.questions
+        }
+        init(readyTest.id, aid, questionsToUse)
+      },
+    })
+  }
+
   // Start attempt once test is loaded and ready
   useEffect(() => {
     if (!test || test.status !== 'ready' || startedRef.current) return
     startedRef.current = true
-
-    startAttempt.mutate(test.id, {
-      onSuccess: async ({ attemptId: aid }) => {
-        // Fetch fresh test data so we always get the latest questions,
-        // not the potentially stale closure value from when the effect ran
-        const freshTest = await queryClient.fetchQuery<Test>({
-          queryKey: testKeys.detail(test.id),
-          queryFn: () => testApi.getTestById(test.id),
-        })
-        init(test.id, aid, freshTest.questions)
-      },
-    })
+    beginAttempt(test)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [test?.id, test?.status])
+
+  // Recovery: if the tab was hidden/frozen by the browser while the start-attempt response was in
+  // flight, the mutate-level onSuccess callback can be lost even though the mutation itself
+  // eventually settles as success. Re-derive init from the mutation's cached result so the runner
+  // never sits on a spinner with a successfully started attempt.
+  useEffect(() => {
+    if (!startAttempt.isSuccess || questions.length > 0) return
+    if (!test || test.status !== 'ready' || !test.questions?.length) return
+    init(test.id, startAttempt.data.attemptId, test.questions)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startAttempt.isSuccess, questions.length, test?.id, test?.status])
+
+  const handleRetryStart = () => {
+    if (!test) return
+    startAttempt.reset()
+    beginAttempt(test)
+  }
 
   // Cleanup on unmount
   useEffect(
@@ -116,6 +143,9 @@ export function TestRunnerPage() {
   const currentQuestion = questions[currentQuestionIndex] ?? null
   const currentFeedback = currentQuestion ? feedbacks[currentQuestion.id] : null
   const correctCount = Object.values(feedbacks).filter((f) => f.isCorrect).length
+  // Counted from feedbacks, not (index - correct): the index only advances on "Next", so right
+  // after answering it still points at the current question and the difference goes negative.
+  const incorrectCount = Object.values(feedbacks).filter((f) => !f.isCorrect).length
   const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   const handleSubmitAnswer = async (givenAnswer: string) => {
@@ -137,6 +167,36 @@ export function TestRunnerPage() {
     } else {
       nextQuestion()
     }
+  }
+
+  // Starting the attempt failed — without this branch the "ready but no questions yet" spinner
+  // below would spin forever (onSuccess never ran, and startedRef blocks a re-run of the effect).
+  if (startAttempt.isError && questions.length === 0) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 16,
+          padding: '80px 0',
+          textAlign: 'center',
+        }}
+      >
+        <p className="ds-body" style={{ color: 'var(--danger)' }}>
+          {t('testRunner.startFailed')}
+        </p>
+        <button className="lx-btn-primary" onClick={handleRetryStart}>
+          {t('testRunner.retry')}
+        </button>
+        <Link
+          to={ROUTES.TESTS}
+          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
+        >
+          {t('testRunner.backToTests')}
+        </Link>
+      </div>
+    )
   }
 
   if (isLoading || startAttempt.isPending || (test?.status === 'ready' && questions.length === 0)) {
@@ -235,7 +295,7 @@ export function TestRunnerPage() {
             {t('testRunner.correct', { count: correctCount })}
           </span>
           <span style={{ color: 'var(--danger)', fontSize: 11, fontWeight: 700 }}>
-            {t('testRunner.incorrect', { count: currentQuestionIndex - correctCount })}
+            {t('testRunner.incorrect', { count: incorrectCount })}
           </span>
         </div>
       )}

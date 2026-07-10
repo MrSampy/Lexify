@@ -1,27 +1,42 @@
+using System.Text.Json;
 using Lexify.Application.Abstractions;
 using Lexify.Application.AI.Dtos;
-using Lexify.Application.Words.Dtos;
 
 namespace Lexify.API.Tests.Infrastructure;
 
-/// <summary>Minimal AI provider stub that yields a single well-formed JSON response.</summary>
+/// <summary>Minimal AI provider stub that echoes back a well-formed enrichment response.</summary>
 public sealed class StreamingStubAIProvider : IAIProvider
 {
-    private const string StubJson =
-        """{"words":[{"term":"hello","translation":"привіт","wordType":"word","notes":null,"exampleSentence":null}],"suggestedTitle":null}""";
-
-    public async IAsyncEnumerable<string> StreamFormatWordsAsync(
-        string rawText, string targetLanguage, string nativeLanguage,
+    public async IAsyncEnumerable<string> StreamEnrichWordsAsync(
+        IReadOnlyList<ParsedImportLine> lines, string targetLanguage, string nativeLanguage,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
         await Task.Yield();
-        yield return StubJson;
+
+        var words = lines.Select(line => new
+        {
+            id = line.Id,
+            term = line.Term ?? line.RawLine,
+            translation = line.Translation ?? "unknown",
+            wordType = "word",
+            alternativeTranslations = Array.Empty<string>(),
+            notes = (string?)null,
+            exampleSentence = (string?)null,
+            confidenceNote = (string?)null
+        });
+
+        yield return JsonSerializer.Serialize(new { suggestedTitle = (string?)null, words });
     }
 
-    public Task<TestGenerationResult> GenerateTestQuestionsAsync(
-        IReadOnlyList<WordDto> words, IReadOnlyList<string> questionTypes,
-        int count, string? englishLevel = null, CancellationToken ct = default)
-        => Task.FromResult(new TestGenerationResult([]));
+    public Task<IReadOnlyList<FillSentenceAtom>> GenerateFillSentencesAsync(
+        IReadOnlyList<FillSentenceRequest> requests, string targetLanguage,
+        string? englishLevel = null, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<FillSentenceAtom>>(
+            requests.Select(r => new FillSentenceAtom(r.WordId, $"This is a sentence with {r.Term} in it.")).ToList());
+
+    public Task<IReadOnlyList<string>> GenerateFakeDistractorsAsync(
+        string correctAnswer, int count, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<string>>([]);
 
     public Task<string?> SuggestBlockTitleAsync(
         IReadOnlyList<string> terms, string language, CancellationToken ct = default)

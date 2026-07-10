@@ -66,10 +66,15 @@ public sealed class AiCallLogConfiguration : IEntityTypeConfiguration<AiCallLog>
 
         builder.ToTable(t =>
         {
+            // Provider is a free-form name from the "AiProviders" config list (Lemonade, Ollama,
+            // OpenAI, ...), not a fixed enum — only guard against empty values.
             t.HasCheckConstraint("chk_ai_logs_provider",
-                "provider IN ('ollama', 'openai')");
+                "LENGTH(TRIM(provider)) > 0");
+            // 'generate_test' is kept for backward compatibility with historical log rows even
+            // though nothing writes it anymore (test generation no longer makes a single whole-test
+            // AI call — see generate_fill_sentences/generate_distractors).
             t.HasCheckConstraint("chk_ai_logs_type",
-                "call_type IN ('format_words', 'generate_test', 'suggest_title')");
+                "call_type IN ('format_words', 'generate_test', 'generate_fill_sentences', 'generate_distractors', 'suggest_title')");
             t.HasCheckConstraint("chk_ai_logs_duration",
                 "duration_ms >= 0");
         });

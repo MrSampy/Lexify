@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { debounce } from '@/shared/lib'
 import { useConfirm } from '@/shared/ui'
+import { useAuthStore } from '@/entities/user'
 import {
   useAdminUsers,
   useSuspendUserMutation,
@@ -15,6 +16,8 @@ import { UsersTable, UserDetailModal } from '@/features/admin-users'
 const PAGE_SIZE = 20
 
 export function AdminUsersPage() {
+  const currentUserRole = useAuthStore((s) => s.user?.role)
+  const canManageUsers = currentUserRole === 'admin'
   const [page, setPage] = useState(1)
   const [role, setRole] = useState<string>('')
   const [status, setStatus] = useState<string>('')
@@ -109,6 +112,7 @@ export function AdminUsersPage() {
       <UsersTable
         users={data?.items ?? []}
         isLoading={isLoading}
+        canManageUsers={canManageUsers}
         onSuspend={(id) => void suspend.mutateAsync(id)}
         onRestore={(id) => void restore.mutateAsync(id)}
         onDelete={(id, email) => void handleDelete(id, email)}
@@ -152,6 +156,7 @@ export function AdminUsersPage() {
       <UserDetailModal
         user={selectedUser}
         open={!!selectedUser}
+        canManageUsers={canManageUsers}
         onClose={() => setSelectedUser(null)}
         onSuspend={(id) => void suspend.mutateAsync(id)}
         onRestore={(id) => void restore.mutateAsync(id)}

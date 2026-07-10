@@ -63,15 +63,18 @@ public sealed class AdminController(ISender sender) : BaseApiController
     public async Task<IActionResult> RestoreUser(Guid id, CancellationToken ct) =>
         ToActionResult(await sender.Send(new RestoreUserCommand(id), ct));
 
+    [SuperAdminOnly]
     [HttpDelete("users/{id:guid}")]
     public async Task<IActionResult> DeleteUser(Guid id, CancellationToken ct) =>
         ToActionResult(await sender.Send(new DeleteUserCommand(id), ct));
 
+    [SuperAdminOnly]
     [HttpPut("users/{id:guid}/role")]
     public async Task<IActionResult> ChangeUserRole(
         Guid id, [FromBody] ChangeUserRoleRequest body, CancellationToken ct) =>
         ToActionResult(await sender.Send(new ChangeUserRoleCommand(id, body.Role), ct));
 
+    [SuperAdminOnly]
     [HttpPost("users/{id:guid}/impersonate")]
     public async Task<IActionResult> ImpersonateUser(Guid id, CancellationToken ct) =>
         ToActionResult(await sender.Send(new ImpersonateUserCommand(id), ct));
@@ -82,6 +85,7 @@ public sealed class AdminController(ISender sender) : BaseApiController
     public async Task<IActionResult> GetSystemSettings(CancellationToken ct) =>
         ToActionResult(await sender.Send(new GetSystemSettingsQuery(), ct));
 
+    [SuperAdminOnly]
     [HttpPut("settings/{key}")]
     public async Task<IActionResult> UpdateSystemSetting(
         string key, [FromBody] UpdateSystemSettingRequest body, CancellationToken ct) =>
@@ -119,6 +123,7 @@ public sealed class AdminController(ISender sender) : BaseApiController
         [FromQuery] bool includeInactive = true, CancellationToken ct = default) =>
         ToActionResult(await sender.Send(new GetLanguagesQuery(includeInactive), ct));
 
+    [SuperAdminOnly]
     [HttpPost("languages")]
     public async Task<IActionResult> AddLanguage(
         [FromBody] AddLanguageRequest body, CancellationToken ct) =>
@@ -126,6 +131,7 @@ public sealed class AdminController(ISender sender) : BaseApiController
             new AddLanguageCommand(body.Code, body.Name, body.NativeName, body.SortOrder), ct),
             dto => CreatedAtAction(nameof(GetLanguages), dto));
 
+    [SuperAdminOnly]
     [HttpPut("languages/{code}/toggle")]
     public async Task<IActionResult> ToggleLanguage(string code, CancellationToken ct) =>
         ToActionResult(await sender.Send(new ToggleLanguageCommand(code), ct));

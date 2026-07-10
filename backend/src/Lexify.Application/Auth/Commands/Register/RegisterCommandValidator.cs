@@ -17,7 +17,8 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
             .MaximumLength(100).WithMessage("Password must not exceed 100 characters.");
 
         RuleFor(x => x.DisplayName)
-            .MaximumLength(64).WithMessage("Display name must not exceed 64 characters.")
-            .When(x => x.DisplayName is not null);
+            .NotEmpty().WithMessage("Display name is required.")
+            .MinimumLength(2).WithMessage("Display name must be at least 2 characters.")
+            .MaximumLength(64).WithMessage("Display name must not exceed 64 characters.");
     }
 }

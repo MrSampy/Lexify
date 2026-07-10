@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Lexify.Application.Abstractions;
 using Lexify.Application.Common;
 using Lexify.Domain.Entities;
@@ -28,7 +29,7 @@ public sealed class ImpersonateUserCommandHandler(
             action: "impersonate_user",
             targetType: "User",
             targetId: target.Id.ToString(),
-            newValue: $"impersonated as {target.Email}");
+            newValue: JsonSerializer.Serialize($"impersonated as {target.Email}"));
 
         await auditLogRepository.AddAsync(log, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

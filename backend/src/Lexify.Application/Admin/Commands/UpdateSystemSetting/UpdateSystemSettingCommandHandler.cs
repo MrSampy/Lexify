@@ -33,8 +33,8 @@ public sealed class UpdateSystemSettingCommandHandler(
             action: "update_system_setting",
             targetType: "SystemSetting",
             targetId: request.Key,
-            oldValue: oldValue,
-            newValue: request.Value);
+            oldValue: ToJsonAuditValue(oldValue, setting.ValueType),
+            newValue: ToJsonAuditValue(request.Value, setting.ValueType));
 
         await auditLogRepository.AddAsync(log, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -43,6 +43,11 @@ public sealed class UpdateSystemSettingCommandHandler(
 
         return Result.Ok();
     }
+
+    // AuditLog.OldValue/NewValue are jsonb columns — "string"-typed settings aren't
+    // valid JSON on their own (unquoted), so they need to be JSON-encoded first.
+    private static string ToJsonAuditValue(string value, string valueType) =>
+        valueType == "string" ? JsonSerializer.Serialize(value) : value;
 
     private static bool IsValueValid(string value, string valueType) => valueType switch
     {

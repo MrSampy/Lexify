@@ -1,5 +1,6 @@
 using Lexify.Application.Common;
 using Lexify.Application.Tests.Dtos;
+using Lexify.Domain.Entities;
 using Lexify.Domain.Repositories;
 using MediatR;
 
@@ -14,10 +15,14 @@ public sealed class GetTestsQueryHandler(
     {
         var tests = await testRepository.GetByUserIdAsync(request.UserId, cancellationToken);
 
-        var filtered = (string.IsNullOrEmpty(request.Status)
-            ? tests
-            : tests.Where(t => t.Status == request.Status))
-            .ToList();
+        // "Delete" on a test just archives it (preserves question-dedup history and past attempts —
+        // see DeleteTestCommandHandler). Without an explicit status filter, archived tests must stay
+        // hidden or "deleting" a test wouldn't actually remove it from what the user sees.
+        var filtered = (request.Status switch
+        {
+            null or "" => tests.Where(t => t.Status != Test.Statuses.Archived),
+            _ => tests.Where(t => t.Status == request.Status)
+        }).ToList();
 
         var total = filtered.Count;
         var items = filtered

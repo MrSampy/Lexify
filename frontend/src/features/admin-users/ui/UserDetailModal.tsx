@@ -5,6 +5,7 @@ import type { AdminUser } from '@/entities/admin'
 interface UserDetailModalProps {
   user: AdminUser | null
   open: boolean
+  canManageUsers: boolean
   onClose: () => void
   onSuspend: (id: string) => void
   onRestore: (id: string) => void
@@ -14,6 +15,7 @@ interface UserDetailModalProps {
 export function UserDetailModal({
   user,
   open,
+  canManageUsers,
   onClose,
   onSuspend,
   onRestore,
@@ -83,17 +85,19 @@ export function UserDetailModal({
               Restore
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={() => {
-              onDelete(user.id, user.email)
-              onClose()
-            }}
-          >
-            Delete
-          </Button>
+          {canManageUsers && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => {
+                onDelete(user.id, user.email)
+                onClose()
+              }}
+            >
+              Delete
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={onClose} className="ml-auto">
             Close
           </Button>
