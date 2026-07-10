@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ROUTES, LANGUAGES } from '@/shared/config'
 import { Spinner } from '@/shared/ui'
-import { useAuthStore, useUserStats } from '@/entities/user'
+import { useAuthStore, useProfile, useUserStats } from '@/entities/user'
 import { useBlocks } from '@/entities/block'
 import { useTests } from '@/entities/test'
 import { ReviewDueBanner } from '@/widgets/ReviewDueBanner'
@@ -40,13 +40,18 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; border: string 
 export function DashboardPage() {
   const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
+  const { data: profile } = useProfile()
   const { data: stats } = useUserStats()
   const { data: blocksPage, isLoading: blocksLoading } = useBlocks({ page: 1, pageSize: 3 })
   const { data: testsPage, isLoading: testsLoading } = useTests(undefined, 1)
 
   const recentBlocks = blocksPage?.items ?? []
   const recentTests = (testsPage?.items ?? []).slice(0, 3)
-  const displayName = user?.displayName ?? user?.email?.split('@')[0] ?? t('dashboard.fallbackName')
+  // The JWT carries no displayName claim (auth-store user always has displayName: null), so the
+  // real name comes from the profile endpoint; email localpart is only the fallback while it loads
+  // or when the user never set a name.
+  const displayName =
+    profile?.displayName ?? user?.email?.split('@')[0] ?? t('dashboard.fallbackName')
 
   return (
     <div>

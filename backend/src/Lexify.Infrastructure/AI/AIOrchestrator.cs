@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Lexify.Application.Abstractions;
 using Lexify.Application.AI.Dtos;
-using Lexify.Application.Words.Dtos;
 using Lexify.Domain.Entities;
 using Lexify.Domain.Repositories;
 using Lexify.Infrastructure.Settings;
@@ -27,8 +26,8 @@ public sealed partial class AIOrchestrator(
 {
     private List<AiProviderSettings> Providers => providersOptions.Value;
 
-    public async IAsyncEnumerable<string> StreamFormatWordsAsync(
-        string rawText,
+    public async IAsyncEnumerable<string> StreamEnrichWordsAsync(
+        IReadOnlyList<ParsedImportLine> lines,
         string targetLanguage,
         string nativeLanguage,
         [EnumeratorCancellation] CancellationToken ct = default)
@@ -40,11 +39,11 @@ public sealed partial class AIOrchestrator(
             HttpResponseMessage response;
             try
             {
-                response = await client.OpenFormatStreamAsync(rawText, targetLanguage, nativeLanguage, ct);
+                response = await client.OpenEnrichStreamAsync(lines, targetLanguage, nativeLanguage, ct);
             }
             catch (Exception ex)
             {
-                LogProviderError(logger, ex, "StreamFormatWords", settings.Name);
+                LogProviderError(logger, ex, "StreamEnrichWords", settings.Name);
                 await WriteLogAsync(AiCallLog.CallTypes.FormatWords, settings, sw, false, ex.Message, ct);
                 continue;
             }
@@ -59,38 +58,60 @@ public sealed partial class AIOrchestrator(
             yield break;
         }
 
-        LogAllProvidersFailed(logger, "StreamFormatWords");
+        LogAllProvidersFailed(logger, "StreamEnrichWords");
     }
 
-    public async Task<TestGenerationResult> GenerateTestQuestionsAsync(
-        IReadOnlyList<WordDto> words,
-        IReadOnlyList<string> questionTypes,
-        int count,
+    public async Task<IReadOnlyList<FillSentenceAtom>> GenerateFillSentencesAsync(
+        IReadOnlyList<FillSentenceRequest> requests,
+        string targetLanguage,
         string? englishLevel = null,
         CancellationToken ct = default)
     {
-        Exception? lastError = null;
-
         foreach (var settings in Providers)
         {
             var client = CreateClient(settings);
             var sw = Stopwatch.StartNew();
             try
             {
-                var result = await client.GenerateTestQuestionsAsync(words, questionTypes, count, englishLevel, ct);
-                await WriteLogAsync(AiCallLog.CallTypes.GenerateTest, settings, sw, true, null, ct);
+                var result = await client.GenerateFillSentencesAsync(requests, targetLanguage, englishLevel, ct);
+                await WriteLogAsync(AiCallLog.CallTypes.GenerateFillSentences, settings, sw, true, null, ct);
                 return result;
             }
             catch (Exception ex)
             {
-                lastError = ex;
-                LogProviderError(logger, ex, "GenerateTestQuestions", settings.Name);
-                await WriteLogAsync(AiCallLog.CallTypes.GenerateTest, settings, sw, false, ex.Message, ct);
+                LogProviderError(logger, ex, "GenerateFillSentences", settings.Name);
+                await WriteLogAsync(AiCallLog.CallTypes.GenerateFillSentences, settings, sw, false, ex.Message, ct);
             }
         }
 
-        LogAllProvidersFailed(logger, "GenerateTestQuestions");
-        throw lastError ?? new InvalidOperationException("No AI providers are configured.");
+        LogAllProvidersFailed(logger, "GenerateFillSentences");
+        return [];
+    }
+
+    public async Task<IReadOnlyList<string>> GenerateFakeDistractorsAsync(
+        string correctAnswer,
+        int count,
+        CancellationToken ct = default)
+    {
+        foreach (var settings in Providers)
+        {
+            var client = CreateClient(settings);
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                var result = await client.GenerateFakeDistractorsAsync(correctAnswer, count, ct);
+                await WriteLogAsync(AiCallLog.CallTypes.GenerateDistractors, settings, sw, true, null, ct);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                LogProviderError(logger, ex, "GenerateFakeDistractors", settings.Name);
+                await WriteLogAsync(AiCallLog.CallTypes.GenerateDistractors, settings, sw, false, ex.Message, ct);
+            }
+        }
+
+        LogAllProvidersFailed(logger, "GenerateFakeDistractors");
+        return [];
     }
 
     public async Task<string?> SuggestBlockTitleAsync(

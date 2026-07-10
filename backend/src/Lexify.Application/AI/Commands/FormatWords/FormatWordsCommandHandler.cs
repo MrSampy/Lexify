@@ -11,31 +11,25 @@ public sealed class FormatWordsCommandHandler(IAIProvider aiProvider)
 {
     private const int MaxRetries = 2;
 
-    // Local 8B models translate short lists far more accurately than long ones — a big prompt
-    // dilutes their attention and quality degrades (observed: garbled translations, dropped lines).
-    // Batching keeps each LLM call small; batches run sequentially to avoid overloading the
-    // single local inference server.
-    private const int BatchSize = 6;
+    // ImportLineParser already extracts term/translation deterministically for the overwhelming
+    // majority of lines — the LLM's job per batch is enrichment, not parsing, so batches can be
+    // larger than the old raw-text-parsing flow tolerated. Batches still run sequentially to avoid
+    // overloading the single local inference server.
+    private const int BatchSize = 10;
 
     public async IAsyncEnumerable<FormatWordsSseEvent> Handle(
         FormatWordsCommand request,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var lines = request.RawText
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(l => l.Length > 0)
-            .ToList();
+        var parsedLines = ImportLineParser.Parse(request.RawText);
 
-        if (lines.Count == 0)
+        if (parsedLines.Count == 0)
         {
             yield return new FormatWordsSseEvent("error", ErrorMessage: "Input text is empty.");
             yield break;
         }
 
-        var batches = lines
-            .Chunk(BatchSize)
-            .Select(chunk => string.Join('\n', chunk))
-            .ToList();
+        var batches = parsedLines.Chunk(BatchSize).ToList();
 
         yield return new FormatWordsSseEvent("parsing");
 
@@ -44,7 +38,7 @@ public sealed class FormatWordsCommandHandler(IAIProvider aiProvider)
         string? lastError = null;
         var failedBatches = 0;
 
-        foreach (var batchText in batches)
+        foreach (var batch in batches)
         {
             FormatWordsResult? batchResult = null;
 
@@ -52,8 +46,8 @@ public sealed class FormatWordsCommandHandler(IAIProvider aiProvider)
             {
                 var sb = new StringBuilder();
 
-                await foreach (var chunk in aiProvider.StreamFormatWordsAsync(
-                    batchText, request.TargetLanguage, request.NativeLanguage, cancellationToken))
+                await foreach (var chunk in aiProvider.StreamEnrichWordsAsync(
+                    batch, request.TargetLanguage, request.NativeLanguage, cancellationToken))
                 {
                     sb.Append(chunk);
                     // Only stream chunks on the first attempt of each batch; retries are silent
@@ -61,17 +55,19 @@ public sealed class FormatWordsCommandHandler(IAIProvider aiProvider)
                         yield return new FormatWordsSseEvent("streaming", Chunk: chunk);
                 }
 
-                var validation = AIResponseValidator.Validate(sb.ToString(), batchText);
+                var validation = AIResponseValidator.ValidateEnrichment(sb.ToString(), batch);
                 if (validation.IsValid)
                     batchResult = validation.ParsedResult;
                 else
                     lastError = validation.ErrorMessage;
             }
 
+            // Every retry failed — fall back to parser-only output rather than dropping the whole
+            // batch. Only lines the parser itself couldn't split (raw passthrough) are actually lost.
             if (batchResult is null)
             {
                 failedBatches++;
-                continue;
+                batchResult = AIResponseValidator.DegradeToParsedOnly(batch);
             }
 
             allWords.AddRange(batchResult.Words);
@@ -96,7 +92,7 @@ public sealed class FormatWordsCommandHandler(IAIProvider aiProvider)
         }
 
         var errorMessage = failedBatches > 0
-            ? $"{failedBatches} of {batches.Count} batches failed; some lines may be missing."
+            ? $"{failedBatches} of {batches.Count} batches: AI enrichment failed, used basic parsing only (no word type, notes, or example sentence); any unparseable lines in those batches were dropped."
             : null;
 
         yield return new FormatWordsSseEvent(

@@ -1,7 +1,7 @@
 import { useNavigate, NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ROUTES } from '@/shared/config'
-import { useAuthStore } from '@/entities/user'
+import { useAuthStore, useProfile } from '@/entities/user'
 import { authApi } from '@/features/auth'
 import { SearchBar } from '@/widgets/SearchBar'
 
@@ -23,8 +23,10 @@ export function UserLayout() {
   const { t, i18n } = useTranslation()
   const logout = useAuthStore((s) => s.logout)
   const user = useAuthStore((s) => s.user)
+  const { data: profile } = useProfile()
   const navigate = useNavigate()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = user?.role === 'admin' || user?.role === 'moderator'
+  const displayName = profile?.displayName ?? user?.displayName ?? user?.email.split('@')[0]
 
   async function handleLogout() {
     try {
@@ -163,7 +165,7 @@ export function UserLayout() {
                 fontWeight: 600,
               }}
             >
-              {user.displayName ?? user.email.split('@')[0]}
+              {displayName}
             </div>
           )}
           <button
@@ -256,7 +258,7 @@ export function UserLayout() {
               }}
             >
               <span>👤</span>
-              {user.displayName ?? user.email.split('@')[0]}
+              {displayName}
             </div>
           )}
         </div>

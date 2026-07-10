@@ -47,12 +47,16 @@ public sealed class Question
         if (string.IsNullOrWhiteSpace(questionText)) throw new DomainException("Question text cannot be empty.");
         if (string.IsNullOrWhiteSpace(correctAnswer)) throw new DomainException("Correct answer cannot be empty.");
 
-        var contentHash = ComputeHash(questionType, questionText);
+        var contentHash = ComputeContentHash(questionType, questionText);
         return new Question(testId, wordId, questionType, questionText, correctAnswer, sortOrder, contentHash);
     }
 
-    // SHA-256(questionType|questionText)
-    private static string ComputeHash(string questionType, string questionText)
+    /// <summary>
+    /// SHA-256(questionType|questionText). Exposed publicly so callers can predict the hash of a
+    /// question before it's actually assembled — used by GenerateTestJob's planning step to prefer
+    /// (word, type) combinations this user hasn't already seen in a prior test.
+    /// </summary>
+    public static string ComputeContentHash(string questionType, string questionText)
     {
         var input = $"{questionType}|{questionText}";
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));

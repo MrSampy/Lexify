@@ -34,7 +34,9 @@ export function TestCreatePage() {
   }, [polledStatus, generatingTestId, navigate, reset])
 
   const generationFailed = polledStatus === 'failed'
-  const isGenerating = !!generatingTestId && !generationFailed
+  // 'ready' also stops the spinner: navigation in the effect above is the normal exit, but if it
+  // ever stalls the page must fall back to the form rather than spin forever.
+  const isGenerating = !!generatingTestId && !generationFailed && polledStatus !== 'ready'
 
   const canGenerate =
     selectedBlockIds.length > 0 &&

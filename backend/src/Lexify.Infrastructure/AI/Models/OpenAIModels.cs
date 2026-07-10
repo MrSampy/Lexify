@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Lexify.Infrastructure.AI.Models;
@@ -23,6 +24,46 @@ internal sealed class OpenAIChatRequest
     /// </summary>
     [JsonPropertyName("max_tokens")]
     public int? MaxTokens { get; init; }
+
+    /// <summary>
+    /// Asks the server to constrain decoding to valid JSON (grammar-level, not just a prompt
+    /// instruction). Supported by most OpenAI-compatible local servers (llama.cpp, vLLM, Lemonade);
+    /// servers that don't recognize the field generally just ignore it.
+    /// </summary>
+    [JsonPropertyName("response_format")]
+    public OpenAIResponseFormat? ResponseFormat { get; init; }
+}
+
+internal sealed class OpenAIResponseFormat
+{
+    [JsonPropertyName("type")]
+    public string Type { get; init; } = "json_object";
+
+    /// <summary>
+    /// Grammar-level schema for "type":"json_schema" requests. Must stay null (and therefore
+    /// omitted — see JsonIgnore below) for plain "json_object" requests: llama.cpp-backed servers
+    /// reject a literal "json_schema": null field on those.
+    /// </summary>
+    [JsonPropertyName("json_schema")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public OpenAIJsonSchema? JsonSchema { get; init; }
+
+    public static OpenAIResponseFormat JsonObject() => new() { Type = "json_object" };
+
+    public static OpenAIResponseFormat ForSchema(string name, JsonElement schema, bool strict = true) =>
+        new() { Type = "json_schema", JsonSchema = new OpenAIJsonSchema { Name = name, Strict = strict, Schema = schema } };
+}
+
+internal sealed class OpenAIJsonSchema
+{
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = default!;
+
+    [JsonPropertyName("strict")]
+    public bool Strict { get; init; } = true;
+
+    [JsonPropertyName("schema")]
+    public JsonElement Schema { get; init; }
 }
 
 internal sealed class OpenAIMessage

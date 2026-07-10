@@ -20,6 +20,7 @@ import type { AdminUser } from '@/entities/admin'
 interface UsersTableProps {
   users: AdminUser[]
   isLoading: boolean
+  canManageUsers: boolean
   onSuspend: (id: string) => void
   onRestore: (id: string) => void
   onDelete: (id: string, email: string) => void
@@ -38,6 +39,7 @@ const ROLES = ['user', 'moderator', 'admin']
 export function UsersTable({
   users,
   isLoading,
+  canManageUsers,
   onSuspend,
   onRestore,
   onDelete,
@@ -86,21 +88,25 @@ export function UsersTable({
                 )}
               </TableCell>
               <TableCell>
-                <Select
-                  value={user.role}
-                  onValueChange={(role) => role && onRoleChange(user.id, role)}
-                >
-                  <SelectTrigger className="h-7 w-28 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROLES.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {canManageUsers ? (
+                  <Select
+                    value={user.role}
+                    onValueChange={(role) => role && onRoleChange(user.id, role)}
+                  >
+                    <SelectTrigger className="h-7 w-28 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLES.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Badge variant="outline">{user.role}</Badge>
+                )}
               </TableCell>
               <TableCell>
                 <Badge variant={STATUS_VARIANTS[user.status] ?? 'outline'}>{user.status}</Badge>
@@ -132,14 +138,16 @@ export function UsersTable({
                       Restore
                     </Button>
                   ) : null}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs text-destructive hover:text-destructive"
-                    onClick={() => onDelete(user.id, user.email)}
-                  >
-                    Delete
-                  </Button>
+                  {canManageUsers && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs text-destructive hover:text-destructive"
+                      onClick={() => onDelete(user.id, user.email)}
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

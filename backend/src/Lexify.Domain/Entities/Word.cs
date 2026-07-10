@@ -99,6 +99,17 @@ public sealed class Word
         ExampleSentence = exampleSentence;
     }
 
+    /// <summary>
+    /// Caches an LLM-generated example sentence on its own, unlike <see cref="UpdateDetails"/> which
+    /// also requires and overwrites translation/notes. Used to persist fill-in-sentence quiz atoms
+    /// so future tests can reuse them without another LLM call.
+    /// </summary>
+    public void SetExampleSentence(string sentence)
+    {
+        if (string.IsNullOrWhiteSpace(sentence)) throw new DomainException("Example sentence cannot be empty.");
+        ExampleSentence = sentence;
+    }
+
     public void SetConfidence(bool flag, string? note)
     {
         ConfidenceFlag = flag;

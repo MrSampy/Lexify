@@ -38,7 +38,8 @@ public sealed class AiCallLog
     public static class CallTypes
     {
         public const string FormatWords = "format_words";
-        public const string GenerateTest = "generate_test";
+        public const string GenerateFillSentences = "generate_fill_sentences";
+        public const string GenerateDistractors = "generate_distractors";
         public const string SuggestTitle = "suggest_title";
     }
 }

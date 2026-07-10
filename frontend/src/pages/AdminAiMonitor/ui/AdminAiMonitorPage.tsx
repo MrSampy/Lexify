@@ -109,8 +109,11 @@ export function AdminAiMonitorPage() {
           style={{ width: 150, height: 36, fontSize: 13, cursor: 'pointer' }}
         >
           <option value="all">All providers</option>
-          <option value="Ollama">Ollama</option>
-          <option value="OpenAI">OpenAI</option>
+          {(providerStatus ?? []).map((p) => (
+            <option key={p.provider} value={p.provider}>
+              {p.provider}
+            </option>
+          ))}
         </select>
         <input
           className="lx-input"

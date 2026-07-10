@@ -180,6 +180,8 @@
     "notFound": "Test not found.",
     "backToTests": "← Back to tests",
     "notReady": "This test is not ready yet",
+    "startFailed": "Could not start the test. Please try again.",
+    "retry": "Try again",
     "correct": "✓ {{count}} correct",
     "incorrect": "✕ {{count}} incorrect",
     "finishing": "finishing…",

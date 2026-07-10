@@ -18,9 +18,16 @@ public sealed class AiProviderHealthCheck(
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context, CancellationToken cancellationToken = default)
     {
+        // Explicitly-returned results are NOT affected by the failureStatus configured on
+        // AddCheck(...) — that parameter only kicks in when the check throws. Since we report
+        // failure via a return value (not an exception), we must honor the registered
+        // FailureStatus (Degraded) ourselves, or a dead LLM would incorrectly flip /api/health
+        // to Unhealthy for the whole app.
+        var failureStatus = context.Registration.FailureStatus;
+
         var providers = providersOptions.Value;
         if (providers.Count == 0)
-            return HealthCheckResult.Unhealthy("No AI providers configured.");
+            return new HealthCheckResult(failureStatus, "No AI providers configured.");
 
         var failures = new List<string>();
 
@@ -43,7 +50,7 @@ public sealed class AiProviderHealthCheck(
             }
         }
 
-        return HealthCheckResult.Unhealthy(
-            $"No AI provider reachable ({string.Join("; ", failures)}).");
+        return new HealthCheckResult(
+            failureStatus, $"No AI provider reachable ({string.Join("; ", failures)}).");
     }
 }

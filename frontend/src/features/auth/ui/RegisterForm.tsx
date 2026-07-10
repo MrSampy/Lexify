@@ -8,7 +8,7 @@ import { authApi } from '../api/authApi'
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  displayName: z.string().min(2, 'At least 2 characters').max(50).optional(),
+  displayName: z.string().min(2, 'At least 2 characters').max(50),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -46,8 +46,8 @@ export function RegisterForm() {
           type="text"
           autoComplete="name"
           className="lx-input"
-          placeholder="Your name (optional)"
-          aria-label="Display name (optional)"
+          placeholder="Your name"
+          aria-label="Display name"
           {...register('displayName')}
         />
         {errors.displayName && (

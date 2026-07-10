@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Lexify.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Lexify.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260705101400_RelaxAiLogsProviderConstraint")]
+    partial class RelaxAiLogsProviderConstraint
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -105,7 +108,7 @@ namespace Lexify.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("chk_ai_logs_provider", "LENGTH(TRIM(provider)) > 0");
 
-                            t.HasCheckConstraint("chk_ai_logs_type", "call_type IN ('format_words', 'generate_test', 'generate_fill_sentences', 'generate_distractors', 'suggest_title')");
+                            t.HasCheckConstraint("chk_ai_logs_type", "call_type IN ('format_words', 'generate_test', 'suggest_title')");
                         });
                 });
 
