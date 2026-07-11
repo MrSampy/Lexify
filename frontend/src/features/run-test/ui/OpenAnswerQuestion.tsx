@@ -30,10 +30,10 @@ export function OpenAnswerQuestion({ question, onSubmit, disabled }: OpenAnswerQ
     <div>
       <p
         style={{
-          fontSize: 16,
+          fontSize: 20,
           fontWeight: 500,
           color: 'var(--fg-1)',
-          marginBottom: 20,
+          marginBottom: 24,
           lineHeight: 1.5,
         }}
       >
@@ -49,7 +49,7 @@ export function OpenAnswerQuestion({ question, onSubmit, disabled }: OpenAnswerQ
           placeholder="type your answer…"
           disabled={disabled}
           autoFocus
-          style={{ flex: 1, height: 42, fontSize: 15 }}
+          style={{ flex: 1, height: 50, fontSize: 17 }}
         />
         <button
           className="lx-btn-primary"

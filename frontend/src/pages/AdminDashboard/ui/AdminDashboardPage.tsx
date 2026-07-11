@@ -72,7 +72,13 @@ export function AdminDashboardPage() {
       ) : null}
 
       {/* Charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 16,
+        }}
+      >
         <div
           style={{
             background: 'var(--bg-2)',

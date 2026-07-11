@@ -23,22 +23,22 @@ export function MultiSelectQuestion({ question, onSubmit, disabled }: MultiSelec
     <div>
       <p
         style={{
-          fontSize: 16,
+          fontSize: 20,
           fontWeight: 500,
           color: 'var(--fg-1)',
-          marginBottom: 20,
+          marginBottom: 24,
           lineHeight: 1.5,
         }}
       >
         {question.questionText}
       </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
         {options.map((option) => {
           const isSelected = selected.includes(option.optionText)
           return (
             <label
               key={option.id}
-              className={`flex items-center gap-3 rounded-[var(--r-md)] border px-3.5 py-[11px] transition-colors duration-100 ${
+              className={`flex items-center gap-3 rounded-[var(--r-md)] border px-4 py-3.5 transition-colors duration-100 ${
                 disabled ? 'cursor-default' : 'cursor-pointer'
               } ${
                 isSelected
@@ -51,9 +51,9 @@ export function MultiSelectQuestion({ question, onSubmit, disabled }: MultiSelec
                 checked={isSelected}
                 onChange={() => !disabled && toggle(option.optionText)}
                 disabled={disabled}
-                className="h-3.5 w-3.5 shrink-0 accent-[var(--accent-color)]"
+                className="h-4 w-4 shrink-0 accent-[var(--accent-color)]"
               />
-              <span className="text-sm text-[var(--fg-1)]">{option.optionText}</span>
+              <span className="text-base text-[var(--fg-1)]">{option.optionText}</span>
             </label>
           )
         })}

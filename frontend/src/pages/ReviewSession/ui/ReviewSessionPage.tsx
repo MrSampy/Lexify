@@ -173,7 +173,7 @@ export function ReviewSessionPage() {
   const remaining = words.length - currentIndex
 
   return (
-    <div style={{ maxWidth: 560, margin: '0 auto' }}>
+    <div style={{ maxWidth: 900, margin: '0 auto' }}>
       {/* Header */}
       <div
         style={{
@@ -196,9 +196,12 @@ export function ReviewSessionPage() {
         <div className="lx-progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
-      {/* Flashcard */}
-      <div className="review-card-wrap" style={{ marginBottom: 24, minHeight: 280 }}>
-        <div className={`review-card-inner${flipped ? ' flipped' : ''}`} style={{ minHeight: 280 }}>
+      {/* Flashcard — clamp()-based sizing keeps it usable on phone screens */}
+      <div className="review-card-wrap" style={{ marginBottom: 24, minHeight: 'min(480px, 65vh)' }}>
+        <div
+          className={`review-card-inner${flipped ? ' flipped' : ''}`}
+          style={{ minHeight: 'min(480px, 65vh)' }}
+        >
           {/* Front */}
           <div
             className="review-card-face"
@@ -206,22 +209,24 @@ export function ReviewSessionPage() {
               background: 'var(--bg-2)',
               border: '1px solid var(--line-2)',
               borderRadius: 'var(--r-xl)',
-              padding: '46px 30px',
+              padding: 'clamp(28px, 7vw, 64px) clamp(16px, 5vw, 44px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              minHeight: 280,
+              minHeight: 'min(480px, 65vh)',
             }}
           >
             <div
               style={{
                 fontFamily: 'var(--font-display)',
                 fontWeight: 600,
-                fontSize: 42,
+                fontSize: 'clamp(32px, 11vw, 60px)',
                 color: 'var(--fg-1)',
                 letterSpacing: '-0.02em',
                 textAlign: 'center',
+                overflowWrap: 'anywhere',
+                maxWidth: '100%',
               }}
             >
               {currentWord.term}
@@ -242,13 +247,13 @@ export function ReviewSessionPage() {
               background: 'var(--bg-2)',
               border: '1px solid var(--accent-line)',
               borderRadius: 'var(--r-xl)',
-              padding: '36px 30px',
+              padding: 'clamp(24px, 6vw, 54px) clamp(16px, 5vw, 44px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: 'var(--glow-accent)',
-              minHeight: 280,
+              minHeight: 'min(480px, 65vh)',
             }}
           >
             <div style={{ color: 'var(--fg-4)', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
@@ -258,10 +263,12 @@ export function ReviewSessionPage() {
               style={{
                 fontFamily: 'var(--font-display)',
                 fontWeight: 600,
-                fontSize: 32,
+                fontSize: 'clamp(26px, 9vw, 46px)',
                 color: 'var(--accent-color)',
                 letterSpacing: '-0.02em',
                 textAlign: 'center',
+                overflowWrap: 'anywhere',
+                maxWidth: '100%',
               }}
             >
               {currentWord.translation}

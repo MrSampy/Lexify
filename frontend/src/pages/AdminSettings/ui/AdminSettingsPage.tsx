@@ -43,13 +43,14 @@ export function AdminSettingsPage() {
             background: 'var(--bg-2)',
             border: '1px solid var(--line-2)',
             borderRadius: 'var(--r-md)',
-            overflow: 'hidden',
+            overflowX: 'auto',
           }}
         >
           {/* Header row */}
           <div
             style={{
               display: 'grid',
+              minWidth: 560,
               gridTemplateColumns: COL_WIDTHS.join(' '),
               gap: '0 16px',
               padding: '10px 16px',
@@ -79,6 +80,7 @@ export function AdminSettingsPage() {
               key={s.key}
               style={{
                 display: 'grid',
+                minWidth: 560,
                 gridTemplateColumns: COL_WIDTHS.join(' '),
                 gap: '0 16px',
                 alignItems: 'center',

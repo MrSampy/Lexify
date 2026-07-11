@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Spinner } from '@/shared/ui'
+import { LxSelect, Spinner } from '@/shared/ui'
 import { useAiStats, useAiStatus, useAiLogs } from '@/entities/admin'
 import type { AiLogsParams } from '@/entities/admin'
 import { AiMetricsChart, AiLogTable } from '@/features/admin-ai-monitor'
@@ -99,22 +99,18 @@ export function AdminAiMonitorPage() {
           marginBottom: 14,
         }}
       >
-        <select
-          className="lx-input"
-          value={provider}
-          onChange={(e) => {
-            setProvider(e.target.value === 'all' ? '' : e.target.value)
+        <LxSelect
+          value={provider || 'all'}
+          onValueChange={(v) => {
+            setProvider(v === 'all' ? '' : v)
             setPage(1)
           }}
-          style={{ width: 150, height: 36, fontSize: 13, cursor: 'pointer' }}
-        >
-          <option value="all">All providers</option>
-          {(providerStatus ?? []).map((p) => (
-            <option key={p.provider} value={p.provider}>
-              {p.provider}
-            </option>
-          ))}
-        </select>
+          triggerStyle={{ width: '100%', maxWidth: 150 }}
+          options={[
+            { value: 'all', label: 'All providers' },
+            ...(providerStatus ?? []).map((p) => ({ value: p.provider, label: p.provider })),
+          ]}
+        />
         <input
           className="lx-input"
           placeholder="call type…"

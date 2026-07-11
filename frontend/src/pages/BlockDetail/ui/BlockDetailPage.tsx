@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { ROUTES, LANGUAGES } from '@/shared/config'
-import { Spinner, useConfirm } from '@/shared/ui'
+import { LxSelect, Spinner, useConfirm, ChipListInput } from '@/shared/ui'
 import { useBlock, useDeleteBlockMutation, useExportBlock } from '@/entities/block'
 import { useCreateWordMutation } from '@/entities/word'
 import { WordRow } from '@/entities/word'
@@ -30,6 +30,7 @@ export function BlockDetailPage() {
   const [wordsPage, setWordsPage] = useState(1)
   const [confidenceOnly, setConfidenceOnly] = useState(false)
   const [showAddWord, setShowAddWord] = useState(false)
+  const [addSynonyms, setAddSynonyms] = useState<string[]>([])
 
   const { data, isLoading, isError } = useBlock(id ?? '', wordsPage)
   const { confirm, confirmDialog } = useConfirm()
@@ -76,9 +77,11 @@ export function BlockDetailPage() {
       translation: values.translation,
       wordType: values.wordType,
       notes: values.notes || undefined,
+      synonyms: addSynonyms.length > 0 ? addSynonyms : undefined,
       sortOrder: currentCount + 1,
     })
     reset()
+    setAddSynonyms([])
     setShowAddWord(false)
   }
 
@@ -309,18 +312,15 @@ export function BlockDetailPage() {
               )}
             </div>
             <div>
-              <select
+              <LxSelect
                 value={wordType}
-                onChange={(e) => setValue('wordType', e.target.value)}
-                className="lx-input"
-                style={{ cursor: 'pointer' }}
-              >
-                {WORD_TYPES.map((t) => (
-                  <option key={t} value={t} style={{ background: 'var(--bg-2)' }}>
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(v) => setValue('wordType', v)}
+                triggerStyle={{ width: '100%' }}
+                options={WORD_TYPES.map((t) => ({
+                  value: t,
+                  label: t.charAt(0).toUpperCase() + t.slice(1),
+                }))}
+              />
             </div>
             <div>
               <input
@@ -329,6 +329,16 @@ export function BlockDetailPage() {
                 {...register('notes')}
               />
             </div>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label className="lx-label" style={{ display: 'block', marginBottom: 6 }}>
+              {t('words.synonymsLabel')}
+            </label>
+            <ChipListInput
+              value={addSynonyms}
+              onChange={setAddSynonyms}
+              placeholder={t('words.addSynonym')}
+            />
           </div>
           <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
             <button
@@ -352,10 +362,10 @@ export function BlockDetailPage() {
           overflowX: 'auto',
         }}
       >
-        {/* Table header */}
+        {/* Table header — hidden on mobile where rows render as stacked cards */}
         <div
+          className="hidden md:grid"
           style={{
-            display: 'grid',
             minWidth: 560,
             gridTemplateColumns: '1.4fr 1.4fr 0.9fr 1.6fr 60px',
             gap: 12,

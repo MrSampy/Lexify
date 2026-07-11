@@ -1,6 +1,10 @@
-import { useNavigate, NavLink, Outlet } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate, useLocation, NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Menu } from 'lucide-react'
 import { ROUTES } from '@/shared/config'
+import { useIsMobile } from '@/shared/lib'
+import { MobileDrawer } from '@/shared/ui'
 import { useAuthStore, useProfile } from '@/entities/user'
 import { authApi } from '@/features/auth'
 import { SearchBar } from '@/widgets/SearchBar'
@@ -19,14 +23,164 @@ const LANG_OPTIONS = [
   { code: 'uk', label: 'УК' },
 ]
 
+/** Sidebar inner content — shared between the desktop sticky aside and the mobile drawer. */
+function SidebarContent({
+  isAdmin,
+  displayName,
+  onLogout,
+}: {
+  isAdmin: boolean
+  displayName: string | undefined
+  onLogout: () => void
+}) {
+  const { t } = useTranslation()
+  const user = useAuthStore((s) => s.user)
+
+  return (
+    <>
+      {/* Logo */}
+      <div style={{ padding: '4px 8px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            background: 'var(--accent-color)',
+            borderRadius: 'var(--r-sm)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(22,185,129,0.3)',
+          }}
+        >
+          <span
+            style={{
+              color: '#fff',
+              fontSize: 18,
+              fontWeight: 800,
+              fontFamily: 'var(--font-display)',
+            }}
+          >
+            L
+          </span>
+        </div>
+        <span
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 20,
+            fontWeight: 700,
+            color: 'var(--fg-1)',
+          }}
+        >
+          Lexify
+        </span>
+      </div>
+
+      {/* Nav section label */}
+      <div
+        style={{
+          padding: '0 8px 8px',
+          fontSize: 11,
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '0.10em',
+          color: 'var(--fg-4)',
+        }}
+      >
+        {t('nav.menu')}
+      </div>
+
+      {/* Nav items */}
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
+        {APP_NAV.map(({ labelKey, to, emoji }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === ROUTES.DASHBOARD}
+            className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
+          >
+            <span style={{ fontSize: 16 }}>{emoji}</span>
+            <span>{t(labelKey)}</span>
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Admin link */}
+      {isAdmin && (
+        <>
+          <div
+            style={{
+              padding: '12px 8px 8px',
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.10em',
+              color: 'var(--fg-4)',
+            }}
+          >
+            {t('nav.admin')}
+          </div>
+          <NavLink
+            to={ROUTES.ADMIN.DASHBOARD}
+            className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
+            style={({ isActive }) => ({ color: isActive ? 'var(--warning)' : 'var(--fg-3)' })}
+          >
+            <span style={{ fontSize: 16 }}>⚙️</span>
+            <span>{t('nav.adminPanel')}</span>
+          </NavLink>
+        </>
+      )}
+
+      <div style={{ flex: 1 }} />
+
+      {/* User info + logout */}
+      <div style={{ borderTop: '1.5px solid var(--line-2)', paddingTop: 12, marginTop: 8 }}>
+        {user && (
+          <div
+            style={{
+              padding: '6px 8px 10px',
+              fontSize: 12,
+              color: 'var(--fg-4)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontWeight: 600,
+            }}
+          >
+            {displayName}
+          </div>
+        )}
+        <button
+          onClick={onLogout}
+          className="lx-nav-item"
+          style={{ color: 'var(--danger)', width: '100%' }}
+        >
+          <span style={{ fontSize: 16 }}>👋</span>
+          <span>{t('nav.signOut')}</span>
+        </button>
+      </div>
+    </>
+  )
+}
+
 export function UserLayout() {
-  const { t, i18n } = useTranslation()
+  const { i18n } = useTranslation()
   const logout = useAuthStore((s) => s.logout)
   const user = useAuthStore((s) => s.user)
   const { data: profile } = useProfile()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isMobile = useIsMobile()
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const isAdmin = user?.role === 'admin' || user?.role === 'moderator'
   const displayName = profile?.displayName ?? user?.displayName ?? user?.email.split('@')[0]
+
+  // Close the drawer whenever navigation happens (nav-item click, search, back/forward).
+  // Render-time adjustment instead of an effect — see react.dev/learn/you-might-not-need-an-effect.
+  const [prevPathname, setPrevPathname] = useState(location.pathname)
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname)
+    setDrawerOpen(false)
+  }
 
   async function handleLogout() {
     try {
@@ -38,146 +192,41 @@ export function UserLayout() {
     navigate(ROUTES.LOGIN, { replace: true })
   }
 
+  const sidebarContent = (
+    <SidebarContent
+      isAdmin={isAdmin}
+      displayName={displayName}
+      onLogout={() => void handleLogout()}
+    />
+  )
+
   return (
     <div style={{ display: 'flex', alignItems: 'stretch', minHeight: '100vh' }}>
-      {/* ── SIDEBAR ── */}
-      <aside
-        style={{
-          width: 248,
-          flexShrink: 0,
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          overflowY: 'auto',
-          background: 'var(--bg-1)',
-          borderRight: '1.5px solid var(--line-2)',
-          padding: '20px 12px',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '2px 0 12px rgba(20,80,60,0.05)',
-        }}
-      >
-        {/* Logo */}
-        <div style={{ padding: '4px 8px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              background: 'var(--accent-color)',
-              borderRadius: 'var(--r-sm)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(22,185,129,0.3)',
-            }}
-          >
-            <span
-              style={{
-                color: '#fff',
-                fontSize: 18,
-                fontWeight: 800,
-                fontFamily: 'var(--font-display)',
-              }}
-            >
-              L
-            </span>
-          </div>
-          <span
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 20,
-              fontWeight: 700,
-              color: 'var(--fg-1)',
-            }}
-          >
-            Lexify
-          </span>
-        </div>
-
-        {/* Nav section label */}
-        <div
+      {/* ── SIDEBAR: sticky aside on desktop, off-canvas drawer on mobile ── */}
+      {isMobile ? (
+        <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+          {sidebarContent}
+        </MobileDrawer>
+      ) : (
+        <aside
           style={{
-            padding: '0 8px 8px',
-            fontSize: 11,
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.10em',
-            color: 'var(--fg-4)',
+            width: 248,
+            flexShrink: 0,
+            position: 'sticky',
+            top: 0,
+            height: '100vh',
+            overflowY: 'auto',
+            background: 'var(--bg-1)',
+            borderRight: '1.5px solid var(--line-2)',
+            padding: '20px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '2px 0 12px rgba(20,80,60,0.05)',
           }}
         >
-          {t('nav.menu')}
-        </div>
-
-        {/* Nav items */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
-          {APP_NAV.map(({ labelKey, to, emoji }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === ROUTES.DASHBOARD}
-              className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
-            >
-              <span style={{ fontSize: 16 }}>{emoji}</span>
-              <span>{t(labelKey)}</span>
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Admin link */}
-        {isAdmin && (
-          <>
-            <div
-              style={{
-                padding: '12px 8px 8px',
-                fontSize: 11,
-                fontWeight: 800,
-                textTransform: 'uppercase',
-                letterSpacing: '0.10em',
-                color: 'var(--fg-4)',
-              }}
-            >
-              {t('nav.admin')}
-            </div>
-            <NavLink
-              to={ROUTES.ADMIN.DASHBOARD}
-              className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
-              style={({ isActive }) => ({ color: isActive ? 'var(--warning)' : 'var(--fg-3)' })}
-            >
-              <span style={{ fontSize: 16 }}>⚙️</span>
-              <span>{t('nav.adminPanel')}</span>
-            </NavLink>
-          </>
-        )}
-
-        <div style={{ flex: 1 }} />
-
-        {/* User info + logout */}
-        <div style={{ borderTop: '1.5px solid var(--line-2)', paddingTop: 12, marginTop: 8 }}>
-          {user && (
-            <div
-              style={{
-                padding: '6px 8px 10px',
-                fontSize: 12,
-                color: 'var(--fg-4)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                fontWeight: 600,
-              }}
-            >
-              {displayName}
-            </div>
-          )}
-          <button
-            onClick={handleLogout}
-            className="lx-nav-item"
-            style={{ color: 'var(--danger)', width: '100%' }}
-          >
-            <span style={{ fontSize: 16 }}>👋</span>
-            <span>{t('nav.signOut')}</span>
-          </button>
-        </div>
-      </aside>
+          {sidebarContent}
+        </aside>
+      )}
 
       {/* ── MAIN CONTENT ── */}
       <main
@@ -197,19 +246,42 @@ export function UserLayout() {
             zIndex: 30,
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
-            padding: '10px 28px',
-            background: 'rgba(238,249,243,0.90)',
+            gap: isMobile ? 8 : 14,
+            padding: '10px clamp(12px, 3vw, 28px)',
+            background: 'var(--header-bg)',
             backdropFilter: 'blur(12px)',
             borderBottom: '1.5px solid var(--line-2)',
           }}
         >
-          <div style={{ flex: 1 }} />
-          <SearchBar />
+          {isMobile && (
+            <button
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Open menu"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                flexShrink: 0,
+                border: '1.5px solid var(--line-2)',
+                borderRadius: 'var(--r-sm)',
+                background: 'var(--bg-1)',
+                color: 'var(--fg-2)',
+                cursor: 'pointer',
+              }}
+            >
+              <Menu style={{ width: 20, height: 20 }} />
+            </button>
+          )}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
+            <SearchBar />
+          </div>
           {/* Language switcher */}
           <div
             style={{
               display: 'flex',
+              flexShrink: 0,
               gap: 4,
               padding: 3,
               borderRadius: 'var(--r-pill)',
@@ -242,7 +314,8 @@ export function UserLayout() {
               )
             })}
           </div>
-          {user && (
+          {/* User pill — hidden on mobile (name + sign-out live in the drawer) */}
+          {user && !isMobile && (
             <div
               style={{
                 display: 'flex',
@@ -264,7 +337,13 @@ export function UserLayout() {
         </div>
 
         {/* Page content */}
-        <div style={{ flex: 1, padding: '32px 28px 64px', overflowX: 'hidden' }}>
+        <div
+          style={{
+            flex: 1,
+            padding: 'clamp(20px, 4vw, 32px) clamp(12px, 3vw, 28px) 64px',
+            overflowX: 'hidden',
+          }}
+        >
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <Outlet />
           </div>

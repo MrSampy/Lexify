@@ -65,12 +65,13 @@ export function AdminLanguagesPage() {
             background: 'var(--bg-2)',
             border: '1px solid var(--line-2)',
             borderRadius: 'var(--r-md)',
-            overflow: 'hidden',
+            overflowX: 'auto',
           }}
         >
           <div
             style={{
               display: 'grid',
+              minWidth: 520,
               gridTemplateColumns: COL_WIDTHS.join(' '),
               gap: '0 16px',
               padding: '10px 16px',
@@ -100,6 +101,7 @@ export function AdminLanguagesPage() {
               key={lang.id}
               style={{
                 display: 'grid',
+                minWidth: 520,
                 gridTemplateColumns: COL_WIDTHS.join(' '),
                 gap: '0 16px',
                 alignItems: 'center',

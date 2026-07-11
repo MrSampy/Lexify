@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { LxSelect } from '@/shared/ui'
 import {
   useProfile,
   useUpdateEnglishLevelMutation,
@@ -25,20 +26,16 @@ export function EnglishLevelSelect() {
         {t('genTest.yourLevel')}
       </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <select
-          className="lx-input"
-          style={{ width: 160 }}
+        <LxSelect
           value={profile?.englishLevel ?? ''}
           disabled={isLoading || updateLevel.isPending}
-          onChange={(e) => handleChange(e.target.value)}
-        >
-          <option value="">{t('common.notSet')}</option>
-          {ENGLISH_LEVELS.map((level) => (
-            <option key={level} value={level}>
-              {level}
-            </option>
-          ))}
-        </select>
+          onValueChange={handleChange}
+          triggerStyle={{ width: '100%', maxWidth: 160 }}
+          options={[
+            { value: '', label: t('common.notSet') },
+            ...ENGLISH_LEVELS.map((level) => ({ value: level, label: level })),
+          ]}
+        />
         <span className="ds-sm" style={{ color: 'var(--fg-4)' }}>
           {t('genTest.cefrHint')}
         </span>

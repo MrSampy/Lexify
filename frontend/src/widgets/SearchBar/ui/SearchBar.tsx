@@ -32,7 +32,8 @@ export function SearchBar() {
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    // Fluid up to 200px so the bar shrinks gracefully in the mobile top bar.
+    <div style={{ position: 'relative', flex: '1 1 auto', maxWidth: 200, minWidth: 0 }}>
       <Search
         style={{
           position: 'absolute',
@@ -51,7 +52,7 @@ export function SearchBar() {
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        style={{ height: 34, width: 200, paddingLeft: 30, fontSize: 13 }}
+        style={{ height: 34, width: '100%', paddingLeft: 30, fontSize: 13 }}
       />
     </div>
   )
