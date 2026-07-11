@@ -11,7 +11,8 @@ public sealed record ParsedImportLine(
     string? Term,
     string? Translation,
     IReadOnlyList<string> AlternativeTranslations,
-    bool ConfidenceFlag)
+    bool ConfidenceFlag,
+    string? Notes = null)
 {
     public bool IsParsed => Term is not null;
 }

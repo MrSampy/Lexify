@@ -215,14 +215,22 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
         Return ONLY a valid JSON object — no markdown, no explanation, no extra text or commentary before or after the JSON. The response must end immediately after the closing '}'.
         You enrich pre-parsed {{targetLanguage}} vocabulary entries with {{nativeLanguage}} translations.
         Input is a JSON array; each item has an "id" and either ("term" and "translation") or "raw".
-        - For items with "term" and "translation": copy them into your output EXACTLY as given, character for character — never correct, retranslate, or rephrase them.
+        - For items with "term" and "translation": copy them into your output EXACTLY as given, character for character — never correct, retranslate, or rephrase them. EXCEPTION: see the wrong-language rule below.
         - For items with "raw": the line could not be split automatically. Extract the {{targetLanguage}} term yourself and translate it into {{nativeLanguage}}.
         For EVERY item, also add:
-        - wordType: "word" (single word), "phrase" (short phrase), "idiom" (fixed expression), or "expression" (anything else)
+        - wordType: classify the TERM as EXACTLY one of these four values. Decide by counting words and by literal vs figurative meaning:
+            * "word" — a single vocabulary word (one token), of ANY part of speech: noun, verb, adjective, or adverb. An infinitive written with a leading "to " (e.g. "to crave", "to unwind") is still ONE word. A hyphenated single word (e.g. "on-demand", "well-known") is still ONE word. This is the DEFAULT and the most common type — e.g. "suspense", "closure", "staggering", "surge" are all "word".
+            * "phrase" — two or more SEPARATE words whose combined meaning is literal/compositional, e.g. "embark on", "give up", "on demand".
+            * "idiom" — a fixed multi-word expression whose meaning is NOT deducible from the individual words, e.g. "kick the bucket", "piece of cake".
+            * "expression" — a fixed multi-word saying or collocation that is neither a plain phrase nor an idiom. Use this RARELY.
+          Hard rule: if the term is a SINGLE word (ignoring a leading "to " and treating hyphenated words as one), wordType MUST be "word" — never "phrase", "idiom", or "expression". When in doubt, choose "word".
         - alternativeTranslations: other common {{nativeLanguage}} translations, as a list (empty [] if none)
         - notes: brief grammar info (irregular verb, plural form, construction pattern) or null
         - exampleSentence: one short {{targetLanguage}} sentence using the term, or null
         - confidenceNote: null unless the given translation looks wrong or ambiguous — then briefly explain why
+        - synonyms: {{targetLanguage}} words with the same meaning as the term (same language as the term, NOT the translation), as a list. Keep it empty [] by default; only fill it for the wrong-language rule below or when a synonym is obvious. Do not pad it.
+        - translationInTargetLanguage: a boolean. Set it to true ONLY when the given "translation" is actually written in {{targetLanguage}} (the same language as the term) instead of {{nativeLanguage}}. Otherwise false.
+        WRONG-LANGUAGE RULE: If the given "translation" is in {{targetLanguage}} rather than {{nativeLanguage}} (e.g. the term and its "translation" are both {{targetLanguage}} words), then: set translationInTargetLanguage to true, replace "translation" with a correct {{nativeLanguage}} translation of the term, and add the original wrong-language word to "synonyms". This is the one case where you may change a given "translation".
         Output exactly one item per input item, using the SAME "id" values — never add, drop, merge, or reorder items.
         Schema:
         {
@@ -234,6 +242,8 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
               "translation": "string",
               "wordType": "word|phrase|idiom|expression",
               "alternativeTranslations": ["string"],
+              "synonyms": ["string"],
+              "translationInTargetLanguage": false,
               "notes": "string or null",
               "exampleSentence": "string or null",
               "confidenceNote": "string or null"

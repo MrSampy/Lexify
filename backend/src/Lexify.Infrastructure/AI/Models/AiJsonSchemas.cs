@@ -22,7 +22,7 @@ internal static class AiJsonSchemas
               "type": "array",
               "items": {
                 "type": "object",
-                "required": ["id", "term", "translation", "wordType", "alternativeTranslations"],
+                "required": ["id", "term", "translation", "wordType", "alternativeTranslations", "synonyms"],
                 "additionalProperties": false,
                 "properties": {
                   "id": { "type": "integer" },
@@ -30,6 +30,8 @@ internal static class AiJsonSchemas
                   "translation": { "type": "string" },
                   "wordType": { "enum": ["word", "phrase", "idiom", "expression"] },
                   "alternativeTranslations": { "type": "array", "items": { "type": "string" } },
+                  "synonyms": { "type": "array", "items": { "type": "string" } },
+                  "translationInTargetLanguage": { "type": ["boolean", "null"] },
                   "notes": { "type": ["string", "null"] },
                   "exampleSentence": { "type": ["string", "null"] },
                   "confidenceNote": { "type": ["string", "null"] }

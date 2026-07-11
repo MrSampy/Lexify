@@ -55,18 +55,37 @@ public static class AIResponseValidator
             // For lines the parser already split, term/translation are ground truth — the LLM was
             // told to copy them exactly, but repair (don't reject) if it altered them anyway.
             var term = line.IsParsed ? line.Term! : ai.Term;
-            var translation = line.IsParsed ? line.Translation! : ai.Translation;
+
+            // Exception: when the parser's translation is actually written in the target language
+            // (same as the term) rather than the native language, the LLM re-translates it and moves
+            // the original wrong-language word into synonyms. Only then do we trust the AI's translation
+            // over the parser's for a parsed line.
+            var translationWrongLanguage = line.IsParsed && ai.TranslationInTargetLanguage == true;
+            var translation = (line.IsParsed && !translationWrongLanguage) ? line.Translation! : ai.Translation;
+
             var alternatives = MergeAlternatives(line.AlternativeTranslations, ai.AlternativeTranslations);
+
+            // When we accepted a re-translation, the parser's original (wrong-language) translation
+            // becomes a synonym alongside anything the AI already returned.
+            var aiSynonyms = translationWrongLanguage
+                ? (ai.Synonyms ?? []).Append(line.Translation!)
+                : ai.Synonyms;
+            var synonyms = MergeSynonyms(aiSynonyms, term);
+
+            // A parenthetical note extracted deterministically from the user's own raw input is
+            // ground truth, same as term/translation above — it wins over whatever the AI proposed.
+            var notes = line.Notes ?? ai.Notes;
 
             items.Add(new FormatWordItem(
                 Term: term,
                 Translation: translation,
                 WordType: ai.WordType,
-                Notes: ai.Notes,
+                Notes: notes,
                 ExampleSentence: ai.ExampleSentence,
                 ConfidenceFlag: line.ConfidenceFlag,
                 ConfidenceNote: ai.ConfidenceNote,
-                AlternativeTranslations: alternatives));
+                AlternativeTranslations: alternatives,
+                Synonyms: synonyms));
         }
 
         return AIValidationResult.Ok(new FormatWordsResult(items, parsed.SuggestedTitle));
@@ -88,6 +107,24 @@ public static class AIResponseValidator
         return merged;
     }
 
+    /// <summary>Dedupes synonyms (case-insensitive), drops blanks, and drops any entry equal to the term.</summary>
+    private static List<string> MergeSynonyms(IEnumerable<string>? synonyms, string term)
+    {
+        var merged = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var syn in synonyms ?? [])
+        {
+            var trimmed = syn.Trim();
+            if (trimmed.Length > 0
+                && !string.Equals(trimmed, term, StringComparison.OrdinalIgnoreCase)
+                && seen.Add(trimmed))
+                merged.Add(trimmed);
+        }
+
+        return merged;
+    }
+
     /// <summary>
     /// Deterministic fallback used when every LLM retry for a batch fails: parsed lines still
     /// produce a usable FormatWordItem from parser output alone (no enrichment), so only truly
@@ -101,11 +138,12 @@ public static class AIResponseValidator
                 Term: l.Term!,
                 Translation: l.Translation!,
                 WordType: "word",
-                Notes: null,
+                Notes: l.Notes,
                 ExampleSentence: null,
                 ConfidenceFlag: l.ConfidenceFlag,
                 ConfidenceNote: null,
-                AlternativeTranslations: l.AlternativeTranslations))
+                AlternativeTranslations: l.AlternativeTranslations,
+                Synonyms: []))
             .ToList();
 
         return new FormatWordsResult(items, null);

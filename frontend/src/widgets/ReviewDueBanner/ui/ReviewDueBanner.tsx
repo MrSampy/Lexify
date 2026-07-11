@@ -13,6 +13,7 @@ export function ReviewDueBanner() {
       style={{
         display: 'flex',
         alignItems: 'center',
+        flexWrap: 'wrap',
         gap: 16,
         padding: '16px 20px',
         background: 'var(--accent-ghost)',

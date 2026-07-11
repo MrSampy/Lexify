@@ -59,9 +59,13 @@ function SelectContent({
   children,
   side = 'bottom',
   sideOffset = 4,
-  align = 'center',
+  align = 'start',
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  // Render as a plain dropdown below the trigger instead of overlaying the selected item on top of
+  // the trigger. The overlay mode (base-ui default) draws the active item on the trigger's own
+  // (white) background while the rest of the list uses the popup background, which reads as an odd
+  // empty band / gap between the first and second option.
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<

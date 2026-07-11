@@ -30,6 +30,9 @@ public sealed class CreateWordCommandHandler(
             request.ExampleSentence,
             request.SortOrder);
 
+        if (request.Synonyms is { Count: > 0 })
+            word.SetSynonyms(request.Synonyms);
+
         await wordRepository.AddAsync(word, cancellationToken);
 
         return Result.Ok(word.Id);

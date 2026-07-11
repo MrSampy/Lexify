@@ -9,4 +9,5 @@ public sealed record ImportWordItem(
     bool ConfidenceFlag,
     string? ConfidenceNote,
     int SortOrder = 0,
-    IReadOnlyList<string>? AlternativeTranslations = null);
+    IReadOnlyList<string>? AlternativeTranslations = null,
+    IReadOnlyList<string>? Synonyms = null);

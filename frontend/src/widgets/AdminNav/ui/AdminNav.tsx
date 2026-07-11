@@ -11,26 +11,16 @@ const NAV_ITEMS = [
   { label: 'Audit log', to: ROUTES.ADMIN.AUDIT, emoji: '📋' },
 ]
 
-export function AdminNav() {
+interface AdminNavProps {
+  /** When true, render only the nav content (no aside shell) — used inside the mobile drawer. */
+  inDrawer?: boolean
+}
+
+export function AdminNav({ inDrawer = false }: AdminNavProps) {
   const user = useAuthStore((s) => s.user)
 
-  return (
-    <aside
-      style={{
-        width: 248,
-        flexShrink: 0,
-        position: 'sticky',
-        top: 0,
-        height: '100vh',
-        overflowY: 'auto',
-        background: 'var(--bg-1)',
-        borderRight: '1.5px solid var(--line-2)',
-        padding: '20px 12px',
-        display: 'flex',
-        flexDirection: 'column',
-        boxShadow: '2px 0 12px rgba(20,80,60,0.05)',
-      }}
-    >
+  const content = (
+    <>
       {/* Logo */}
       <div style={{ padding: '4px 8px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div
@@ -132,6 +122,29 @@ export function AdminNav() {
           <span>Back to app</span>
         </NavLink>
       </div>
+    </>
+  )
+
+  if (inDrawer) return content
+
+  return (
+    <aside
+      style={{
+        width: 248,
+        flexShrink: 0,
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        overflowY: 'auto',
+        background: 'var(--bg-1)',
+        borderRight: '1.5px solid var(--line-2)',
+        padding: '20px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: '2px 0 12px rgba(20,80,60,0.05)',
+      }}
+    >
+      {content}
     </aside>
   )
 }

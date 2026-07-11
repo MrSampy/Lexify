@@ -112,6 +112,7 @@ export function WordImportPage() {
         term: w.term.trim(),
         translation: w.translation.trim(),
         alternativeTranslations: w.alternativeTranslations?.filter((t) => t.trim().length > 0),
+        synonyms: w.synonyms?.filter((s) => s.trim().length > 0),
         wordType: w.wordType,
         notes: w.notes ?? undefined,
         exampleSentence: w.exampleSentence ?? undefined,
@@ -194,8 +195,9 @@ export function WordImportPage() {
               flex: 1,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: 8,
-              padding: '10px 16px',
+              padding: '10px clamp(6px, 2vw, 16px)',
               borderRight: i < STEPS.length - 1 ? '1px solid var(--line-2)' : 'none',
               background: i === stepIndex ? 'var(--accent-ghost)' : 'transparent',
               borderBottom:
@@ -217,7 +219,9 @@ export function WordImportPage() {
             >
               {i < stepIndex ? '✓' : s.idx}
             </span>
+            {/* Step labels are hidden on phones — the numbers/checkmarks carry the state */}
             <span
+              className="hidden sm:inline"
               style={{
                 fontSize: 12,
                 color:
@@ -277,7 +281,7 @@ export function WordImportPage() {
       >
         {/* Step 1 — input */}
         {step === 'input' && (
-          <div style={{ padding: '24px 28px' }}>
+          <div style={{ padding: '24px clamp(14px, 4vw, 28px)' }}>
             {error && <ImportErrorBanner message={error} onRetry={() => void handleFormat()} />}
             <RawTextInput onSubmit={() => void handleFormat()} />
           </div>
@@ -316,7 +320,7 @@ export function WordImportPage() {
                 {t('wordImport.cancelStream')}
               </button>
             </div>
-            <div style={{ padding: '20px 24px' }}>
+            <div style={{ padding: '20px clamp(14px, 4vw, 24px)' }}>
               <FormatProgress />
             </div>
           </div>
@@ -324,7 +328,7 @@ export function WordImportPage() {
 
         {/* Step 3 — preview & save */}
         {step === 'preview' && (
-          <div style={{ padding: '24px 28px' }}>
+          <div style={{ padding: '24px clamp(14px, 4vw, 28px)' }}>
             <BlockTitleInput />
             <div style={{ marginTop: 20 }}>
               <WordPreviewTable />
@@ -367,7 +371,7 @@ export function WordImportPage() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 12,
-              padding: '60px 28px',
+              padding: '60px clamp(14px, 4vw, 28px)',
             }}
           >
             <Spinner size="sm" />

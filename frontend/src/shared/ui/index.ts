@@ -35,6 +35,10 @@ export { Checkbox } from '@/components/ui/checkbox'
 export { Toaster } from '@/components/ui/sonner'
 
 // Custom components
+export { LxSelect } from './LxSelect'
+export type { LxSelectOption } from './LxSelect'
+export { ChipListInput } from './ChipListInput'
+export { MobileDrawer } from './MobileDrawer'
 export { Spinner } from './Spinner'
 export { ConfidenceBadge } from './ConfidenceBadge'
 export { useConfirm } from './ConfirmDialog'

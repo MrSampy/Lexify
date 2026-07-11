@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { LANGUAGES } from '@/shared/config'
+import { LxSelect } from '@/shared/ui'
 import { useUserTags } from '@/entities/block/api/tagApi'
 
 interface BlockFiltersProps {
@@ -114,21 +115,15 @@ export function BlockFilters({
         )}
       </div>
 
-      <select
-        className="lx-input"
+      <LxSelect
         value={languageId !== undefined ? String(languageId) : 'all'}
-        onChange={(e) =>
-          onLanguageChange(e.target.value === 'all' ? undefined : Number(e.target.value))
-        }
-        style={{ height: 36, width: 160, fontSize: 13, cursor: 'pointer' }}
-      >
-        <option value="all">All languages</option>
-        {Object.entries(LANGUAGES).map(([id, lang]) => (
-          <option key={id} value={id}>
-            {lang.name}
-          </option>
-        ))}
-      </select>
+        onValueChange={(v) => onLanguageChange(v === 'all' ? undefined : Number(v))}
+        triggerStyle={{ width: '100%', maxWidth: 160 }}
+        options={[
+          { value: 'all', label: 'All languages' },
+          ...Object.entries(LANGUAGES).map(([id, lang]) => ({ value: id, label: lang.name })),
+        ]}
+      />
     </div>
   )
 }

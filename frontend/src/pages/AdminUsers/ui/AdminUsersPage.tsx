@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { debounce } from '@/shared/lib'
-import { useConfirm } from '@/shared/ui'
+import { LxSelect, useConfirm } from '@/shared/ui'
 import { useAuthStore } from '@/entities/user'
 import {
   useAdminUsers,
@@ -79,34 +79,34 @@ export function AdminUsersPage() {
           }}
           style={{ width: 220, height: 36, fontSize: 13 }}
         />
-        <select
-          className="lx-input"
-          value={role}
-          onChange={(e) => {
-            setRole(e.target.value === 'all' ? '' : e.target.value)
+        <LxSelect
+          value={role || 'all'}
+          onValueChange={(v) => {
+            setRole(v === 'all' ? '' : v)
             setPage(1)
           }}
-          style={{ width: 140, height: 36, fontSize: 13, cursor: 'pointer' }}
-        >
-          <option value="all">All roles</option>
-          <option value="user">User</option>
-          <option value="moderator">Moderator</option>
-          <option value="admin">Admin</option>
-        </select>
-        <select
-          className="lx-input"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value === 'all' ? '' : e.target.value)
+          triggerStyle={{ width: '100%', maxWidth: 140 }}
+          options={[
+            { value: 'all', label: 'All roles' },
+            { value: 'user', label: 'User' },
+            { value: 'moderator', label: 'Moderator' },
+            { value: 'admin', label: 'Admin' },
+          ]}
+        />
+        <LxSelect
+          value={status || 'all'}
+          onValueChange={(v) => {
+            setStatus(v === 'all' ? '' : v)
             setPage(1)
           }}
-          style={{ width: 150, height: 36, fontSize: 13, cursor: 'pointer' }}
-        >
-          <option value="all">All statuses</option>
-          <option value="active">Active</option>
-          <option value="suspended">Suspended</option>
-          <option value="deleted">Deleted</option>
-        </select>
+          triggerStyle={{ width: '100%', maxWidth: 150 }}
+          options={[
+            { value: 'all', label: 'All statuses' },
+            { value: 'active', label: 'Active' },
+            { value: 'suspended', label: 'Suspended' },
+            { value: 'deleted', label: 'Deleted' },
+          ]}
+        />
       </div>
 
       <UsersTable

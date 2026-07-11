@@ -6,6 +6,7 @@ export interface Word {
   term: string
   translation: string
   alternativeTranslations?: string[] | null
+  synonyms?: string[] | null
   wordType: string
   notes: string | null
   exampleSentence: string | null
@@ -23,6 +24,7 @@ export interface CreateWordInput {
   term: string
   translation: string
   alternativeTranslations?: string[]
+  synonyms?: string[]
   wordType: string
   notes?: string
   exampleSentence?: string
@@ -34,6 +36,7 @@ export interface CreateWordInput {
 export interface UpdateWordInput {
   translation: string
   alternativeTranslations?: string[]
+  synonyms?: string[]
   notes?: string
   exampleSentence?: string
   confidenceFlag?: boolean

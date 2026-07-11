@@ -6,4 +6,5 @@ public sealed record CreateWordRequest(
     string WordType,
     string? Notes,
     string? ExampleSentence,
-    int SortOrder = 0);
+    int SortOrder = 0,
+    IReadOnlyList<string>? Synonyms = null);

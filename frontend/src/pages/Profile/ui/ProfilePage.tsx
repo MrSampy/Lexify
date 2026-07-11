@@ -10,7 +10,7 @@ import {
   ENGLISH_LEVELS,
   type EnglishLevel,
 } from '@/entities/user'
-import { Spinner } from '@/shared/ui'
+import { LxSelect, Spinner } from '@/shared/ui'
 
 const THEMES = [
   { value: 'light', labelKey: 'profile.themeLight' },
@@ -143,20 +143,16 @@ export function ProfilePage() {
 
         <SectionCard title={t('profile.englishLevel')}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <select
-              className="lx-input"
-              style={{ width: 160 }}
+            <LxSelect
               value={profile?.englishLevel ?? ''}
               disabled={updateLevel.isPending}
-              onChange={(e) => void handleLevelChange(e.target.value)}
-            >
-              <option value="">{t('common.notSet')}</option>
-              {ENGLISH_LEVELS.map((level) => (
-                <option key={level} value={level}>
-                  {level}
-                </option>
-              ))}
-            </select>
+              onValueChange={(v) => void handleLevelChange(v)}
+              triggerStyle={{ width: '100%', maxWidth: 160 }}
+              options={[
+                { value: '', label: t('common.notSet') },
+                ...ENGLISH_LEVELS.map((level) => ({ value: level, label: level })),
+              ]}
+            />
             <span className="ds-sm" style={{ color: 'var(--fg-4)' }}>
               {t('profile.cefrHint')}
             </span>

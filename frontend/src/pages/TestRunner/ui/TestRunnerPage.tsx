@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -66,7 +66,6 @@ export function TestRunnerPage() {
   const { id: testId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const startedRef = useRef(false)
 
   const { data: test, isLoading, isError } = useTest(testId ?? '')
 
@@ -86,50 +85,46 @@ export function TestRunnerPage() {
     reset,
   } = useTestRunnerStore()
 
-  const beginAttempt = (readyTest: Test) => {
-    startAttempt.mutate(readyTest.id, {
-      // `readyTest.questions` are already the final ones (a ready test's questions never change
-      // afterward), so there's normally nothing "stale" left to re-fetch. The one exception: the
-      // poller on TestCreatePage may have cached a ready test whose `questions` came back empty —
-      // init with an empty list would leave the loading spinner below spinning forever, so only
-      // that case falls back to a fresh fetch.
-      onSuccess: async ({ attemptId: aid }) => {
-        let questionsToUse = readyTest.questions
-        if (!questionsToUse?.length) {
-          const freshTest = await queryClient.fetchQuery<Test>({
-            queryKey: testKeys.detail(readyTest.id),
-            queryFn: () => testApi.getTestById(readyTest.id),
-          })
-          questionsToUse = freshTest.questions
-        }
-        init(readyTest.id, aid, questionsToUse)
-      },
-    })
-  }
-
-  // Start attempt once test is loaded and ready
+  // Start the attempt once the test is ready. Guarded by the mutation's own idle state rather than
+  // a ref: under StrictMode (and any remount) a ref that survives the remount would block the fresh
+  // mutation observer from ever firing, leaving the spinner below stuck forever even though the
+  // test is ready. `isIdle` fires exactly once per live observer and re-fires only if the observer
+  // is genuinely reset (a real remount), so no duplicate attempts under StrictMode's double-invoke.
   useEffect(() => {
-    if (!test || test.status !== 'ready' || startedRef.current) return
-    startedRef.current = true
-    beginAttempt(test)
+    if (!test || test.status !== 'ready') return
+    if (startAttempt.isIdle) startAttempt.mutate(test.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [test?.id, test?.status])
+  }, [test?.id, test?.status, startAttempt.isIdle])
 
-  // Recovery: if the tab was hidden/frozen by the browser while the start-attempt response was in
-  // flight, the mutate-level onSuccess callback can be lost even though the mutation itself
-  // eventually settles as success. Re-derive init from the mutation's cached result so the runner
-  // never sits on a spinner with a successfully started attempt.
+  // Populate the runner store from the mutation RESULT, not from a mutate()-level onSuccess
+  // callback (those are dropped if the component unmounts before the response lands — exactly what
+  // happens on a StrictMode remount or a backgrounded tab). Idempotent: keyed on the attempt id, so
+  // it runs once the attempt exists and the ready test's questions are available.
   useEffect(() => {
-    if (!startAttempt.isSuccess || questions.length > 0) return
-    if (!test || test.status !== 'ready' || !test.questions?.length) return
-    init(test.id, startAttempt.data.attemptId, test.questions)
+    const aid = startAttempt.data?.attemptId
+    if (!aid || questions.length > 0) return
+    if (!test || test.status !== 'ready') return
+
+    if (test.questions?.length) {
+      init(test.id, aid, test.questions)
+      return
+    }
+    // A ready test should always carry its questions; if the cached copy came back empty, fetch a
+    // fresh one rather than init-ing with an empty list (which would spin forever).
+    void queryClient
+      .fetchQuery<Test>({
+        queryKey: testKeys.detail(test.id),
+        queryFn: () => testApi.getTestById(test.id),
+      })
+      .then((fresh) => {
+        if (fresh.questions?.length) init(test.id, aid, fresh.questions)
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startAttempt.isSuccess, questions.length, test?.id, test?.status])
+  }, [startAttempt.data?.attemptId, questions.length, test?.id, test?.status])
 
   const handleRetryStart = () => {
     if (!test) return
     startAttempt.reset()
-    beginAttempt(test)
   }
 
   // Cleanup on unmount
@@ -170,7 +165,7 @@ export function TestRunnerPage() {
   }
 
   // Starting the attempt failed — without this branch the "ready but no questions yet" spinner
-  // below would spin forever (onSuccess never ran, and startedRef blocks a re-run of the effect).
+  // below would spin forever. Retry resets the mutation to idle, which re-fires the start effect.
   if (startAttempt.isError && questions.length === 0) {
     return (
       <div
@@ -261,7 +256,7 @@ export function TestRunnerPage() {
   const progress = questions.length > 0 ? (currentQuestionIndex / questions.length) * 100 : 0
 
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto' }}>
+    <div style={{ maxWidth: 940, margin: '0 auto' }}>
       {/* Header */}
       <div
         style={{
@@ -339,7 +334,7 @@ export function TestRunnerPage() {
             </span>
           </div>
 
-          <div style={{ padding: '24px 24px' }}>
+          <div style={{ padding: 'clamp(16px, 5vw, 32px)' }}>
             {!currentFeedback ? (
               <QuestionView
                 question={currentQuestion}
@@ -349,7 +344,7 @@ export function TestRunnerPage() {
             ) : (
               <div>
                 <p
-                  style={{ fontSize: 16, fontWeight: 500, color: 'var(--fg-1)', marginBottom: 16 }}
+                  style={{ fontSize: 20, fontWeight: 500, color: 'var(--fg-1)', marginBottom: 16 }}
                 >
                   {currentQuestion.questionText}
                 </p>

@@ -25,6 +25,8 @@ public sealed class UpdateWordCommandHandler(
         word.SetConfidence(request.ConfidenceFlag, request.ConfidenceNote);
         if (request.AlternativeTranslations is not null)
             word.SetAlternativeTranslations(request.AlternativeTranslations);
+        if (request.Synonyms is not null)
+            word.SetSynonyms(request.Synonyms);
         await wordRepository.UpdateAsync(word, cancellationToken);
 
         return Result.Ok();

@@ -3,6 +3,7 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "save": "Save",
+    "done": "Done",
     "edit": "Edit",
     "back": "← Back",
     "next": "Next",
@@ -91,6 +92,9 @@
     "deleted": "Word deleted",
     "deleteFailed": "Failed to delete word",
     "also": "also:",
+    "synonyms": "synonyms:",
+    "synonymsLabel": "Synonyms (optional)",
+    "addSynonym": "add synonym...",
     "addNote": "add note",
     "types": {
       "word": "Word",
