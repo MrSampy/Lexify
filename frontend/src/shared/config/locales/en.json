@@ -9,7 +9,8 @@
     "next": "Next",
     "previous": "Previous",
     "tryAgain": "Try again",
-    "notSet": "Not set"
+    "notSet": "Not set",
+    "allLanguages": "All languages"
   },
   "nav": {
     "menu": "Menu",
@@ -34,7 +35,18 @@
     "createOne": "Create one",
     "createTitle": "Create your account ✨",
     "alreadyRegistered": "Already registered?",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "email": "Email",
+    "password": "Password",
+    "yourName": "Your name",
+    "emailInvalid": "Enter a valid email",
+    "passwordMin": "Password must be at least 8 characters",
+    "nameMin": "At least 2 characters",
+    "invalidCredentials": "Invalid email or password.",
+    "register": "Register",
+    "creatingAccount": "Creating account…",
+    "registerFailed": "Registration failed. Please try again."
   },
   "dashboard": {
     "greeting": "Hi, {{name}}! 🌱",
@@ -54,7 +66,11 @@
     "allTests": "All tests →",
     "noTests": "No tests yet.",
     "createFirstTest": "Create your first test →",
-    "run": "Run →"
+    "run": "Run →",
+    "reviewDue_one": "{{count}} word due for review today",
+    "reviewDue_other": "{{count}} words due for review today",
+    "reviewDueDesc": "Spaced repetition — only what's actually due",
+    "startReview": "Start review →"
   },
   "blocks": {
     "title": "Word blocks",
@@ -67,7 +83,11 @@
     "deleted": "Block deleted",
     "deleteFailed": "Failed to delete block",
     "wordCount_one": "{{count}} word",
-    "wordCount_other": "{{count}} words"
+    "wordCount_other": "{{count}} words",
+    "filterByTag": "filter by tag…",
+    "clearFilter": "clear filter",
+    "loadFailed": "Failed to load blocks. Please try again.",
+    "noBlocksYet": "No blocks yet. Create your first one!"
   },
   "blockDetail": {
     "backToBlocks": "← Back to blocks",
@@ -143,6 +163,26 @@
     "formatWithAI": "Format with AI",
     "noRows": "No words yet — add one below.",
     "addRow": "Add row"
+  },
+  "csvImport": {
+    "title": "Import from CSV",
+    "dropHint": "Drag & drop a CSV file here, or click to browse",
+    "expectedColumns": "Expected columns: term, translation, wordType, notes, exampleSentence",
+    "clickToChange": "{{size}} KB — click to change",
+    "blockTitle": "Block title",
+    "blockTitlePlaceholder": "My vocabulary block",
+    "language": "Language",
+    "selectLanguage": "Select language",
+    "previewRows_one": "Preview (first {{count}} row)",
+    "previewRows_other": "Preview (first {{count}} rows)",
+    "colTerm": "Term",
+    "colTranslation": "Translation",
+    "colType": "Type",
+    "import": "Import",
+    "importing": "Importing…",
+    "importSuccess": "Block imported successfully!",
+    "fillAllFields": "Please fill all fields and select a file.",
+    "csvOnly": "Please select a CSV file."
   },
   "tests": {
     "title": "Tests",

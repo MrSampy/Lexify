@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LANGUAGES } from '@/shared/config'
 import { LxSelect } from '@/shared/ui'
 import { useUserTags } from '@/entities/block/api/tagApi'
@@ -16,6 +17,7 @@ export function BlockFilters({
   tag,
   onTagChange,
 }: BlockFiltersProps) {
+  const { t } = useTranslation()
   const [showSuggestions, setShowSuggestions] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const { data: userTags = [] } = useUserTags()
@@ -30,7 +32,7 @@ export function BlockFilters({
         <input
           ref={inputRef}
           className="lx-input"
-          placeholder="filter by tag…"
+          placeholder={t('blocks.filterByTag')}
           value={tag}
           onChange={(e) => onTagChange(e.target.value)}
           onFocus={() => setShowSuggestions(true)}
@@ -108,7 +110,7 @@ export function BlockFilters({
                   setShowSuggestions(false)
                 }}
               >
-                clear filter
+                {t('blocks.clearFilter')}
               </button>
             )}
           </div>
@@ -120,7 +122,7 @@ export function BlockFilters({
         onValueChange={(v) => onLanguageChange(v === 'all' ? undefined : Number(v))}
         triggerStyle={{ width: '100%', maxWidth: 160 }}
         options={[
-          { value: 'all', label: 'All languages' },
+          { value: 'all', label: t('common.allLanguages') },
           ...Object.entries(LANGUAGES).map(([id, lang]) => ({ value: id, label: lang.name })),
         ]}
       />

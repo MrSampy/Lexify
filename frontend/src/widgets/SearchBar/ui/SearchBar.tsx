@@ -1,10 +1,12 @@
 import { useCallback, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { debounce } from '@/shared/lib/debounce'
 import { ROUTES } from '@/shared/config'
 
 export function SearchBar() {
+  const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [value, setValue] = useState(() => searchParams.get('q') ?? '')
@@ -48,7 +50,7 @@ export function SearchBar() {
       />
       <input
         className="lx-input"
-        placeholder="search words…"
+        placeholder={t('search.placeholder')}
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}

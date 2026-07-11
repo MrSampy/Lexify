@@ -99,13 +99,16 @@ export function TestListPage() {
             }}
           >
             <SelectTrigger className="w-36">
-              <SelectValue />
+              <SelectValue>
+                {statusFilter === 'all' ? t('tests.filterAll') : t(`tests.status.${statusFilter}`)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">all</SelectItem>
-              <SelectItem value="generating">generating</SelectItem>
-              <SelectItem value="ready">ready</SelectItem>
-              <SelectItem value="archived">archived</SelectItem>
+              <SelectItem value="all">{t('tests.filterAll')}</SelectItem>
+              <SelectItem value="generating">{t('tests.status.generating')}</SelectItem>
+              <SelectItem value="ready">{t('tests.status.ready')}</SelectItem>
+              <SelectItem value="failed">{t('tests.status.failed')}</SelectItem>
+              <SelectItem value="archived">{t('tests.status.archived')}</SelectItem>
             </SelectContent>
           </Select>
           <button className="lx-btn-primary" onClick={() => navigate(ROUTES.TEST_CREATE)}>
@@ -243,7 +246,7 @@ export function TestListPage() {
             onClick={() => setPage((p) => p - 1)}
             style={{ padding: '8px 16px' }}
           >
-            Previous
+            {t('common.previous')}
           </button>
           <span className="ds-code" style={{ color: 'var(--fg-3)' }}>
             {page} / {data.totalPages}
@@ -254,7 +257,7 @@ export function TestListPage() {
             onClick={() => setPage((p) => p + 1)}
             style={{ padding: '8px 16px' }}
           >
-            Next
+            {t('common.next')}
           </button>
         </div>
       )}

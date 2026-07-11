@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button, Spinner } from '@/shared/ui'
 import { BlockCard } from '@/entities/block'
 import type { WordBlock, BlockFilter } from '@/entities/block'
@@ -9,6 +10,7 @@ interface BlockListProps {
 }
 
 export function BlockList({ filter, onPageChange }: BlockListProps) {
+  const { t } = useTranslation()
   const { data, isLoading, isError } = useBlocks(filter)
 
   if (isLoading) {
@@ -20,19 +22,11 @@ export function BlockList({ filter, onPageChange }: BlockListProps) {
   }
 
   if (isError) {
-    return (
-      <div className="py-16 text-center text-muted-foreground">
-        Failed to load blocks. Please try again.
-      </div>
-    )
+    return <div className="py-16 text-center text-muted-foreground">{t('blocks.loadFailed')}</div>
   }
 
   if (!data || data.items.length === 0) {
-    return (
-      <div className="py-16 text-center text-muted-foreground">
-        No blocks yet. Create your first one!
-      </div>
-    )
+    return <div className="py-16 text-center text-muted-foreground">{t('blocks.noBlocksYet')}</div>
   }
 
   return (
@@ -51,7 +45,7 @@ export function BlockList({ filter, onPageChange }: BlockListProps) {
             disabled={!data.hasPreviousPage}
             onClick={() => onPageChange(filter.page - 1)}
           >
-            Previous
+            {t('common.previous')}
           </Button>
           <span className="text-sm text-muted-foreground">
             {filter.page} / {data.totalPages}
@@ -62,7 +56,7 @@ export function BlockList({ filter, onPageChange }: BlockListProps) {
             disabled={!data.hasNextPage}
             onClick={() => onPageChange(filter.page + 1)}
           >
-            Next
+            {t('common.next')}
           </Button>
         </div>
       )}

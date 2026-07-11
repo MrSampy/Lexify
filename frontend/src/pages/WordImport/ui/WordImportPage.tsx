@@ -345,11 +345,11 @@ export function WordImportPage() {
               }}
             >
               <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
-                {formattedWords.length} {formattedWords.length === 1 ? 'word' : 'words'} ready
+                {t('wordImport.ready', { count: formattedWords.length })}
               </span>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className="lx-btn-secondary" onClick={resetToInput}>
-                  ← Back
+                  {t('common.back')}
                 </button>
                 <button
                   className="lx-btn-primary"

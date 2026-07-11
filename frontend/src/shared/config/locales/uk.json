@@ -9,7 +9,8 @@
     "next": "Далі",
     "previous": "Назад",
     "tryAgain": "Спробувати ще раз",
-    "notSet": "Не вказано"
+    "notSet": "Не вказано",
+    "allLanguages": "Усі мови"
   },
   "nav": {
     "menu": "Меню",
@@ -34,7 +35,18 @@
     "createOne": "Створити",
     "createTitle": "Створіть свій акаунт ✨",
     "alreadyRegistered": "Уже зареєстровані?",
-    "signIn": "Увійти"
+    "signIn": "Увійти",
+    "signingIn": "Входимо…",
+    "email": "Email",
+    "password": "Пароль",
+    "yourName": "Ваше ім'я",
+    "emailInvalid": "Введіть коректний email",
+    "passwordMin": "Пароль має містити щонайменше 8 символів",
+    "nameMin": "Щонайменше 2 символи",
+    "invalidCredentials": "Невірний email або пароль.",
+    "register": "Зареєструватися",
+    "creatingAccount": "Створюємо акаунт…",
+    "registerFailed": "Не вдалося зареєструватися. Спробуйте ще раз."
   },
   "dashboard": {
     "greeting": "Привіт, {{name}}! 🌱",
@@ -54,7 +66,12 @@
     "allTests": "Усі тести →",
     "noTests": "Тестів поки немає.",
     "createFirstTest": "Створіть свій перший тест →",
-    "run": "Пройти →"
+    "run": "Пройти →",
+    "reviewDue_one": "{{count}} слово до повторення сьогодні",
+    "reviewDue_few": "{{count}} слова до повторення сьогодні",
+    "reviewDue_many": "{{count}} слів до повторення сьогодні",
+    "reviewDueDesc": "Інтервальне повторення — лише те, що справді на часі",
+    "startReview": "Почати повторення →"
   },
   "blocks": {
     "title": "Блоки слів",
@@ -68,7 +85,11 @@
     "deleteFailed": "Не вдалося видалити блок",
     "wordCount_one": "{{count}} слово",
     "wordCount_few": "{{count}} слова",
-    "wordCount_many": "{{count}} слів"
+    "wordCount_many": "{{count}} слів",
+    "filterByTag": "фільтр за тегом…",
+    "clearFilter": "скинути фільтр",
+    "loadFailed": "Не вдалося завантажити блоки. Спробуйте ще раз.",
+    "noBlocksYet": "Блоків ще немає. Створіть свій перший!"
   },
   "blockDetail": {
     "backToBlocks": "← До блоків",
@@ -147,6 +168,27 @@
     "formatWithAI": "Відформатувати з ШІ",
     "noRows": "Слів ще немає — додайте нижче.",
     "addRow": "Додати рядок"
+  },
+  "csvImport": {
+    "title": "Імпорт із CSV",
+    "dropHint": "Перетягніть CSV-файл сюди або клацніть, щоб вибрати",
+    "expectedColumns": "Очікувані колонки: term, translation, wordType, notes, exampleSentence",
+    "clickToChange": "{{size}} КБ — клацніть, щоб змінити",
+    "blockTitle": "Назва блоку",
+    "blockTitlePlaceholder": "Мій блок лексики",
+    "language": "Мова",
+    "selectLanguage": "Виберіть мову",
+    "previewRows_one": "Перегляд (перший {{count}} рядок)",
+    "previewRows_few": "Перегляд (перші {{count}} рядки)",
+    "previewRows_many": "Перегляд (перші {{count}} рядків)",
+    "colTerm": "Слово",
+    "colTranslation": "Переклад",
+    "colType": "Тип",
+    "import": "Імпортувати",
+    "importing": "Імпортуємо…",
+    "importSuccess": "Блок успішно імпортовано!",
+    "fillAllFields": "Заповніть усі поля та виберіть файл.",
+    "csvOnly": "Виберіть файл у форматі CSV."
   },
   "tests": {
     "title": "Тести",

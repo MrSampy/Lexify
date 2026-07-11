@@ -420,7 +420,7 @@ export function BlockDetailPage() {
             onClick={() => setWordsPage((p) => p - 1)}
             style={{ padding: '8px 16px' }}
           >
-            Previous
+            {t('common.previous')}
           </button>
           <span className="ds-code" style={{ color: 'var(--fg-3)' }}>
             {wordsPage} / {words.totalPages}
@@ -431,7 +431,7 @@ export function BlockDetailPage() {
             onClick={() => setWordsPage((p) => p + 1)}
             style={{ padding: '8px 16px' }}
           >
-            Next
+            {t('common.next')}
           </button>
         </div>
       )}
