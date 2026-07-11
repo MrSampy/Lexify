@@ -1,14 +1,114 @@
 import { useState } from 'react'
 import { Pencil, Check, X } from 'lucide-react'
 import { Spinner } from '@/shared/ui'
-import { formatDate } from '@/shared/lib'
+import { formatDate, useIsMobile } from '@/shared/lib'
 import { useSettings, useUpdateSettingMutation } from '@/entities/admin'
+import type { SystemSetting } from '@/entities/admin'
 
 const COL_WIDTHS = ['220px', '1fr', '80px', '1fr', '120px', '40px']
+
+interface EditState {
+  editingKey: string | null
+  editValue: string
+  onEdit: (key: string, currentValue: string) => void
+  onSave: (key: string) => void
+  onCancel: () => void
+  onChangeValue: (value: string) => void
+  isPending: boolean
+}
+
+/**
+ * Mobile card for one setting — the desktop grid's fixed 220px/80px/120px columns plus a flexible
+ * description column force long descriptions to wrap into many narrow lines on a phone. Stack the
+ * fields vertically instead.
+ */
+function SettingCard({ setting: s, edit }: { setting: SystemSetting; edit: EditState }) {
+  const isEditing = edit.editingKey === s.key
+  return (
+    <div className="space-y-2 border-b border-b-[var(--line-1)] p-3 last:border-b-0">
+      <div className="flex items-center justify-between gap-2">
+        <span style={{ color: 'var(--fg-2)', fontSize: 13, fontWeight: 600 }}>{s.key}</span>
+        <span
+          style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: 10,
+            padding: '2px 7px',
+            borderRadius: 'var(--r-sm)',
+            background: 'var(--bg-3)',
+            border: '1px solid var(--line-2)',
+            color: 'var(--fg-4)',
+            flexShrink: 0,
+          }}
+        >
+          {s.valueType}
+        </span>
+      </div>
+      {s.description && <div style={{ fontSize: 12, color: 'var(--fg-3)' }}>{s.description}</div>}
+      {isEditing ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <input
+            className="lx-input"
+            value={edit.editValue}
+            onChange={(e) => edit.onChangeValue(e.target.value)}
+            autoFocus
+            style={{ height: 32, fontSize: 13, flex: 1 }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') edit.onSave(s.key)
+              if (e.key === 'Escape') edit.onCancel()
+            }}
+          />
+          <button
+            onClick={() => edit.onSave(s.key)}
+            disabled={edit.isPending}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--success)',
+              padding: 4,
+            }}
+          >
+            <Check size={16} />
+          </button>
+          <button
+            onClick={edit.onCancel}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--fg-4)',
+              padding: 4,
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2">
+          <span style={{ color: 'var(--fg-1)', fontSize: 13 }}>{s.value}</span>
+          <button
+            onClick={() => edit.onEdit(s.key, s.value)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--fg-4)',
+              padding: 4,
+            }}
+          >
+            <Pencil size={14} />
+          </button>
+        </div>
+      )}
+      <div style={{ color: 'var(--fg-4)', fontSize: 11 }}>{formatDate(s.updatedAt)}</div>
+    </div>
+  )
+}
 
 export function AdminSettingsPage() {
   const { data: settings, isLoading } = useSettings()
   const updateSetting = useUpdateSettingMutation()
+  const isMobile = useIsMobile()
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
@@ -36,6 +136,30 @@ export function AdminSettingsPage() {
       {isLoading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
           <Spinner size="lg" />
+        </div>
+      ) : isMobile ? (
+        <div
+          style={{
+            background: 'var(--bg-2)',
+            border: '1px solid var(--line-2)',
+            borderRadius: 'var(--r-md)',
+          }}
+        >
+          {(settings ?? []).map((s) => (
+            <SettingCard
+              key={s.key}
+              setting={s}
+              edit={{
+                editingKey,
+                editValue,
+                onEdit: handleEdit,
+                onSave: (key) => void handleSave(key),
+                onCancel: handleCancel,
+                onChangeValue: setEditValue,
+                isPending: updateSetting.isPending,
+              }}
+            />
+          ))}
         </div>
       ) : (
         <div
