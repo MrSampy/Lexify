@@ -6,4 +6,5 @@ public sealed record UpdateWordRequest(
     string? ExampleSentence,
     bool ConfidenceFlag,
     string? ConfidenceNote,
-    IReadOnlyList<string>? AlternativeTranslations = null);
+    IReadOnlyList<string>? AlternativeTranslations = null,
+    IReadOnlyList<string>? Synonyms = null);

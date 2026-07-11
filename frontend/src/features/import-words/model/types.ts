@@ -2,6 +2,7 @@ export interface FormatWordItem {
   term: string
   translation: string
   alternativeTranslations?: string[] | null
+  synonyms?: string[] | null
   wordType: string
   notes?: string | null
   exampleSentence?: string | null

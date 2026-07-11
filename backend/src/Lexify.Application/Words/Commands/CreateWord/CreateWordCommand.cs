@@ -11,5 +11,6 @@ public sealed record CreateWordCommand(
     string WordType,
     string? Notes,
     string? ExampleSentence,
-    int SortOrder = 0
+    int SortOrder = 0,
+    IReadOnlyList<string>? Synonyms = null
 ) : IRequest<Result<Guid>>, IInvalidatesBlocksCache;

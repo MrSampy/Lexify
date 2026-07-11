@@ -15,6 +15,8 @@ public sealed class Word
     public string Translation { get; private set; } = default!;
     /// <summary>Extra translation variants beyond the primary one (may be empty).</summary>
     public List<string> AlternativeTranslations { get; private set; } = [];
+    /// <summary>Same-language (as the term) equivalents of the word (may be empty).</summary>
+    public List<string> Synonyms { get; private set; } = [];
     public string WordType { get; private set; } = default!;
     public string? Notes { get; private set; }
     public string? ExampleSentence { get; private set; }
@@ -122,6 +124,16 @@ public sealed class Word
         AlternativeTranslations = (translations ?? [])
             .Select(t => t.Trim())
             .Where(t => t.Length > 0 && !string.Equals(t, Translation, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>Replaces synonyms (same-language equivalents); blanks, duplicates, and copies of the term are dropped.</summary>
+    public void SetSynonyms(IEnumerable<string>? synonyms)
+    {
+        Synonyms = (synonyms ?? [])
+            .Select(s => s.Trim())
+            .Where(s => s.Length > 0 && !string.Equals(s, Term, StringComparison.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
     }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import { Button, useConfirm } from '@/shared/ui'
+import { Button, useConfirm, ChipListInput } from '@/shared/ui'
 import { useUpdateWordMutation, useDeleteWordMutation } from '../api/wordApi'
 import type { Word } from '../model/types'
 import { WordTypeBadge } from './WordTypeBadge'
@@ -13,12 +13,23 @@ interface WordRowProps {
 
 export function WordRow({ word, blockId }: WordRowProps) {
   const { t } = useTranslation()
-  const [editField, setEditField] = useState<'translation' | 'notes' | null>(null)
+  const [editField, setEditField] = useState<'translation' | 'notes' | 'synonyms' | null>(null)
   const [draftTranslation, setDraftTranslation] = useState(word.translation)
   const [draftNotes, setDraftNotes] = useState(word.notes ?? '')
+  // Synonyms auto-save on every add/remove (like tags) rather than via an explicit ✓/✕ —
+  // so there is no "cancel" that could discard an addition and no save-reads-stale-draft race.
+  const [synonyms, setSynonyms] = useState<string[]>(word.synonyms ?? [])
   const updateWord = useUpdateWordMutation(blockId)
   const deleteWord = useDeleteWordMutation(blockId)
   const { confirm, confirmDialog } = useConfirm()
+
+  // Re-sync local synonyms when the word refetches (e.g. after our own mutation invalidates it).
+  // Render-time adjustment instead of an effect — see react.dev/learn/you-might-not-need-an-effect.
+  const [prevWordSynonyms, setPrevWordSynonyms] = useState(word.synonyms)
+  if (prevWordSynonyms !== word.synonyms) {
+    setPrevWordSynonyms(word.synonyms)
+    setSynonyms(word.synonyms ?? [])
+  }
 
   const handleSave = async () => {
     await updateWord.mutateAsync({
@@ -29,6 +40,8 @@ export function WordRow({ word, blockId }: WordRowProps) {
         exampleSentence: word.exampleSentence ?? undefined,
         confidenceFlag: word.confidenceFlag,
         confidenceNote: word.confidenceNote ?? undefined,
+        alternativeTranslations: word.alternativeTranslations ?? undefined,
+        synonyms,
       },
     })
     setEditField(null)
@@ -40,6 +53,22 @@ export function WordRow({ word, blockId }: WordRowProps) {
     setEditField(null)
   }
 
+  const persistSynonyms = (next: string[]) => {
+    setSynonyms(next)
+    updateWord.mutate({
+      wordId: word.id,
+      input: {
+        translation: word.translation,
+        notes: word.notes ?? undefined,
+        exampleSentence: word.exampleSentence ?? undefined,
+        confidenceFlag: word.confidenceFlag,
+        confidenceNote: word.confidenceNote ?? undefined,
+        alternativeTranslations: word.alternativeTranslations ?? undefined,
+        synonyms: next,
+      },
+    })
+  }
+
   const handleDelete = async () => {
     if (!(await confirm({ title: t('words.deleteConfirm', { term: word.term }) }))) return
     deleteWord.mutate(word.id, {
@@ -49,8 +78,9 @@ export function WordRow({ word, blockId }: WordRowProps) {
   }
 
   return (
+    // Mobile: stacked card (1 column); desktop (md+): the original 5-column table row.
     <div
-      className={`grid min-w-[560px] grid-cols-[1.4fr_1.4fr_0.9fr_1.6fr_60px] items-center gap-3 border-b border-b-[var(--line-1)] border-l-2 px-[18px] py-3.5 ${
+      className={`relative grid grid-cols-1 gap-1.5 border-b border-b-[var(--line-1)] border-l-2 px-[18px] py-3.5 md:min-w-[560px] md:grid-cols-[1.4fr_1.4fr_0.9fr_1.6fr_60px] md:items-center md:gap-3 ${
         word.confidenceFlag ? 'border-l-[var(--warning)]' : 'border-l-transparent'
       }`}
     >
@@ -97,6 +127,38 @@ export function WordRow({ word, blockId }: WordRowProps) {
           <div style={{ fontSize: 12, color: 'var(--fg-4)', marginTop: 2 }}>
             {t('words.also')} {word.alternativeTranslations.join(', ')}
           </div>
+        )}
+        {/* Synonyms — chips auto-save on add/remove; "Done" only closes the editor */}
+        {editField === 'synonyms' ? (
+          <div style={{ marginTop: 6 }}>
+            <ChipListInput
+              value={synonyms}
+              onChange={persistSynonyms}
+              placeholder={t('words.addSynonym')}
+            />
+            <button
+              onClick={() => setEditField(null)}
+              className="lx-btn-secondary"
+              style={{ marginTop: 6, padding: '4px 12px', fontSize: 12 }}
+            >
+              {t('common.done')}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditField('synonyms')}
+            className="cursor-pointer border-none bg-transparent p-0 text-left text-xs transition-colors duration-100 [font-family:var(--font-body)]"
+            style={{
+              display: 'block',
+              width: 'fit-content',
+              marginTop: 3,
+              color: synonyms.length ? 'var(--accent-dim)' : 'var(--fg-4)',
+            }}
+          >
+            {synonyms.length > 0
+              ? `${t('words.synonyms')} ${synonyms.join(', ')}`
+              : t('words.addSynonym')}
+          </button>
         )}
       </div>
 
@@ -145,8 +207,8 @@ export function WordRow({ word, blockId }: WordRowProps) {
         )}
       </div>
 
-      {/* Delete */}
-      <div className="text-right">
+      {/* Delete — pinned to the card's top-right corner on mobile, last column on desktop */}
+      <div className="absolute top-3 right-3 md:static md:text-right">
         <button
           onClick={() => void handleDelete()}
           disabled={deleteWord.isPending}

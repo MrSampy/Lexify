@@ -142,4 +142,51 @@ public class ImportLineParserTests
     {
         Assert.Empty(ImportLineParser.Parse(""));
     }
+
+    [Fact]
+    public void Parse_TranslationWithAttachedParentheses_ExtractsNotesAndStripsTranslation()
+    {
+        var result = ImportLineParser.Parse("to drop off - випадково(в контексті сну)");
+
+        Assert.True(result[0].IsParsed);
+        Assert.Equal("випадково", result[0].Translation);
+        Assert.Equal("в контексті сну", result[0].Notes);
+    }
+
+    [Fact]
+    public void Parse_TranslationWithSpacedParentheses_ExtractsNotesAndTrims()
+    {
+        var result = ImportLineParser.Parse("to hit the sack - іти на боковеньку (заснути)");
+
+        Assert.True(result[0].IsParsed);
+        Assert.Equal("іти на боковеньку", result[0].Translation);
+        Assert.Equal("заснути", result[0].Notes);
+    }
+
+    [Fact]
+    public void Parse_TranslationWithoutParentheses_NotesIsNull()
+    {
+        var result = ImportLineParser.Parse("dog - собака");
+
+        Assert.Null(result[0].Notes);
+    }
+
+    [Fact]
+    public void Parse_TranslationWithParenthesesContainingComma_DoesNotSplitIntoAlternatives()
+    {
+        var result = ImportLineParser.Parse("word - переклад (розмовне, неформально), синонім");
+
+        Assert.Equal("переклад", result[0].Translation);
+        Assert.Equal("розмовне, неформально", result[0].Notes);
+        Assert.Equal(["синонім"], result[0].AlternativeTranslations);
+    }
+
+    [Fact]
+    public void Parse_MultipleParentheticalGroups_MergesNotesWithSemicolon()
+    {
+        var result = ImportLineParser.Parse("word - переклад (a) (b)");
+
+        Assert.Equal("переклад", result[0].Translation);
+        Assert.Equal("a; b", result[0].Notes);
+    }
 }

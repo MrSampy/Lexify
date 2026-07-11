@@ -23,6 +23,12 @@ public sealed class WordConfiguration : IEntityTypeConfiguration<Word>
             .HasDefaultValueSql("'{}'::text[]")
             .IsRequired();
 
+        builder.Property(w => w.Synonyms)
+            .HasColumnName("synonyms")
+            .HasColumnType("text[]")
+            .HasDefaultValueSql("'{}'::text[]")
+            .IsRequired();
+
         builder.Property(w => w.WordType)
             .HasColumnName("word_type")
             .HasMaxLength(20)

@@ -186,4 +186,35 @@ public class WordTests
         Assert.False(word.ConfidenceFlag);
         Assert.Null(word.ConfidenceNote);
     }
+
+    [Fact]
+    public void SetSynonyms_TrimsDropsBlanksAndDeduplicatesCaseInsensitively()
+    {
+        var word = Word.Create(ValidBlockId, "big", "великий");
+
+        word.SetSynonyms(["  large  ", "large", "LARGE", "", "   ", "huge"]);
+
+        Assert.Equal(["large", "huge"], word.Synonyms);
+    }
+
+    [Fact]
+    public void SetSynonyms_DropsEntriesEqualToTerm()
+    {
+        var word = Word.Create(ValidBlockId, "big", "великий");
+
+        word.SetSynonyms(["big", "Big", "large"]);
+
+        Assert.Equal(["large"], word.Synonyms);
+    }
+
+    [Fact]
+    public void SetSynonyms_WithNull_ClearsList()
+    {
+        var word = Word.Create(ValidBlockId, "big", "великий");
+        word.SetSynonyms(["large"]);
+
+        word.SetSynonyms(null);
+
+        Assert.Empty(word.Synonyms);
+    }
 }

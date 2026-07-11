@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
   ConfidenceBadge,
+  ChipListInput,
 } from '@/shared/ui'
 import { useImportWordsStore } from '../model/store'
 import type { EditableWord } from '../model/types'
@@ -50,6 +51,14 @@ function WordPreviewRow({ word, onUpdate, onRemove }: RowProps) {
             {t('words.also')} {word.alternativeTranslations.join(', ')}
           </div>
         )}
+        <div className="px-3 pb-2 pt-1">
+          <div className="mb-1 text-xs text-muted-foreground">{t('words.synonyms')}</div>
+          <ChipListInput
+            value={word.synonyms ?? []}
+            onChange={(synonyms) => onUpdate({ synonyms })}
+            placeholder={t('words.addSynonym')}
+          />
+        </div>
       </td>
       <td className="w-36 p-1">
         <Select value={word.wordType} onValueChange={(v) => v && onUpdate({ wordType: v })}>

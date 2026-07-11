@@ -16,4 +16,5 @@ public sealed record WordDto(
     int IntervalDays,
     int Repetitions,
     DateTimeOffset NextReviewAt,
-    IReadOnlyList<string>? AlternativeTranslations = null);
+    IReadOnlyList<string>? AlternativeTranslations = null,
+    IReadOnlyList<string>? Synonyms = null);

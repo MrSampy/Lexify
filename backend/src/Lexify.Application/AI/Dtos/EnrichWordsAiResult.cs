@@ -17,4 +17,6 @@ public sealed record EnrichedWordAiItem(
     IReadOnlyList<string>? AlternativeTranslations,
     string? Notes,
     string? ExampleSentence,
-    string? ConfidenceNote);
+    string? ConfidenceNote,
+    IReadOnlyList<string>? Synonyms = null,
+    bool? TranslationInTargetLanguage = null);

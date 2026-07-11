@@ -59,7 +59,8 @@ public sealed class WordsController(ISender sender, ICurrentUserService currentU
             request.WordType,
             request.Notes,
             request.ExampleSentence,
-            request.SortOrder);
+            request.SortOrder,
+            request.Synonyms);
 
         var result = await sender.Send(command, cancellationToken);
         return ToActionResult(result, id => CreatedAtAction(nameof(GetWords), new { blockId }, id));
@@ -84,7 +85,8 @@ public sealed class WordsController(ISender sender, ICurrentUserService currentU
             request.ExampleSentence,
             request.ConfidenceFlag,
             request.ConfidenceNote,
-            request.AlternativeTranslations);
+            request.AlternativeTranslations,
+            request.Synonyms);
 
         return ToActionResult(await sender.Send(command, cancellationToken));
     }
@@ -160,7 +162,7 @@ public sealed class WordsController(ISender sender, ICurrentUserService currentU
                 w.Term, w.Translation, w.WordType,
                 w.Notes, w.ExampleSentence,
                 w.ConfidenceFlag, w.ConfidenceNote, w.SortOrder,
-                w.AlternativeTranslations))
+                w.AlternativeTranslations, w.Synonyms))
             .ToList();
 
         var command = new ImportWordsCommand(blockId, items);

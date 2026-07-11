@@ -38,6 +38,9 @@ public sealed class ImportWordsCommandHandler(
             if (item.AlternativeTranslations is { Count: > 0 })
                 word.SetAlternativeTranslations(item.AlternativeTranslations);
 
+            if (item.Synonyms is { Count: > 0 })
+                word.SetSynonyms(item.Synonyms);
+
             return word;
         }).ToList();
 
