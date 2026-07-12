@@ -1,15 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { HelpCircle } from 'lucide-react'
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui'
+import { Button, Dialog, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui'
 
 const RULE_KEYS = ['rule1', 'rule2', 'rule3', 'rule4', 'rule5', 'rule6'] as const
 
@@ -31,13 +23,14 @@ export function ImportHelpDialog() {
         {t('import.help.trigger')}
       </Button>
 
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      {/* Fixed header/footer, scrollable rule list — the content is too tall for short viewports otherwise. */}
+      <DialogContent className="flex max-h-[85vh] w-full max-w-[min(32rem,calc(100%-2rem))] flex-col gap-0 p-0">
+        <div className="flex-none space-y-2 p-4 pb-3">
           <DialogTitle>{t('import.help.title')}</DialogTitle>
           <DialogDescription>{t('import.help.intro')}</DialogDescription>
-        </DialogHeader>
+        </div>
 
-        <ol className="space-y-4 text-sm">
+        <ol className="flex-1 space-y-4 overflow-y-auto px-4 pb-4 text-sm">
           {RULE_KEYS.map((key, i) => (
             <li key={key} className="flex gap-3">
               <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
@@ -56,9 +49,9 @@ export function ImportHelpDialog() {
           ))}
         </ol>
 
-        <DialogFooter>
+        <div className="flex flex-none justify-end gap-2 rounded-b-xl border-t bg-muted/50 p-4">
           <Button onClick={() => setOpen(false)}>{t('import.help.close')}</Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )
