@@ -2,6 +2,8 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { LoginPage } from '@/pages/Login/ui/LoginPage'
 import { RegisterPage } from '@/pages/Register/ui/RegisterPage'
+import { ForgotPasswordPage } from '@/pages/ForgotPassword/ui/ForgotPasswordPage'
+import { ResetPasswordPage } from '@/pages/ResetPassword/ui/ResetPasswordPage'
 import { BlockListPage } from '@/pages/BlockList/ui/BlockListPage'
 import { BlockDetailPage } from '@/pages/BlockDetail/ui/BlockDetailPage'
 import { WordImportPage } from '@/pages/WordImport/ui/WordImportPage'
@@ -27,6 +29,8 @@ import { AdminGuard } from './guards/AdminGuard'
 const router = createBrowserRouter([
   { path: ROUTES.LOGIN, element: <LoginPage /> },
   { path: ROUTES.REGISTER, element: <RegisterPage /> },
+  { path: ROUTES.FORGOT_PASSWORD, element: <ForgotPasswordPage /> },
+  { path: ROUTES.RESET_PASSWORD, element: <ResetPasswordPage /> },
   {
     element: <AuthGuard />,
     children: [

@@ -7,6 +7,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<Language> Languages => Set<Language>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();

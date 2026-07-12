@@ -8,4 +8,8 @@ public interface IBackgroundJobService
         Guid[] blockIds,
         string[] questionTypes,
         int questionCount);
+
+    void EnqueueWelcomeEmail(string email, string username);
+
+    void EnqueuePasswordResetEmail(string email, string rawToken);
 }

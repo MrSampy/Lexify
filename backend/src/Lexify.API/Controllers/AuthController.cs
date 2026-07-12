@@ -1,8 +1,10 @@
 using Lexify.Application.Auth.Commands.Common;
+using Lexify.Application.Auth.Commands.ForgotPassword;
 using Lexify.Application.Auth.Commands.Login;
 using Lexify.Application.Auth.Commands.Logout;
 using Lexify.Application.Auth.Commands.RefreshToken;
 using Lexify.Application.Auth.Commands.Register;
+using Lexify.Application.Auth.Commands.ResetPassword;
 using Lexify.API.RateLimit;
 using Lexify.API.Requests.Auth;
 using MediatR;
@@ -83,6 +85,30 @@ public sealed class AuthController(ISender sender) : BaseApiController
 
         DeleteRefreshCookie();
         return Ok();
+    }
+
+    /// <summary>Request a password-reset email. Always returns 200 so the response reveals nothing about account existence.</summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request, CancellationToken cancellationToken)
+    {
+        await sender.Send(new ForgotPasswordCommand(request.Email), cancellationToken);
+        return Ok();
+    }
+
+    /// <summary>Set a new password using a token from the reset email. The token is single-use.</summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(
+            new ResetPasswordCommand(request.Token, request.NewPassword),
+            cancellationToken);
+
+        return ToActionResult(result);
     }
 
     private IActionResult ToAuthResult(AuthResponse auth)

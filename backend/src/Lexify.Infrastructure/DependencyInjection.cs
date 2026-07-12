@@ -70,6 +70,7 @@ public static class DependencyInjection
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IWordBlockRepository, WordBlockRepository>();
         services.AddScoped<IWordRepository, WordRepository>();
         services.AddScoped<IAiCallLogRepository, AiCallLogRepository>();
@@ -90,8 +91,11 @@ public static class DependencyInjection
         services.AddHangfireServer(opts => opts.WorkerCount = 2);
         services.AddScoped<GenerateTestJob>();
         services.AddScoped<CleanupRefreshTokensJob>();
+        services.AddScoped<CleanupPasswordResetTokensJob>();
         services.AddScoped<AnonymizeDeletedUsersJob>();
         services.AddScoped<SendReviewRemindersJob>();
+        services.AddScoped<SendWelcomeEmailJob>();
+        services.AddScoped<SendPasswordResetEmailJob>();
         services.AddScoped<CleanupAiLogsJob>();
         services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
 

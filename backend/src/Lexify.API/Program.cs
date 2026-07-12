@@ -137,6 +137,8 @@ if (!app.Environment.IsEnvironment("Testing"))
     var recurringJobs = app.Services.GetRequiredService<IRecurringJobManager>();
     recurringJobs.AddOrUpdate<CleanupRefreshTokensJob>(
         "cleanup-refresh-tokens", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+    recurringJobs.AddOrUpdate<CleanupPasswordResetTokensJob>(
+        "cleanup-password-reset-tokens", job => job.RunAsync(CancellationToken.None), Cron.Daily);
     recurringJobs.AddOrUpdate<AnonymizeDeletedUsersJob>(
         "anonymize-deleted-users", job => job.RunAsync(CancellationToken.None), Cron.Daily);
     recurringJobs.AddOrUpdate<SendReviewRemindersJob>(

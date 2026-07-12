@@ -2,22 +2,30 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { ROUTES } from '@/shared/config'
-import { useAuthStore } from '@/entities/user'
 import { authApi } from '../api/authApi'
 
-const schema = z.object({
-  email: z.string().email('auth.emailInvalid'),
-  password: z.string().min(8, 'auth.passwordMin'),
-})
+const schema = z
+  .object({
+    newPassword: z.string().min(8, 'auth.passwordMin'),
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: 'auth.passwordsMismatch',
+    path: ['confirmPassword'],
+  })
 
 type FormValues = z.infer<typeof schema>
 
-export function LoginForm() {
+interface ResetPasswordFormProps {
+  token: string
+}
+
+export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const setAuth = useAuthStore((s) => s.setAuth)
 
   const {
     register,
@@ -28,14 +36,12 @@ export function LoginForm() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const data = await authApi.login(values.email, values.password)
-      setAuth(data)
-      navigate(ROUTES.DASHBOARD)
-    } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'auth.invalidCredentials'
-      setError('root', { message })
+      await authApi.resetPassword(token, values.newPassword)
+      toast.success(t('auth.resetSuccess'))
+      navigate(ROUTES.LOGIN)
+    } catch {
+      // The backend intentionally returns one generic message for any token failure
+      setError('root', { message: 'auth.resetInvalid' })
     }
   }
 
@@ -46,49 +52,36 @@ export function LoginForm() {
     >
       <div>
         <input
-          id="email"
-          type="email"
-          placeholder={t('auth.email')}
-          aria-label={t('auth.email')}
-          autoComplete="email"
+          id="newPassword"
+          type="password"
+          placeholder={t('auth.newPassword')}
+          aria-label={t('auth.newPassword')}
+          autoComplete="new-password"
           className="lx-input"
-          {...register('email')}
+          {...register('newPassword')}
         />
-        {errors.email && (
+        {errors.newPassword && (
           <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
-            {t(errors.email.message ?? '')}
+            {t(errors.newPassword.message ?? '')}
           </p>
         )}
       </div>
 
       <div>
         <input
-          id="password"
+          id="confirmPassword"
           type="password"
-          placeholder={t('auth.password')}
-          aria-label={t('auth.password')}
-          autoComplete="current-password"
+          placeholder={t('auth.confirmPassword')}
+          aria-label={t('auth.confirmPassword')}
+          autoComplete="new-password"
           className="lx-input"
-          {...register('password')}
+          {...register('confirmPassword')}
         />
-        {errors.password && (
+        {errors.confirmPassword && (
           <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
-            {t(errors.password.message ?? '')}
+            {t(errors.confirmPassword.message ?? '')}
           </p>
         )}
-        <p style={{ margin: '6px 0 0', textAlign: 'right' }}>
-          <Link
-            to={ROUTES.FORGOT_PASSWORD}
-            style={{
-              color: 'var(--accent-color)',
-              textDecoration: 'none',
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            {t('auth.forgotPassword')}
-          </Link>
-        </p>
       </div>
 
       {errors.root && (
@@ -107,15 +100,13 @@ export function LoginForm() {
         </div>
       )}
 
-      <div style={{ height: 4 }} />
-
       <button
         type="submit"
         className="lx-btn-primary"
         disabled={isSubmitting}
         style={{ width: '100%', justifyContent: 'center' }}
       >
-        {isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
+        {isSubmitting ? t('auth.resetting') : t('auth.resetSubmit')}
       </button>
     </form>
   )
