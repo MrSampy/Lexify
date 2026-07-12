@@ -199,7 +199,30 @@
     "charCount": "{{count}} / 10 000 characters",
     "formatWithAI": "Format with AI",
     "noRows": "No words yet — add one below.",
-    "addRow": "Add row"
+    "addRow": "Add row",
+    "help": {
+      "trigger": "How does this work?",
+      "title": "How to write your word list",
+      "intro": "You don't have to follow any strict format — but a few simple habits below help us get every word right on the first try.",
+      "rule1Title": "One word per line",
+      "rule1Desc": "Write each word or phrase on its own line.",
+      "rule1Example": "cat\ndog\nhouse",
+      "rule2Title": "Separate the word from its translation",
+      "rule2Desc": "Put a dash, a colon, or a tab between the word and its translation.",
+      "rule2Example": "cat - кіт",
+      "rule3Title": "Know more than one translation?",
+      "rule3Desc": "List the extra ones after a comma or a slash — we'll keep the first as the main translation and save the rest alongside it.",
+      "rule3Example": "collar - комір, шийка",
+      "rule4Title": "Want to add a quick clarification?",
+      "rule4Desc": "Put it in parentheses right after the translation — it won't be mixed into the translation itself.",
+      "rule4Example": "spring - весна (пора року)",
+      "rule5Title": "Not sure a translation is right?",
+      "rule5Desc": "End the line with a question mark and we'll mark that word for you to double-check later.",
+      "rule5Example": "aloof - відсторонений?",
+      "rule6Title": "Prefer to just paste messy text?",
+      "rule6Desc": "That works too — paste a sentence, a list from class, or your own notes in any shape. We'll pick out the words, translate them, work out whether each one is a single word, a phrase, or a fixed expression, and add an example sentence where it helps.",
+      "close": "Got it"
+    }
   },
   "csvImport": {
     "title": "Import from CSV",
