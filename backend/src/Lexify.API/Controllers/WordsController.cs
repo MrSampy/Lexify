@@ -4,6 +4,8 @@ using Lexify.API.RateLimit;
 using Lexify.API.Requests.Words;
 using Lexify.Application.Abstractions;
 using Lexify.Application.AI.Commands.FormatWords;
+using Lexify.Application.Words.Commands.BulkDeleteWords;
+using Lexify.Application.Words.Commands.BulkMoveWords;
 using Lexify.Application.Words.Commands.CreateWord;
 using Lexify.Application.Words.Commands.DeleteWord;
 using Lexify.Application.Words.Commands.ImportWords;
@@ -101,6 +103,37 @@ public sealed class WordsController(ISender sender, ICurrentUserService currentU
         CancellationToken cancellationToken)
     {
         return ToActionResult(await sender.Send(new DeleteWordCommand(wordId), cancellationToken));
+    }
+
+    /// <summary>Deletes up to 200 selected words from the block in one operation.</summary>
+    [HttpPost("bulk-delete")]
+    [ProducesResponseType<int>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> BulkDeleteWords(
+        Guid blockId,
+        BulkDeleteWordsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new BulkDeleteWordsCommand(blockId, request.WordIds);
+        return ToActionResult(await sender.Send(command, cancellationToken));
+    }
+
+    /// <summary>Moves up to 200 selected words to another block of the same language.</summary>
+    [HttpPost("bulk-move")]
+    [ProducesResponseType<int>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> BulkMoveWords(
+        Guid blockId,
+        BulkMoveWordsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new BulkMoveWordsCommand(blockId, request.TargetBlockId, request.WordIds);
+        return ToActionResult(await sender.Send(command, cancellationToken));
     }
 
     /// <summary>Formats raw vocabulary text via AI and streams SSE events (parsing → streaming → done/error).</summary>

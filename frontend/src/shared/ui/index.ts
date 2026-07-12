@@ -43,6 +43,7 @@ export { Spinner } from './Spinner'
 export { ConfidenceBadge } from './ConfidenceBadge'
 export { useConfirm } from './ConfirmDialog'
 export { LanguageBadge } from './LanguageBadge'
+export { SpeakButton } from './SpeakButton'
 
 // Hooks
 export { useSSE } from './SSEListener/useSSE'

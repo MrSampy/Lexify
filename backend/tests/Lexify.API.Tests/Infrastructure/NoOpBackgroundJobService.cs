@@ -10,4 +10,14 @@ public sealed class NoOpBackgroundJobService : IBackgroundJobService
     {
         // intentionally a no-op — tests check status immediately after enqueue
     }
+
+    public void EnqueueWelcomeEmail(string email, string username)
+    {
+        // intentionally a no-op
+    }
+
+    public void EnqueuePasswordResetEmail(string email, string rawToken)
+    {
+        // intentionally a no-op
+    }
 }

@@ -11,6 +11,7 @@ import {
 } from '@/shared/ui'
 import { useImportWordsStore } from '../model/store'
 import { validateImportInput } from '../lib/validateImportInput'
+import { ImportHelpDialog } from './ImportHelpDialog'
 
 interface Props {
   onSubmit: () => void
@@ -69,7 +70,10 @@ export function RawTextInput({ onSubmit }: Props) {
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">{t('import.vocabText')}</label>
+        <div className="mb-1 flex items-center justify-between">
+          <label className="block text-sm font-medium">{t('import.vocabText')}</label>
+          <ImportHelpDialog />
+        </div>
         <Textarea
           value={rawText}
           onChange={(e) => setRawText(e.target.value)}

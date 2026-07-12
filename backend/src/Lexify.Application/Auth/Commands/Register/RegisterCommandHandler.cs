@@ -8,7 +8,8 @@ namespace Lexify.Application.Auth.Commands.Register;
 
 public sealed class RegisterCommandHandler(
     IUserRepository userRepository,
-    IPasswordHasher passwordHasher)
+    IPasswordHasher passwordHasher,
+    IBackgroundJobService backgroundJobService)
     : IRequestHandler<RegisterCommand, Result<Guid>>
 {
     public async Task<Result<Guid>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -21,6 +22,11 @@ public sealed class RegisterCommandHandler(
         var user = User.Create(request.Email, passwordHash, request.DisplayName);
 
         await userRepository.AddAsync(user, cancellationToken);
+
+        var username = string.IsNullOrWhiteSpace(request.DisplayName)
+            ? request.Email.Split('@')[0]
+            : request.DisplayName;
+        backgroundJobService.EnqueueWelcomeEmail(user.Email, username);
 
         return Result.Ok(user.Id);
     }

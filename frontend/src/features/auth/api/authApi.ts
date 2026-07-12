@@ -14,4 +14,11 @@ export const authApi = {
   logout: () => apiClient.post('/api/auth/logout').then((r) => r.data),
 
   refresh: () => apiClient.post<AuthResponse>('/api/auth/refresh').then((r) => r.data),
+
+  // Always resolves 200 regardless of whether the email exists (anti-enumeration)
+  forgotPassword: (email: string) =>
+    apiClient.post('/api/auth/forgot-password', { email }).then((r) => r.data),
+
+  resetPassword: (token: string, newPassword: string) =>
+    apiClient.post('/api/auth/reset-password', { token, newPassword }).then((r) => r.data),
 }

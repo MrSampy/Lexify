@@ -46,8 +46,15 @@ public interface IWordRepository
         int limit = 20,
         CancellationToken ct = default);
 
+    /// <summary>Returns only the requested words that actually belong to the block — foreign ids are dropped.</summary>
+    Task<IReadOnlyList<Word>> GetByIdsInBlockAsync(
+        Guid blockId,
+        IReadOnlyCollection<Guid> wordIds,
+        CancellationToken ct = default);
+
     Task AddAsync(Word word, CancellationToken ct = default);
     Task AddRangeAsync(IEnumerable<Word> words, CancellationToken ct = default);
     Task UpdateAsync(Word word, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
+    Task DeleteRangeAsync(IEnumerable<Word> words, CancellationToken ct = default);
 }

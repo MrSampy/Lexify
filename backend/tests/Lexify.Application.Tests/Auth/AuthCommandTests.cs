@@ -1,7 +1,9 @@
 using Lexify.Application.Abstractions;
+using Lexify.Application.Auth.Commands.ForgotPassword;
 using Lexify.Application.Auth.Commands.Login;
 using Lexify.Application.Auth.Commands.RefreshToken;
 using Lexify.Application.Auth.Commands.Register;
+using Lexify.Application.Auth.Commands.ResetPassword;
 using Lexify.Application.Common;
 using Lexify.Domain.Entities;
 using Lexify.Domain.Repositories;
@@ -15,6 +17,7 @@ public class AuthCommandTests
 
     private readonly IUserRepository _userRepo = Substitute.For<IUserRepository>();
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
+    private readonly IBackgroundJobService _backgroundJobs = Substitute.For<IBackgroundJobService>();
 
     [Fact]
     public async Task Register_DuplicateEmail_ReturnsFailure()
@@ -23,13 +26,14 @@ public class AuthCommandTests
         _userRepo.GetByEmailAsync("user@example.com", Arg.Any<CancellationToken>())
             .Returns(existingUser);
 
-        var handler = new RegisterCommandHandler(_userRepo, _passwordHasher);
+        var handler = new RegisterCommandHandler(_userRepo, _passwordHasher, _backgroundJobs);
         var result = await handler.Handle(
             new RegisterCommand("user@example.com", "password", null),
             CancellationToken.None);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ResultStatus.Failure, result.Status);
+        _backgroundJobs.DidNotReceive().EnqueueWelcomeEmail(Arg.Any<string>(), Arg.Any<string>());
     }
 
     [Fact]
@@ -39,13 +43,29 @@ public class AuthCommandTests
             .Returns((User?)null);
         _passwordHasher.Hash("password").Returns("hashed");
 
-        var handler = new RegisterCommandHandler(_userRepo, _passwordHasher);
+        var handler = new RegisterCommandHandler(_userRepo, _passwordHasher, _backgroundJobs);
         var result = await handler.Handle(
             new RegisterCommand("new@example.com", "password", "Alice"),
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.NotEqual(Guid.Empty, result.Value);
+        _backgroundJobs.Received(1).EnqueueWelcomeEmail("new@example.com", "Alice");
+    }
+
+    [Fact]
+    public async Task Register_NoDisplayName_WelcomeEmailUsesEmailPrefix()
+    {
+        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((User?)null);
+        _passwordHasher.Hash("password").Returns("hashed");
+
+        var handler = new RegisterCommandHandler(_userRepo, _passwordHasher, _backgroundJobs);
+        await handler.Handle(
+            new RegisterCommand("bob@example.com", "password", null),
+            CancellationToken.None);
+
+        _backgroundJobs.Received(1).EnqueueWelcomeEmail("bob@example.com", "bob");
     }
 
     // ---- Login ----
@@ -197,5 +217,140 @@ public class AuthCommandTests
         Assert.True(result.IsSuccess);
         Assert.Equal("new_access_token", result.Value!.AccessToken);
         Assert.NotNull(result.Value.RefreshToken);
+    }
+
+    // ---- ForgotPassword ----
+
+    private readonly IPasswordResetTokenRepository _resetTokenRepo =
+        Substitute.For<IPasswordResetTokenRepository>();
+
+    [Fact]
+    public async Task ForgotPassword_UnknownEmail_ReturnsOkWithoutEnqueueingEmail()
+    {
+        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((User?)null);
+
+        var handler = new ForgotPasswordCommandHandler(_userRepo, _resetTokenRepo, _backgroundJobs);
+        var result = await handler.Handle(
+            new ForgotPasswordCommand("missing@example.com"),
+            CancellationToken.None);
+
+        // Anti-enumeration: unknown email must be indistinguishable from a known one.
+        Assert.True(result.IsSuccess);
+        await _resetTokenRepo.DidNotReceive()
+            .AddAsync(Arg.Any<PasswordResetToken>(), Arg.Any<CancellationToken>());
+        _backgroundJobs.DidNotReceive()
+            .EnqueuePasswordResetEmail(Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task ForgotPassword_SuspendedUser_ReturnsOkWithoutEnqueueingEmail()
+    {
+        var user = new User("user@example.com", "hash", status: User.Statuses.Suspended);
+        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
+
+        var handler = new ForgotPasswordCommandHandler(_userRepo, _resetTokenRepo, _backgroundJobs);
+        var result = await handler.Handle(
+            new ForgotPasswordCommand("user@example.com"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        _backgroundJobs.DidNotReceive()
+            .EnqueuePasswordResetEmail(Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task ForgotPassword_ActiveUser_InvalidatesOldTokensAndEnqueuesEmail()
+    {
+        var user = new User("user@example.com", "hash");
+        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
+
+        var handler = new ForgotPasswordCommandHandler(_userRepo, _resetTokenRepo, _backgroundJobs);
+        var result = await handler.Handle(
+            new ForgotPasswordCommand("user@example.com"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        await _resetTokenRepo.Received(1)
+            .InvalidateActiveForUserAsync(user.Id, Arg.Any<CancellationToken>());
+        await _resetTokenRepo.Received(1)
+            .AddAsync(Arg.Is<PasswordResetToken>(t => t.UserId == user.Id && t.IsActive),
+                Arg.Any<CancellationToken>());
+        _backgroundJobs.Received(1)
+            .EnqueuePasswordResetEmail("user@example.com", Arg.Is<string>(t => t.Length == 64));
+    }
+
+    // ---- ResetPassword ----
+
+    [Fact]
+    public async Task ResetPassword_UnknownToken_ReturnsGenericFailure()
+    {
+        _resetTokenRepo.GetByHashAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((PasswordResetToken?)null);
+
+        var handler = new ResetPasswordCommandHandler(
+            _userRepo, _resetTokenRepo, _refreshTokenRepo, _passwordHasher);
+        var result = await handler.Handle(
+            new ResetPasswordCommand("unknowntoken", "newpassword1"),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Invalid or expired token.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task ResetPassword_ExpiredToken_ReturnsGenericFailure()
+    {
+        var token = new PasswordResetToken(Guid.NewGuid(), "hash", DateTimeOffset.UtcNow.AddHours(-1));
+        _resetTokenRepo.GetByHashAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(token);
+
+        var handler = new ResetPasswordCommandHandler(
+            _userRepo, _resetTokenRepo, _refreshTokenRepo, _passwordHasher);
+        var result = await handler.Handle(
+            new ResetPasswordCommand("expiredtoken", "newpassword1"),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Invalid or expired token.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task ResetPassword_UsedToken_ReturnsGenericFailure()
+    {
+        var token = new PasswordResetToken(Guid.NewGuid(), "hash", DateTimeOffset.UtcNow.AddHours(1));
+        token.MarkUsed();
+        _resetTokenRepo.GetByHashAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(token);
+
+        var handler = new ResetPasswordCommandHandler(
+            _userRepo, _resetTokenRepo, _refreshTokenRepo, _passwordHasher);
+        var result = await handler.Handle(
+            new ResetPasswordCommand("usedtoken", "newpassword1"),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Invalid or expired token.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task ResetPassword_ValidToken_ChangesPasswordMarksUsedAndRevokesSessions()
+    {
+        var user = new User("user@example.com", "oldhash");
+        var token = new PasswordResetToken(user.Id, "hash", DateTimeOffset.UtcNow.AddHours(1));
+
+        _resetTokenRepo.GetByHashAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(token);
+        _userRepo.GetByIdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(user);
+        _passwordHasher.Hash("newpassword1").Returns("newhash");
+
+        var handler = new ResetPasswordCommandHandler(
+            _userRepo, _resetTokenRepo, _refreshTokenRepo, _passwordHasher);
+        var result = await handler.Handle(
+            new ResetPasswordCommand("validtoken", "newpassword1"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("newhash", user.PasswordHash);
+        Assert.NotNull(token.UsedAt);
+        await _refreshTokenRepo.Received(1)
+            .RevokeAllForUserAsync(user.Id, Arg.Any<CancellationToken>());
     }
 }

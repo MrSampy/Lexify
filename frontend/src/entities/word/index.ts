@@ -6,6 +6,8 @@ export {
   useUpdateWordMutation,
   useDeleteWordMutation,
   useImportWordsMutation,
+  useBulkDeleteWordsMutation,
+  useBulkMoveWordsMutation,
 } from './api/wordApi'
 export { WordRow } from './ui/WordRow'
 export { WordTypeBadge } from './ui/WordTypeBadge'

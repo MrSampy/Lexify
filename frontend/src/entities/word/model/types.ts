@@ -18,6 +18,8 @@ export interface Word {
   intervalDays: number
   repetitions: number
   nextReviewAt: string
+  /** Present only on review-session payloads — used for TTS voice selection. */
+  languageId?: number | null
 }
 
 export interface CreateWordInput {

@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { useAuthStore } from '@/entities/user'
 import { authApi } from '../api/authApi'
@@ -76,6 +76,19 @@ export function LoginForm() {
             {t(errors.password.message ?? '')}
           </p>
         )}
+        <p style={{ margin: '6px 0 0', textAlign: 'right' }}>
+          <Link
+            to={ROUTES.FORGOT_PASSWORD}
+            style={{
+              color: 'var(--accent-color)',
+              textDecoration: 'none',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            {t('auth.forgotPassword')}
+          </Link>
+        </p>
       </div>
 
       {errors.root && (

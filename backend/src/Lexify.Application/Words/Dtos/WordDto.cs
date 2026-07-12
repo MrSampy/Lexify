@@ -17,4 +17,7 @@ public sealed record WordDto(
     int Repetitions,
     DateTimeOffset NextReviewAt,
     IReadOnlyList<string>? AlternativeTranslations = null,
-    IReadOnlyList<string>? Synonyms = null);
+    IReadOnlyList<string>? Synonyms = null,
+    // Populated only where the consumer needs it (e.g. review cards for TTS); word lists
+    // already know their block's language.
+    short? LanguageId = null);

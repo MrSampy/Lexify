@@ -26,4 +26,9 @@ public interface IWordBlockRepository
     Task DeleteAsync(Guid id, CancellationToken ct = default);
     /// <summary>Returns total block count and sum of word counts for a user in one query.</summary>
     Task<(int TotalBlocks, int TotalWords)> GetUserSummaryAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Maps each of the given block ids to its language id (missing blocks are omitted).</summary>
+    Task<IReadOnlyDictionary<Guid, short>> GetLanguageIdsAsync(
+        IReadOnlyCollection<Guid> blockIds,
+        CancellationToken ct = default);
 }

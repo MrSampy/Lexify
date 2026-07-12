@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
-import { Spinner } from '@/shared/ui'
+import { SpeakButton, Spinner } from '@/shared/ui'
 import { useDueWords, useRateWordMutation } from '@/features/review-word'
 import type { Word } from '@/entities/word'
 
@@ -231,6 +231,12 @@ export function ReviewSessionPage() {
             >
               {currentWord.term}
             </div>
+            <SpeakButton
+              text={currentWord.term}
+              languageId={currentWord.languageId}
+              size={22}
+              style={{ marginTop: 14 }}
+            />
             <button
               className="lx-btn-secondary"
               style={{ marginTop: 30 }}

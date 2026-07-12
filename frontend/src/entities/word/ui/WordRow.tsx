@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import { Button, useConfirm, ChipListInput } from '@/shared/ui'
+import { Button, Checkbox, SpeakButton, useConfirm, ChipListInput } from '@/shared/ui'
 import { useUpdateWordMutation, useDeleteWordMutation } from '../api/wordApi'
 import type { Word } from '../model/types'
 import { WordTypeBadge } from './WordTypeBadge'
@@ -9,9 +9,14 @@ import { WordTypeBadge } from './WordTypeBadge'
 interface WordRowProps {
   word: Word
   blockId: string
+  /** Language of the block — enables the pronunciation button when a voice exists. */
+  languageId?: number
+  /** When provided, the row renders a selection checkbox (bulk actions). */
+  selected?: boolean
+  onSelectedChange?: (selected: boolean) => void
 }
 
-export function WordRow({ word, blockId }: WordRowProps) {
+export function WordRow({ word, blockId, languageId, selected, onSelectedChange }: WordRowProps) {
   const { t } = useTranslation()
   const [editField, setEditField] = useState<'translation' | 'notes' | 'synonyms' | null>(null)
   const [draftTranslation, setDraftTranslation] = useState(word.translation)
@@ -77,15 +82,43 @@ export function WordRow({ word, blockId }: WordRowProps) {
     })
   }
 
+  const selectable = onSelectedChange !== undefined
+
   return (
-    // Mobile: stacked card (1 column); desktop (md+): the original 5-column table row.
+    // Mobile: stacked card (1 column); desktop (md+): the original table row
+    // (+ a leading checkbox column when bulk selection is enabled).
     <div
-      className={`relative grid grid-cols-1 gap-1.5 border-b border-b-[var(--line-1)] border-l-2 px-[18px] py-3.5 md:min-w-[560px] md:grid-cols-[1.4fr_1.4fr_0.9fr_1.6fr_60px] md:items-center md:gap-3 ${
-        word.confidenceFlag ? 'border-l-[var(--warning)]' : 'border-l-transparent'
-      }`}
+      className={`relative grid grid-cols-1 gap-1.5 border-b border-b-[var(--line-1)] border-l-2 py-3.5 pr-[18px] md:min-w-[560px] md:items-center md:gap-3 ${
+        selectable
+          ? 'pl-8 md:grid-cols-[28px_1.4fr_1.4fr_0.9fr_1.6fr_60px] md:pl-[18px]'
+          : 'pl-[18px] md:grid-cols-[1.4fr_1.4fr_0.9fr_1.6fr_60px]'
+      } ${word.confidenceFlag ? 'border-l-[var(--warning)]' : 'border-l-transparent'}`}
     >
+      {/* Selection checkbox — inline with the term on mobile, own column on desktop */}
+      {selectable && (
+        <div className="absolute top-4 left-1 md:static">
+          <Checkbox
+            checked={selected ?? false}
+            onCheckedChange={(v) => onSelectedChange(v === true)}
+            aria-label={word.term}
+          />
+        </div>
+      )}
+
       {/* Term */}
-      <div style={{ color: 'var(--fg-1)', fontWeight: 500, fontSize: 14 }}>{word.term}</div>
+      <div
+        style={{
+          color: 'var(--fg-1)',
+          fontWeight: 500,
+          fontSize: 14,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <span>{word.term}</span>
+        <SpeakButton text={word.term} languageId={languageId} />
+      </div>
 
       {/* Translation */}
       <div>
