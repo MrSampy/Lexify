@@ -1,19 +1,21 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { authApi } from '../api/authApi'
 
 const schema = z.object({
-  email: z.string().email('Enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  displayName: z.string().min(2, 'At least 2 characters').max(50),
+  email: z.string().email('auth.emailInvalid'),
+  password: z.string().min(8, 'auth.passwordMin'),
+  displayName: z.string().min(2, 'auth.nameMin').max(50),
 })
 
 type FormValues = z.infer<typeof schema>
 
 export function RegisterForm() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const {
@@ -30,7 +32,7 @@ export function RegisterForm() {
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Registration failed. Please try again.'
+        'auth.registerFailed'
       setError('root', { message })
     }
   }
@@ -46,13 +48,13 @@ export function RegisterForm() {
           type="text"
           autoComplete="name"
           className="lx-input"
-          placeholder="Your name"
-          aria-label="Display name"
+          placeholder={t('auth.yourName')}
+          aria-label={t('auth.yourName')}
           {...register('displayName')}
         />
         {errors.displayName && (
           <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
-            {errors.displayName.message}
+            {t(errors.displayName.message ?? '')}
           </p>
         )}
       </div>
@@ -61,15 +63,15 @@ export function RegisterForm() {
         <input
           id="email"
           type="email"
-          placeholder="Email"
-          aria-label="Email"
+          placeholder={t('auth.email')}
+          aria-label={t('auth.email')}
           autoComplete="email"
           className="lx-input"
           {...register('email')}
         />
         {errors.email && (
           <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
-            {errors.email.message}
+            {t(errors.email.message ?? '')}
           </p>
         )}
       </div>
@@ -78,15 +80,15 @@ export function RegisterForm() {
         <input
           id="password"
           type="password"
-          placeholder="Password"
-          aria-label="Password"
+          placeholder={t('auth.password')}
+          aria-label={t('auth.password')}
           autoComplete="new-password"
           className="lx-input"
           {...register('password')}
         />
         {errors.password && (
           <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
-            {errors.password.message}
+            {t(errors.password.message ?? '')}
           </p>
         )}
       </div>
@@ -103,7 +105,7 @@ export function RegisterForm() {
             fontFamily: 'var(--font-body)',
           }}
         >
-          {errors.root.message}
+          {t(errors.root.message ?? '')}
         </div>
       )}
 
@@ -115,7 +117,7 @@ export function RegisterForm() {
         disabled={isSubmitting}
         style={{ width: '100%', justifyContent: 'center' }}
       >
-        {isSubmitting ? 'Creating account…' : 'Register'}
+        {isSubmitting ? t('auth.creatingAccount') : t('auth.register')}
       </button>
     </form>
   )

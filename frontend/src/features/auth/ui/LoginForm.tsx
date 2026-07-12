@@ -1,19 +1,21 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { useAuthStore } from '@/entities/user'
 import { authApi } from '../api/authApi'
 
 const schema = z.object({
-  email: z.string().email('Enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  email: z.string().email('auth.emailInvalid'),
+  password: z.string().min(8, 'auth.passwordMin'),
 })
 
 type FormValues = z.infer<typeof schema>
 
 export function LoginForm() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
 
@@ -32,7 +34,7 @@ export function LoginForm() {
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Invalid email or password.'
+        'auth.invalidCredentials'
       setError('root', { message })
     }
   }
@@ -46,15 +48,15 @@ export function LoginForm() {
         <input
           id="email"
           type="email"
-          placeholder="Email"
-          aria-label="Email"
+          placeholder={t('auth.email')}
+          aria-label={t('auth.email')}
           autoComplete="email"
           className="lx-input"
           {...register('email')}
         />
         {errors.email && (
           <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
-            {errors.email.message}
+            {t(errors.email.message ?? '')}
           </p>
         )}
       </div>
@@ -63,15 +65,15 @@ export function LoginForm() {
         <input
           id="password"
           type="password"
-          placeholder="Password"
-          aria-label="Password"
+          placeholder={t('auth.password')}
+          aria-label={t('auth.password')}
           autoComplete="current-password"
           className="lx-input"
           {...register('password')}
         />
         {errors.password && (
           <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
-            {errors.password.message}
+            {t(errors.password.message ?? '')}
           </p>
         )}
       </div>
@@ -88,7 +90,7 @@ export function LoginForm() {
             fontFamily: 'var(--font-body)',
           }}
         >
-          {errors.root.message}
+          {t(errors.root.message ?? '')}
         </div>
       )}
 
@@ -100,7 +102,7 @@ export function LoginForm() {
         disabled={isSubmitting}
         style={{ width: '100%', justifyContent: 'center' }}
       >
-        {isSubmitting ? 'Signing in…' : 'Sign in'}
+        {isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
       </button>
     </form>
   )

@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Spinner } from '@/shared/ui'
-import { ROUTES } from '@/shared/config'
+import { LxSelect, Spinner } from '@/shared/ui'
+import { LANGUAGES, ROUTES } from '@/shared/config'
 import { debounce } from '@/shared/lib/debounce'
 import { useSearchWords } from '@/entities/word/api/searchApi'
 import { WordTypeBadge } from '@/entities/word'
@@ -11,15 +11,31 @@ export function SearchResultsPage() {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const q = searchParams.get('q') ?? ''
-  const { data, isLoading, isError } = useSearchWords(q)
+  const langParam = searchParams.get('lang')
+  const lang = langParam ? Number(langParam) : undefined
+  const { data, isLoading, isError } = useSearchWords(q, lang)
 
   const [inputValue, setInputValue] = useState(q)
 
   const debouncedSetQuery = useRef(
     debounce((value: string) => {
-      setSearchParams(value.trim() ? { q: value.trim() } : {})
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        if (value.trim()) next.set('q', value.trim())
+        else next.delete('q')
+        return next
+      })
     }, 300),
   ).current
+
+  const handleLangChange = (v: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (v === 'all') next.delete('lang')
+      else next.set('lang', v)
+      return next
+    })
+  }
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,37 +59,49 @@ export function SearchResultsPage() {
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto' }}>
-      {/* Search input */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '14px 18px',
-          background: 'var(--bg-2)',
-          border: `1px solid ${inputValue ? 'var(--accent-line)' : 'var(--line-2)'}`,
-          borderRadius: 'var(--r-md)',
-          marginBottom: 8,
-          boxShadow: inputValue ? '0 0 0 3px var(--accent-ghost)' : 'none',
-        }}
-      >
-        <span style={{ color: 'var(--accent-color)', fontSize: 16 }}>🔍</span>
-        <input
-          autoFocus
-          value={inputValue}
-          onChange={handleChange}
-          placeholder={t('search.placeholder')}
+      {/* Search input + language filter */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 8 }}>
+        <div
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
             flex: 1,
-            border: 'none',
-            outline: 'none',
-            background: 'transparent',
-            color: 'var(--fg-1)',
-            fontSize: 15,
-            fontFamily: 'var(--font-body)',
+            minWidth: 220,
+            padding: '14px 18px',
+            background: 'var(--bg-2)',
+            border: `1px solid ${inputValue ? 'var(--accent-line)' : 'var(--line-2)'}`,
+            borderRadius: 'var(--r-md)',
+            boxShadow: inputValue ? '0 0 0 3px var(--accent-ghost)' : 'none',
           }}
+        >
+          <span style={{ color: 'var(--accent-color)', fontSize: 16 }}>🔍</span>
+          <input
+            autoFocus
+            value={inputValue}
+            onChange={handleChange}
+            placeholder={t('search.placeholder')}
+            style={{
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              color: 'var(--fg-1)',
+              fontSize: 15,
+              fontFamily: 'var(--font-body)',
+            }}
+          />
+          {isLoading && <Spinner />}
+        </div>
+        <LxSelect
+          value={lang !== undefined ? String(lang) : 'all'}
+          onValueChange={handleLangChange}
+          triggerStyle={{ width: 160, alignSelf: 'center' }}
+          options={[
+            { value: 'all', label: t('common.allLanguages') },
+            ...Object.entries(LANGUAGES).map(([id, l]) => ({ value: id, label: l.name })),
+          ]}
         />
-        {isLoading && <Spinner />}
       </div>
 
       {q && data && (

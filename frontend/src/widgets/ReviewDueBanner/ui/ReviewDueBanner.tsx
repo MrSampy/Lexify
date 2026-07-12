@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { useDueWords } from '@/features/review-word'
 
 export function ReviewDueBanner() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { data, isLoading } = useDueWords()
 
@@ -40,10 +42,10 @@ export function ReviewDueBanner() {
       </div>
       <div style={{ flex: 1 }}>
         <div className="ds-h4" style={{ color: 'var(--fg-1)' }}>
-          {data.length} {data.length === 1 ? 'word' : 'words'} due for review today
+          {t('dashboard.reviewDue', { count: data.length })}
         </div>
         <div className="ds-sm" style={{ color: 'var(--fg-3)', marginTop: 2 }}>
-          Spaced repetition — only what's actually due
+          {t('dashboard.reviewDueDesc')}
         </div>
       </div>
       <button
@@ -51,7 +53,7 @@ export function ReviewDueBanner() {
         style={{ padding: '9px 18px', flexShrink: 0 }}
         onClick={() => navigate(ROUTES.REVIEW)}
       >
-        Start review →
+        {t('dashboard.startReview')}
       </button>
     </div>
   )

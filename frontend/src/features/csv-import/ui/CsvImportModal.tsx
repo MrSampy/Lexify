@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { LANGUAGES } from '@/shared/config'
 import {
@@ -29,6 +30,7 @@ interface CsvImportModalProps {
 }
 
 export function CsvImportModal({ open, onClose }: CsvImportModalProps) {
+  const { t } = useTranslation()
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string[][]>([])
   const [title, setTitle] = useState('')
@@ -53,7 +55,7 @@ export function CsvImportModal({ open, onClose }: CsvImportModalProps) {
 
   const handleFileSelect = (f: File) => {
     if (!f.name.endsWith('.csv') && f.type !== 'text/csv') {
-      toast.error('Please select a CSV file.')
+      toast.error(t('csvImport.csvOnly'))
       return
     }
     setFile(f)
@@ -70,7 +72,7 @@ export function CsvImportModal({ open, onClose }: CsvImportModalProps) {
 
   const handleSubmit = async () => {
     if (!file || !title.trim() || !languageId) {
-      toast.error('Please fill all fields and select a file.')
+      toast.error(t('csvImport.fillAllFields'))
       return
     }
 
@@ -80,7 +82,7 @@ export function CsvImportModal({ open, onClose }: CsvImportModalProps) {
     formData.append('file', file)
 
     await importMutation.mutateAsync(formData)
-    toast.success('Block imported successfully!')
+    toast.success(t('csvImport.importSuccess'))
     handleClose()
   }
 
@@ -96,7 +98,7 @@ export function CsvImportModal({ open, onClose }: CsvImportModalProps) {
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Import from CSV</DialogTitle>
+          <DialogTitle>{t('csvImport.title')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -129,16 +131,14 @@ export function CsvImportModal({ open, onClose }: CsvImportModalProps) {
               <div>
                 <p className="font-medium">{file.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {(file.size / 1024).toFixed(1)} KB — click to change
+                  {t('csvImport.clickToChange', { size: (file.size / 1024).toFixed(1) })}
                 </p>
               </div>
             ) : (
               <div>
-                <p className="text-muted-foreground">
-                  Drag & drop a CSV file here, or click to browse
-                </p>
+                <p className="text-muted-foreground">{t('csvImport.dropHint')}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Expected columns: term, translation, wordType, notes, exampleSentence
+                  {t('csvImport.expectedColumns')}
                 </p>
               </div>
             )}
@@ -147,18 +147,18 @@ export function CsvImportModal({ open, onClose }: CsvImportModalProps) {
           {/* Form fields */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-sm font-medium">Block title</label>
+              <label className="text-sm font-medium">{t('csvImport.blockTitle')}</label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="My vocabulary block"
+                placeholder={t('csvImport.blockTitlePlaceholder')}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Language</label>
+              <label className="text-sm font-medium">{t('csvImport.language')}</label>
               <Select value={languageId} onValueChange={(v) => setLanguageId(v ?? '')}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select language">
+                  <SelectValue placeholder={t('csvImport.selectLanguage')}>
                     {languageId ? LANGUAGES[Number(languageId)]?.name : undefined}
                   </SelectValue>
                 </SelectTrigger>
@@ -177,15 +177,15 @@ export function CsvImportModal({ open, onClose }: CsvImportModalProps) {
           {preview.length > 0 && (
             <div>
               <p className="mb-2 text-sm font-medium text-muted-foreground">
-                Preview (first {preview.length} rows)
+                {t('csvImport.previewRows', { count: preview.length })}
               </p>
               <div className="max-h-48 overflow-auto rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-xs">Term</TableHead>
-                      <TableHead className="text-xs">Translation</TableHead>
-                      <TableHead className="text-xs">Type</TableHead>
+                      <TableHead className="text-xs">{t('csvImport.colTerm')}</TableHead>
+                      <TableHead className="text-xs">{t('csvImport.colTranslation')}</TableHead>
+                      <TableHead className="text-xs">{t('csvImport.colType')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -207,13 +207,13 @@ export function CsvImportModal({ open, onClose }: CsvImportModalProps) {
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={!file || !title.trim() || !languageId || importMutation.isPending}
           >
-            {importMutation.isPending ? 'Importing…' : 'Import'}
+            {importMutation.isPending ? t('csvImport.importing') : t('csvImport.import')}
           </Button>
         </DialogFooter>
       </DialogContent>
