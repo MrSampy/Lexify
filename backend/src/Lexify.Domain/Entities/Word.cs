@@ -118,6 +118,13 @@ public sealed class Word
         ConfidenceNote = note;
     }
 
+    /// <summary>Moves the word to another block. Language compatibility is the caller's responsibility.</summary>
+    public void MoveToBlock(Guid targetBlockId)
+    {
+        if (targetBlockId == Guid.Empty) throw new DomainException("Target block ID cannot be empty.");
+        BlockId = targetBlockId;
+    }
+
     /// <summary>Replaces alternative translations; blanks, duplicates, and copies of the primary are dropped.</summary>
     public void SetAlternativeTranslations(IEnumerable<string>? translations)
     {

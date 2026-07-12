@@ -10,7 +10,8 @@
     "previous": "Previous",
     "tryAgain": "Try again",
     "notSet": "Not set",
-    "allLanguages": "All languages"
+    "allLanguages": "All languages",
+    "speak": "Pronounce"
   },
   "nav": {
     "menu": "Menu",
@@ -118,7 +119,26 @@
     "add": "Add",
     "notesOptional": "Notes (optional)",
     "noFlagged": "No flagged words on this page",
-    "noWords": "No words yet — add some above"
+    "noWords": "No words yet — add some above",
+    "selectAll": "Select all on this page",
+    "selectedCount_one": "{{count}} word selected",
+    "selectedCount_other": "{{count}} words selected",
+    "deleteSelected": "Delete selected",
+    "deleteSelectedConfirm_one": "Delete {{count}} selected word?",
+    "deleteSelectedConfirm_other": "Delete {{count}} selected words?",
+    "deleteSuccess_one": "{{count}} word deleted",
+    "deleteSuccess_other": "{{count}} words deleted",
+    "deleteFailed": "Failed to delete selected words",
+    "moveSelected": "Move to block…",
+    "moveTitle_one": "Move {{count}} word to another block",
+    "moveTitle_other": "Move {{count}} words to another block",
+    "moveSelectBlock": "Choose target block",
+    "noTargetBlocks": "No other blocks with the same language — create one first.",
+    "moving": "Moving…",
+    "moveSuccess_one": "{{count}} word moved",
+    "moveSuccess_other": "{{count}} words moved",
+    "moveFailed": "Failed to move selected words",
+    "clearSelection": "Clear selection"
   },
   "words": {
     "term": "Term",

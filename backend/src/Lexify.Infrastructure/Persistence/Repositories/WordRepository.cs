@@ -86,6 +86,20 @@ public sealed class WordRepository(AppDbContext context) : IWordRepository
             context.Words.Remove(word);
     }
 
+    public async Task<IReadOnlyList<Word>> GetByIdsInBlockAsync(
+        Guid blockId,
+        IReadOnlyCollection<Guid> wordIds,
+        CancellationToken ct = default) =>
+        await context.Words
+            .Where(w => w.BlockId == blockId && wordIds.Contains(w.Id))
+            .ToListAsync(ct);
+
+    public Task DeleteRangeAsync(IEnumerable<Word> words, CancellationToken ct = default)
+    {
+        context.Words.RemoveRange(words);
+        return Task.CompletedTask;
+    }
+
     public async Task<IReadOnlyList<WordSearchResult>> SearchAsync(
         Guid userId,
         string query,

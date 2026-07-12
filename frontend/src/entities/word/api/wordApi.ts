@@ -28,6 +28,16 @@ const wordApi = {
 
   importWords: (blockId: string, words: CreateWordInput[]) =>
     apiClient.post<number>(`/api/blocks/${blockId}/words/import`, { words }).then((r) => r.data),
+
+  bulkDeleteWords: (blockId: string, wordIds: string[]) =>
+    apiClient
+      .post<number>(`/api/blocks/${blockId}/words/bulk-delete`, { wordIds })
+      .then((r) => r.data),
+
+  bulkMoveWords: (blockId: string, targetBlockId: string, wordIds: string[]) =>
+    apiClient
+      .post<number>(`/api/blocks/${blockId}/words/bulk-move`, { targetBlockId, wordIds })
+      .then((r) => r.data),
 }
 
 export function useWords(blockId: string, search?: string, page = 1) {
@@ -67,6 +77,29 @@ export function useDeleteWordMutation(blockId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (wordId: string) => wordApi.deleteWord(blockId, wordId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: wordKeys.all(blockId) })
+      void queryClient.invalidateQueries({ queryKey: ['blocks'] })
+    },
+  })
+}
+
+export function useBulkDeleteWordsMutation(blockId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (wordIds: string[]) => wordApi.bulkDeleteWords(blockId, wordIds),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: wordKeys.all(blockId) })
+      void queryClient.invalidateQueries({ queryKey: ['blocks'] })
+    },
+  })
+}
+
+export function useBulkMoveWordsMutation(blockId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ targetBlockId, wordIds }: { targetBlockId: string; wordIds: string[] }) =>
+      wordApi.bulkMoveWords(blockId, targetBlockId, wordIds),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: wordKeys.all(blockId) })
       void queryClient.invalidateQueries({ queryKey: ['blocks'] })

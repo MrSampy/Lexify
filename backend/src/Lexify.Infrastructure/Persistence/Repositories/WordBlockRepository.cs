@@ -64,6 +64,12 @@ public sealed class WordBlockRepository(AppDbContext context) : IWordBlockReposi
         return result is null ? (0, 0) : (result.TotalBlocks, result.TotalWords);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, short>> GetLanguageIdsAsync(
+        IReadOnlyCollection<Guid> blockIds, CancellationToken ct = default) =>
+        await context.WordBlocks
+            .Where(wb => blockIds.Contains(wb.Id))
+            .ToDictionaryAsync(wb => wb.Id, wb => wb.LanguageId, ct);
+
     private IQueryable<WordBlock> BuildUserQuery(Guid userId, short? languageId, string? tag)
     {
         IQueryable<WordBlock> query = context.WordBlocks.Where(wb => wb.UserId == userId);

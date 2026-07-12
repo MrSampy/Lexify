@@ -6,11 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { ROUTES, LANGUAGES } from '@/shared/config'
-import { LxSelect, Spinner, useConfirm, ChipListInput } from '@/shared/ui'
+import { Checkbox, LxSelect, Spinner, useConfirm, ChipListInput } from '@/shared/ui'
 import { useBlock, useDeleteBlockMutation, useExportBlock } from '@/entities/block'
 import { useCreateWordMutation } from '@/entities/word'
 import { WordRow } from '@/entities/word'
 import { TagInput } from '@/features/manage-tags'
+import { BulkActionBar } from '@/features/bulk-word-actions'
 
 const WORD_TYPES = ['word', 'phrase', 'idiom', 'expression']
 
@@ -31,6 +32,13 @@ export function BlockDetailPage() {
   const [confidenceOnly, setConfidenceOnly] = useState(false)
   const [showAddWord, setShowAddWord] = useState(false)
   const [addSynonyms, setAddSynonyms] = useState<string[]>([])
+  // Bulk selection; select-all covers the current page, so a page change resets it.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  const changeWordsPage = (updater: (p: number) => number) => {
+    setSelectedIds(new Set())
+    setWordsPage(updater)
+  }
 
   const { data, isLoading, isError } = useBlock(id ?? '', wordsPage)
   const { confirm, confirmDialog } = useConfirm()
@@ -353,6 +361,14 @@ export function BlockDetailPage() {
         </form>
       )}
 
+      {/* Bulk actions — visible while at least one word is selected */}
+      <BulkActionBar
+        blockId={block.id}
+        languageId={block.languageId}
+        selectedIds={[...selectedIds]}
+        onDone={() => setSelectedIds(new Set())}
+      />
+
       {/* Words table */}
       <div
         style={{
@@ -367,7 +383,7 @@ export function BlockDetailPage() {
           className="hidden md:grid"
           style={{
             minWidth: 560,
-            gridTemplateColumns: '1.4fr 1.4fr 0.9fr 1.6fr 60px',
+            gridTemplateColumns: '28px 1.4fr 1.4fr 0.9fr 1.6fr 60px',
             gap: 12,
             padding: '12px 18px',
             background: 'var(--bg-1)',
@@ -379,6 +395,17 @@ export function BlockDetailPage() {
             color: 'var(--fg-3)',
           }}
         >
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Checkbox
+              aria-label={t('blockDetail.selectAll')}
+              checked={
+                displayedWords.length > 0 && displayedWords.every((w) => selectedIds.has(w.id))
+              }
+              onCheckedChange={(v) =>
+                setSelectedIds(v === true ? new Set(displayedWords.map((w) => w.id)) : new Set())
+              }
+            />
+          </div>
           <div>{t('words.term')}</div>
           <div>{t('words.translation')}</div>
           <div>{t('words.type')}</div>
@@ -399,7 +426,23 @@ export function BlockDetailPage() {
             {confidenceOnly ? t('blockDetail.noFlagged') : t('blockDetail.noWords')}
           </div>
         ) : (
-          displayedWords.map((word) => <WordRow key={word.id} word={word} blockId={block.id} />)
+          displayedWords.map((word) => (
+            <WordRow
+              key={word.id}
+              word={word}
+              blockId={block.id}
+              languageId={block.languageId}
+              selected={selectedIds.has(word.id)}
+              onSelectedChange={(checked) =>
+                setSelectedIds((prev) => {
+                  const next = new Set(prev)
+                  if (checked) next.add(word.id)
+                  else next.delete(word.id)
+                  return next
+                })
+              }
+            />
+          ))
         )}
       </div>
 
@@ -417,7 +460,7 @@ export function BlockDetailPage() {
           <button
             className="lx-btn-secondary"
             disabled={!words.hasPreviousPage}
-            onClick={() => setWordsPage((p) => p - 1)}
+            onClick={() => changeWordsPage((p) => p - 1)}
             style={{ padding: '8px 16px' }}
           >
             {t('common.previous')}
@@ -428,7 +471,7 @@ export function BlockDetailPage() {
           <button
             className="lx-btn-secondary"
             disabled={!words.hasNextPage}
-            onClick={() => setWordsPage((p) => p + 1)}
+            onClick={() => changeWordsPage((p) => p + 1)}
             style={{ padding: '8px 16px' }}
           >
             {t('common.next')}

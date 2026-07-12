@@ -10,7 +10,8 @@
     "previous": "Назад",
     "tryAgain": "Спробувати ще раз",
     "notSet": "Не вказано",
-    "allLanguages": "Усі мови"
+    "allLanguages": "Усі мови",
+    "speak": "Озвучити"
   },
   "nav": {
     "menu": "Меню",
@@ -121,7 +122,31 @@
     "add": "Додати",
     "notesOptional": "Нотатки (необов'язково)",
     "noFlagged": "На цій сторінці немає позначених слів",
-    "noWords": "Слів ще немає — додайте кілька вище"
+    "noWords": "Слів ще немає — додайте кілька вище",
+    "selectAll": "Вибрати всі на цій сторінці",
+    "selectedCount_one": "Вибрано {{count}} слово",
+    "selectedCount_few": "Вибрано {{count}} слова",
+    "selectedCount_many": "Вибрано {{count}} слів",
+    "deleteSelected": "Видалити вибрані",
+    "deleteSelectedConfirm_one": "Видалити {{count}} вибране слово?",
+    "deleteSelectedConfirm_few": "Видалити {{count}} вибрані слова?",
+    "deleteSelectedConfirm_many": "Видалити {{count}} вибраних слів?",
+    "deleteSuccess_one": "{{count}} слово видалено",
+    "deleteSuccess_few": "{{count}} слова видалено",
+    "deleteSuccess_many": "{{count}} слів видалено",
+    "deleteFailed": "Не вдалося видалити вибрані слова",
+    "moveSelected": "Перенести до блоку…",
+    "moveTitle_one": "Перенести {{count}} слово до іншого блоку",
+    "moveTitle_few": "Перенести {{count}} слова до іншого блоку",
+    "moveTitle_many": "Перенести {{count}} слів до іншого блоку",
+    "moveSelectBlock": "Виберіть цільовий блок",
+    "noTargetBlocks": "Немає інших блоків цієї мови — спочатку створіть один.",
+    "moving": "Переносимо…",
+    "moveSuccess_one": "{{count}} слово перенесено",
+    "moveSuccess_few": "{{count}} слова перенесено",
+    "moveSuccess_many": "{{count}} слів перенесено",
+    "moveFailed": "Не вдалося перенести вибрані слова",
+    "clearSelection": "Скинути вибір"
   },
   "words": {
     "term": "Слово",
