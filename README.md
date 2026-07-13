@@ -20,7 +20,7 @@
 | Backend | ASP.NET Core 8, Clean Architecture, CQRS + MediatR |
 | База данных | PostgreSQL 16 (JSONB, Full-text search, RLS) |
 | Кэш / Очередь | Redis 7, Hangfire |
-| AI | Ollama (qwen3:8b), OpenAI fallback |
+| AI | Ollama Cloud (gemma3:27b), OpenAI-compatible |
 | Frontend | React 18 + TypeScript, Feature-Sliced Design |
 | State | Zustand + TanStack Query v5 |
 | UI | shadcn/ui + Tailwind CSS |
@@ -66,27 +66,25 @@ lexify/
 docker-compose up -d postgres redis
 ```
 
-Запускает: PostgreSQL 16 (порт 5432), Redis 7 (порт 6379). Ollama запускается нативно (см. ниже), не в Docker.
+Запускает: PostgreSQL 16 (порт 5432), Redis 7 (порт 6379). AI работает через Ollama Cloud (см. ниже), не в Docker.
 
-### 2. Установить Ollama и скачать AI-модель
+### 2. Настроить Ollama Cloud
 
-**Основной способ (локальная разработка): нативный Ollama на Windows**, а не в Docker — меньше накладных расходов и прямой доступ к GPU-ускорению. NPU из Task Manager пока не используется Ollama (нет backend'а под NPU) — ускорение будет только CPU/GPU.
+Приложение использует **Ollama Cloud** (`https://ollama.com`) через OpenAI-совместимый эндпоинт
+`/v1/chat/completions` — локальная модель и GPU не нужны. Модель по умолчанию: **`gemma3:27b`**.
 
-```bash
-# Установка: https://ollama.com/download/windows, или winget install Ollama.Ollama
-ollama pull qwen3:8b
-```
-
-`Ollama__BaseUrl` в `appsettings.Development.json` уже указывает на `http://localhost:11434`, поэтому `dotnet run` подхватит нативный Ollama без правок конфига.
-
-**Запасной способ: Ollama в Docker** (старый способ, по-прежнему работает):
+API-ключ **не хранится в репозитории**. Для локальной разработки задайте его через user-secrets:
 
 ```bash
-docker-compose up -d          # поднимет также контейнер ollama на порту 11434
-docker exec -it lexify-ollama ollama pull qwen3:8b
+dotnet user-secrets init --project backend/src/Lexify.API   # один раз (добавит UserSecretsId)
+dotnet user-secrets set "AiProviders:0:ApiKey" "<ваш-ключ-Ollama-Cloud>" --project backend/src/Lexify.API
 ```
 
-Нативный и Docker-Ollama не могут одновременно занимать порт 11434 — перед переключением остановите один из них.
+В Docker/prod ключ берётся из переменной окружения `OLLAMA_API_KEY` (см. `.env.example`).
+
+**Локальный Ollama вместо облака** (опционально): установите с https://ollama.com/download/windows,
+`ollama serve`, `ollama pull gemma3:27b`, затем в `appsettings.Development.json` поменяйте `BaseUrl`
+провайдера на `http://localhost:11434` и оставьте `ApiKey` пустым.
 
 ### 3. Запустить Backend
 

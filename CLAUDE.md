@@ -43,30 +43,31 @@ npm run preview    # preview production build
 ### Infrastructure (Docker)
 
 ```bash
-# Start PostgreSQL 16 and Redis only — Ollama runs natively (see below)
+# Start PostgreSQL 16 and Redis (AI runs on Ollama Cloud — see AI section)
 docker compose up -d postgres redis
 ```
 
-### AI — Ollama
+### AI — Ollama Cloud
 
-**Primary (local dev): run Ollama natively on Windows**, not in Docker — avoids container virtualization overhead and lets Ollama use GPU acceleration directly if available. The NPU shown in Task Manager is not currently used by Ollama (no NPU backend yet); this only gets you CPU/GPU inference without the Docker layer.
+The app uses **Ollama Cloud** (`https://ollama.com`) via its OpenAI-compatible `/v1/chat/completions`
+endpoint — no local model download or GPU needed. Default model: **`gemma3:27b`** (multilingual,
+non-thinking instruct → clean streaming JSON). The provider entry lives in the `AiProviders` list in
+`appsettings.Development.json` (`BaseUrl: https://ollama.com`).
 
-```bash
-# Install: https://ollama.com/download/windows, or `winget install Ollama.Ollama`
-ollama serve            # if not already running as a background service
-ollama pull qwen3:8b    # first-time model download
-```
-
-`Ollama__BaseUrl` in `appsettings.Development.json` already points at `http://localhost:11434`, so `dotnet run` picks up the native instance with no config change.
-
-**Fallback: run Ollama in Docker** (original method, still supported):
+**The API key is never committed.** Supply it locally via user-secrets (overrides the empty `ApiKey`
+in appsettings at runtime):
 
 ```bash
-docker compose up -d          # also starts the ollama container on port 11434
-docker exec -it lexify-ollama ollama pull qwen3:8b
+dotnet user-secrets init --project backend/src/Lexify.API   # one-time (adds UserSecretsId)
+dotnet user-secrets set "AiProviders:0:ApiKey" "<your-ollama-cloud-key>" --project backend/src/Lexify.API
 ```
 
-Only one of the two (native or Docker) can bind port 11434 at a time — stop the other before switching.
+In Docker/prod the key comes from the `OLLAMA_API_KEY` env var (see `.env.example`), bound to
+`AiProviders__0__ApiKey`.
+
+**Local Ollama instead of cloud** (optional): install from https://ollama.com/download/windows,
+`ollama serve`, `ollama pull gemma3:27b`, then set the provider's `BaseUrl` to `http://localhost:11434`
+and leave `ApiKey` empty.
 
 ---
 
@@ -104,7 +105,7 @@ Four projects; dependency direction: `API → Application → Domain ← Infrast
 
 **DI entry points**: `builder.Services.AddApplication()` and `builder.Services.AddInfrastructure(config)`.
 
-**AI**: `IAIProvider` is fulfilled by `AIOrchestrator`, which tries Ollama (`qwen3:8b`) first and falls back to OpenAI. HTTP clients have 2-retry Polly policy and 120 s timeout.
+**AI**: `IAIProvider` is fulfilled by `AIOrchestrator`, which walks the ordered `AiProviders` config list — every entry speaks the OpenAI-compatible `/v1/chat/completions` protocol (Ollama, Lemonade, OpenAI, …) via the shared `OpenAiCompatibleClient`, trying each in turn and falling back on failure. Default dev chain: Ollama Cloud (`gemma3:27b`) → Lemonade. HTTP clients have a 2-retry Polly policy and per-provider timeout.
 
 **Background jobs**: Hangfire with PostgreSQL storage, 2 workers. `IBackgroundJobService` is the abstraction; `GenerateTestJob` is the only job so far.
 

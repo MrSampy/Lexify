@@ -43,7 +43,7 @@ public sealed partial class DataSeeder(AppDbContext db, ILogger<DataSeeder> logg
 
         var settings = new SystemSetting[]
         {
-            new("ai.primary_model",              "qwen3:8b", "string", "Active Ollama model"),
+            new("ai.primary_model",              "gemma3:27b", "string", "Active Ollama model"),
             new("ai.fallback_enabled",           "true",     "bool",   "Enable OpenAI fallback"),
             new("ai.rate_limit_per_minute",      "10",       "int",    "Per-user AI request limit per minute"),
             new("features.registration_enabled", "true",     "bool",   "Allow new user registrations"),
