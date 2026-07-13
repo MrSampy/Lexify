@@ -26,14 +26,6 @@ services:
       timeout: 5s
       retries: 5
 
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_KEEP_ALIVE=24h
-
   backend:
     build:
       context: ./backend
@@ -51,8 +43,12 @@ services:
       - Admin__Email=${ADMIN_EMAIL}
       - Admin__Password=${ADMIN_PASSWORD}
       - Admin__DisplayName=${ADMIN_DISPLAY_NAME:-Admin}
-      - Ollama__BaseUrl=http://ollama:11434
-      - Ollama__Model=${OLLAMA_MODEL:-qwen3:8b}
+      - AiProviders__0__Name=Ollama
+      - AiProviders__0__BaseUrl=https://ollama.com
+      - AiProviders__0__Model=${OLLAMA_MODEL:-gemma3:27b}
+      - AiProviders__0__ApiKey=${OLLAMA_API_KEY}
+      - AiProviders__0__TimeoutSeconds=180
+      - AiProviders__0__SupportsJsonSchema=false
       - Hangfire__ConnectionString=${DATABASE_URL}
     depends_on:
       postgres:
@@ -80,4 +76,3 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  ollama_data:
