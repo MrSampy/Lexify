@@ -1,0 +1,18 @@
+# Caddy terminates TLS and is the only thing exposed to the internet.
+# Certificates are obtained and renewed automatically from Let's Encrypt — no certbot, no cron.
+# DOMAIN and ACME_EMAIL come from the .env file next to docker-compose.prod.yml.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Everything goes to the frontend container: it serves the SPA and reverse-proxies /api/* and
+	# /hangfire/* to the backend (see frontend/nginx.conf), so the API is same-origin — no CORS.
+	reverse_proxy frontend:80 {
+		# Server-Sent Events (POST /api/words/format) must not be buffered or they arrive in one lump.
+		flush_interval -1
+	}
+}

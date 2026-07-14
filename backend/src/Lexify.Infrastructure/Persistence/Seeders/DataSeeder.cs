@@ -1,10 +1,16 @@
+using Lexify.Application.Abstractions;
 using Lexify.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Lexify.Infrastructure.Persistence.Seeders;
 
-public sealed partial class DataSeeder(AppDbContext db, ILogger<DataSeeder> logger)
+public sealed partial class DataSeeder(
+    AppDbContext db,
+    IConfiguration configuration,
+    IPasswordHasher passwordHasher,
+    ILogger<DataSeeder> logger)
 {
     public async Task SeedAsync(CancellationToken ct = default)
     {
@@ -58,10 +64,23 @@ public sealed partial class DataSeeder(AppDbContext db, ILogger<DataSeeder> logg
         LogSettingsSeeded(logger, settings.Length);
     }
 
+    /// <summary>
+    /// Reads the admin account from configuration ("Admin" section), so the same values work whether
+    /// they come from appsettings, user-secrets, or the Admin__Email / Admin__Password environment
+    /// variables the containers pass. A pre-computed BCrypt hash may be supplied via Admin:PasswordHash
+    /// instead of Admin:Password when the plaintext should never reach the environment.
+    /// </summary>
     private async Task SeedAdminAsync(CancellationToken ct)
     {
-        var email = Environment.GetEnvironmentVariable("ADMIN_EMAIL");
-        var passwordHash = Environment.GetEnvironmentVariable("ADMIN_PASSWORD_HASH");
+        var email = configuration["Admin:Email"];
+        var password = configuration["Admin:Password"];
+        var configuredHash = configuration["Admin:PasswordHash"];
+
+        var passwordHash = !string.IsNullOrWhiteSpace(configuredHash)
+            ? configuredHash
+            : !string.IsNullOrWhiteSpace(password)
+                ? passwordHasher.Hash(password)
+                : null;
 
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(passwordHash))
         {
@@ -90,7 +109,7 @@ public sealed partial class DataSeeder(AppDbContext db, ILogger<DataSeeder> logg
     [LoggerMessage(Level = LogLevel.Information, Message = "Seeded {Count} system settings.")]
     static partial void LogSettingsSeeded(ILogger logger, int count);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "ADMIN_EMAIL or ADMIN_PASSWORD_HASH not set — skipping admin seed.")]
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Admin:Email or Admin:Password/Admin:PasswordHash not set — skipping admin seed.")]
     static partial void LogAdminSkipped(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Admin user {Email} already exists — skipping.")]
