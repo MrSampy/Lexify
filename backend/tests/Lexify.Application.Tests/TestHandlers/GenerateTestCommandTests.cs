@@ -13,6 +13,7 @@ public class GenerateTestCommandTests
     private readonly IWordRepository _wordRepo;
     private readonly ITestRepository _testRepo;
     private readonly IBackgroundJobService _bgJobService;
+    private readonly IAiQuotaService _aiQuota;
     private readonly IUnitOfWork _unitOfWork;
     private readonly AppGenerateTest.GenerateTestCommandHandler _handler;
 
@@ -22,9 +23,38 @@ public class GenerateTestCommandTests
         _wordRepo = Substitute.For<IWordRepository>();
         _testRepo = Substitute.For<ITestRepository>();
         _bgJobService = Substitute.For<IBackgroundJobService>();
+        _aiQuota = Substitute.For<IAiQuotaService>();
         _unitOfWork = Substitute.For<IUnitOfWork>();
+
+        // Default: quota never blocks, so the existing cases exercise their own logic.
+        _aiQuota.CheckAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(AiQuotaCheck.Unlimited);
+
         _handler = new AppGenerateTest.GenerateTestCommandHandler(
-            _blockRepo, _wordRepo, _testRepo, _bgJobService, _unitOfWork);
+            _blockRepo, _wordRepo, _testRepo, _bgJobService, _aiQuota, _unitOfWork);
+    }
+
+    [Fact]
+    public async Task Handle_DailyAiQuotaExceeded_ReturnsFailureAndDoesNotCreateTest()
+    {
+        var userId = Guid.NewGuid();
+        var blockId = Guid.NewGuid();
+
+        _aiQuota.CheckAsync(userId, Arg.Any<CancellationToken>())
+            .Returns(new AiQuotaCheck(IsExceeded: true, Limit: 50, Used: 50));
+
+        var command = new AppGenerateTest.GenerateTestCommand(userId, [blockId], ["open_answer"], 10);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Failure, result.Status);
+        Assert.Contains("Daily AI limit", result.ErrorMessage);
+
+        // The cap is checked before anything is persisted or queued — otherwise a test row would be
+        // stranded in "generating" forever.
+        await _testRepo.DidNotReceive().AddAsync(Arg.Any<Test>(), Arg.Any<CancellationToken>());
+        _bgJobService.DidNotReceive().EnqueueGenerateTest(
+            Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<Guid[]>(), Arg.Any<string[]>(), Arg.Any<int>());
     }
 
     [Fact]

@@ -1,15 +1,17 @@
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
-import { authApi } from '../api/authApi'
+import { authApi, type RegistrationStatus } from '../api/authApi'
 
 const schema = z.object({
   email: z.string().email('auth.emailInvalid'),
   password: z.string().min(8, 'auth.passwordMin'),
   displayName: z.string().min(2, 'auth.nameMin').max(50),
+  inviteCode: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -17,6 +19,20 @@ type FormValues = z.infer<typeof schema>
 export function RegisterForm() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+
+  // Until this resolves we don't know whether an invite code is needed, so the form renders as if
+  // sign-up were open — the server is the real gate either way, this only shapes the UI.
+  const [status, setStatus] = useState<RegistrationStatus | null>(null)
+
+  useEffect(() => {
+    authApi
+      .registrationStatus()
+      .then(setStatus)
+      .catch(() => setStatus(null))
+  }, [])
+
+  const inviteRequired = status?.inviteRequired ?? false
+  const signUpClosed = status !== null && !status.open && !status.inviteRequired
 
   const {
     register,
@@ -27,7 +43,7 @@ export function RegisterForm() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await authApi.register(values.email, values.password, values.displayName)
+      await authApi.register(values.email, values.password, values.displayName, values.inviteCode)
       navigate(ROUTES.LOGIN)
     } catch (err: unknown) {
       const message =
@@ -35,6 +51,24 @@ export function RegisterForm() {
         'auth.registerFailed'
       setError('root', { message })
     }
+  }
+
+  if (signUpClosed) {
+    return (
+      <div
+        style={{
+          padding: '14px 16px',
+          background: 'var(--bg-3)',
+          border: '1px solid var(--line-2)',
+          borderRadius: 'var(--r-md)',
+          color: 'var(--fg-2)',
+          fontSize: 14,
+          fontFamily: 'var(--font-body)',
+        }}
+      >
+        {t('auth.registrationClosed')}
+      </div>
+    )
   }
 
   return (
@@ -92,6 +126,23 @@ export function RegisterForm() {
           </p>
         )}
       </div>
+
+      {inviteRequired && (
+        <div>
+          <input
+            id="inviteCode"
+            type="text"
+            placeholder={t('auth.inviteCode')}
+            aria-label={t('auth.inviteCode')}
+            autoComplete="off"
+            className="lx-input"
+            {...register('inviteCode')}
+          />
+          <p style={{ color: 'var(--fg-4)', fontSize: 12, marginTop: 4 }}>
+            {t('auth.inviteCodeHint')}
+          </p>
+        </div>
+      )}
 
       {errors.root && (
         <div

@@ -87,6 +87,13 @@ public sealed class AiCallLogConfiguration : IEntityTypeConfiguration<AiCallLog>
             .HasFilter("user_id IS NOT NULL")
             .HasDatabaseName("idx_ai_logs_user");
 
+        // Serves the per-user daily quota count (AiQuotaService), which runs on every AI call —
+        // without it that count degrades to a seq scan over the whole log table.
+        builder.HasIndex(l => new { l.UserId, l.CreatedAt })
+            .IsDescending(false, true)
+            .HasFilter("user_id IS NOT NULL")
+            .HasDatabaseName("idx_ai_logs_user_created");
+
         builder.HasIndex(l => new { l.Provider, l.Success })
             .HasDatabaseName("idx_ai_logs_provider");
 

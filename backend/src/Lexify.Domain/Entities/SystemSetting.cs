@@ -26,4 +26,21 @@ public sealed class SystemSetting
         UpdatedBy = updatedBy;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
+
+    /// <summary>
+    /// Keys of the settings the application actually reads at runtime. Kept here (rather than as
+    /// literals scattered across the seeder and the handlers) so a rename can't silently turn a
+    /// setting into a decorative row that the admin UI edits but nothing honours.
+    /// </summary>
+    public static class Keys
+    {
+        /// <summary>When "false", public sign-up is closed and only <see cref="InviteCode"/> gets a user in.</summary>
+        public const string RegistrationEnabled = "features.registration_enabled";
+
+        /// <summary>Shared invite code required to register while registration is closed. Empty = nobody can register.</summary>
+        public const string InviteCode = "features.invite_code";
+
+        /// <summary>Per-user cap on AI calls per UTC day. Zero or negative disables the cap.</summary>
+        public const string MaxAiCallsPerUserPerDay = "ai.max_calls_per_user_per_day";
+    }
 }

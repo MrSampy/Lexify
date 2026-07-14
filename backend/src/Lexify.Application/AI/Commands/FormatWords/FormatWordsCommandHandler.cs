@@ -6,7 +6,10 @@ using MediatR;
 
 namespace Lexify.Application.AI.Commands.FormatWords;
 
-public sealed class FormatWordsCommandHandler(IAIProvider aiProvider)
+public sealed class FormatWordsCommandHandler(
+    IAIProvider aiProvider,
+    IAiQuotaService aiQuota,
+    ICurrentUserService currentUser)
     : IStreamRequestHandler<FormatWordsCommand, FormatWordsSseEvent>
 {
     private const int MaxRetries = 2;
@@ -21,6 +24,19 @@ public sealed class FormatWordsCommandHandler(IAIProvider aiProvider)
         FormatWordsCommand request,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        // This command is an IStreamRequest, so the IPipelineBehavior chain (validation, transaction,
+        // …) does not run for it — the quota has to be checked here rather than in a behavior.
+        if (currentUser.IsAuthenticated)
+        {
+            var quota = await aiQuota.CheckAsync(currentUser.UserId, cancellationToken);
+            if (quota.IsExceeded)
+            {
+                yield return new FormatWordsSseEvent("error", ErrorMessage:
+                    $"Daily AI limit reached ({quota.Used}/{quota.Limit}). It resets at midnight UTC.");
+                yield break;
+            }
+        }
+
         var parsedLines = ImportLineParser.Parse(request.RawText);
 
         if (parsedLines.Count == 0)

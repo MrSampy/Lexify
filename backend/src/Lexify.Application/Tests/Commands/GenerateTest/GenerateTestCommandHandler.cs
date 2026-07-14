@@ -12,12 +12,20 @@ public sealed class GenerateTestCommandHandler(
     IWordRepository wordRepository,
     ITestRepository testRepository,
     IBackgroundJobService backgroundJobService,
+    IAiQuotaService aiQuota,
     IUnitOfWork unitOfWork)
     : IRequestHandler<GenerateTestCommand, Result<GenerateTestResult>>
 {
     public async Task<Result<GenerateTestResult>> Handle(
         GenerateTestCommand request, CancellationToken cancellationToken)
     {
+        // Checked before the test row is created: generation is handed to a background job, so a
+        // test persisted here would sit in "generating" forever if the job then hit the cap.
+        var quota = await aiQuota.CheckAsync(request.UserId, cancellationToken);
+        if (quota.IsExceeded)
+            return Result.Failure<GenerateTestResult>(
+                $"Daily AI limit reached ({quota.Used}/{quota.Limit}). It resets at midnight UTC.");
+
         // Verify all blocks exist and belong to the requesting user
         var blocks = new List<WordBlock>();
         foreach (var blockId in request.BlockIds)

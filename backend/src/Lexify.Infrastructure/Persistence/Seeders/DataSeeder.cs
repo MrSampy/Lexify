@@ -42,26 +42,45 @@ public sealed partial class DataSeeder(
         LogLanguagesSeeded(logger, languages.Length);
     }
 
+    /// <summary>
+    /// Inserts only the keys that are missing, rather than bailing out when the table is non-empty.
+    /// An all-or-nothing seed would never deliver a setting added after the first deployment — and a
+    /// key with no row cannot be edited in the admin UI (UpdateSystemSetting only updates existing
+    /// rows), so e.g. closing registration would strand the operator with no way to set an invite
+    /// code. Existing rows are left untouched: operators' edits must survive a redeploy.
+    /// </summary>
     private async Task SeedSystemSettingsAsync(CancellationToken ct)
     {
-        if (await db.SystemSettings.AnyAsync(ct))
-            return;
-
         var settings = new SystemSetting[]
         {
             new("ai.primary_model",              "gemma3:27b", "string", "Active Ollama model"),
             new("ai.fallback_enabled",           "true",     "bool",   "Enable OpenAI fallback"),
             new("ai.rate_limit_per_minute",      "10",       "int",    "Per-user AI request limit per minute"),
-            new("features.registration_enabled", "true",     "bool",   "Allow new user registrations"),
+            new(SystemSetting.Keys.MaxAiCallsPerUserPerDay, "50", "int",
+                "Per-user AI calls allowed per UTC day (0 = unlimited). Caps AI spend per user."),
+            new(SystemSetting.Keys.RegistrationEnabled, "true", "bool", "Allow new user registrations"),
+            new(SystemSetting.Keys.InviteCode,   "",         "string",
+                "Shared invite code. Only used when registration is disabled; empty then closes sign-up entirely."),
             new("features.max_words_per_block",  "200",      "int",    "Max words per block (0 = unlimited)"),
             new("features.max_blocks_per_user",  "0",        "int",    "Max blocks per user (0 = unlimited)"),
             new("test.max_questions",            "50",       "int",    "Max questions per test"),
             new("maintenance.enabled",           "false",    "bool",   "Maintenance mode"),
         };
 
-        db.SystemSettings.AddRange(settings);
+        var existingKeys = await db.SystemSettings
+            .Select(s => s.Key)
+            .ToListAsync(ct);
+
+        var missing = settings
+            .Where(s => !existingKeys.Contains(s.Key))
+            .ToArray();
+
+        if (missing.Length == 0)
+            return;
+
+        db.SystemSettings.AddRange(missing);
         await db.SaveChangesAsync(ct);
-        LogSettingsSeeded(logger, settings.Length);
+        LogSettingsSeeded(logger, missing.Length);
     }
 
     /// <summary>
