@@ -48,4 +48,11 @@ public sealed class AiCallLogRepository(AppDbContext context) : IAiCallLogReposi
             .Where(l => l.CreatedAt >= since)
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync(ct);
+
+    public async Task<int> CountByUserSinceAsync(
+        Guid userId, DateTimeOffset since, CancellationToken ct = default) =>
+        await context.AiCallLogs
+            .AsNoTracking()
+            .Where(l => l.UserId == userId && l.CreatedAt >= since)
+            .CountAsync(ct);
 }

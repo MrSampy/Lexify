@@ -12,4 +12,11 @@ public interface IAiCallLogRepository
         int page, int pageSize, CancellationToken ct = default);
 
     Task<IReadOnlyList<AiCallLog>> GetSinceAsync(DateTimeOffset since, CancellationToken ct = default);
+
+    /// <summary>
+    /// Number of AI calls a user made since <paramref name="since"/>. Backs the per-user daily quota.
+    /// Every provider attempt counts, including the fallbacks of one logical call and failed calls —
+    /// each attempt costs money, so counting them is the conservative choice for a spend ceiling.
+    /// </summary>
+    Task<int> CountByUserSinceAsync(Guid userId, DateTimeOffset since, CancellationToken ct = default);
 }

@@ -5,6 +5,7 @@ using Lexify.Infrastructure.Jobs;
 using Lexify.Infrastructure.Persistence.Seeders;
 using Lexify.API.Middleware;
 using Lexify.API.RateLimit;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi.Models;
 using Prometheus;
 using Serilog;
@@ -111,12 +112,16 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
+// In production the SPA is served from the same origin as the API (nginx proxies /api/* to the
+// backend), so CORS is not exercised there. It only matters for the Vite dev server, which runs on
+// a different port — hence the origin comes from config ("Frontend:Url") rather than being hardcoded.
+var frontendUrl = builder.Configuration["Frontend:Url"] ?? "http://localhost:5173";
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
         policy
-            .WithOrigins("http://localhost:5173")
+            .WithOrigins(frontendUrl)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
@@ -158,6 +163,18 @@ if (app.Environment.IsDevelopment())
         ui.SwaggerEndpoint("/swagger/admin/swagger.json",    "Admin");
     });
 }
+
+// Behind the Caddy → nginx → backend chain the app only ever sees plain HTTP on the last hop.
+// Without this, UseHttpsRedirection would see scheme=http and bounce every request into a redirect
+// loop, and client IPs (used by the rate limiter) would all collapse to the proxy's address.
+// KnownNetworks/KnownProxies are cleared because the proxy's container IP is not stable.
+var forwardedHeaders = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeaders.KnownNetworks.Clear();
+forwardedHeaders.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeaders);
 
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseHttpsRedirection();

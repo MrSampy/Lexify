@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+
+# Never bake a developer's local API URL into the image. With VITE_API_URL unset at build time the
+# axios client falls back to relative URLs (/api/...), which nginx proxies to the backend on the
+# same origin — exactly what we want in production.
+.env
+.env.*
+!.env.example
+
+*.log
+.DS_Store

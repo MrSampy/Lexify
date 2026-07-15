@@ -18,6 +18,24 @@ public class AuthCommandTests
     private readonly IUserRepository _userRepo = Substitute.For<IUserRepository>();
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
     private readonly IBackgroundJobService _backgroundJobs = Substitute.For<IBackgroundJobService>();
+    private readonly ISystemSettingRepository _settingRepo = Substitute.For<ISystemSettingRepository>();
+
+    public AuthCommandTests() =>
+        // Hashing is not what the Register tests are about; individual tests override this when they
+        // assert on the stored hash.
+        _passwordHasher.Hash(Arg.Any<string>()).Returns("hashed");
+
+    private RegisterCommandHandler CreateRegisterHandler() =>
+        new(_userRepo, _settingRepo, _passwordHasher, _backgroundJobs);
+
+    /// <summary>Points the settings repo at a given registration_enabled / invite_code pair.</summary>
+    private void GivenRegistrationSettings(string registrationEnabled, string inviteCode)
+    {
+        _settingRepo.GetByKeyAsync(SystemSetting.Keys.RegistrationEnabled, Arg.Any<CancellationToken>())
+            .Returns(new SystemSetting(SystemSetting.Keys.RegistrationEnabled, registrationEnabled, "bool"));
+        _settingRepo.GetByKeyAsync(SystemSetting.Keys.InviteCode, Arg.Any<CancellationToken>())
+            .Returns(new SystemSetting(SystemSetting.Keys.InviteCode, inviteCode, "string"));
+    }
 
     [Fact]
     public async Task Register_DuplicateEmail_ReturnsFailure()
@@ -26,7 +44,7 @@ public class AuthCommandTests
         _userRepo.GetByEmailAsync("user@example.com", Arg.Any<CancellationToken>())
             .Returns(existingUser);
 
-        var handler = new RegisterCommandHandler(_userRepo, _passwordHasher, _backgroundJobs);
+        var handler = CreateRegisterHandler();
         var result = await handler.Handle(
             new RegisterCommand("user@example.com", "password", null),
             CancellationToken.None);
@@ -43,7 +61,7 @@ public class AuthCommandTests
             .Returns((User?)null);
         _passwordHasher.Hash("password").Returns("hashed");
 
-        var handler = new RegisterCommandHandler(_userRepo, _passwordHasher, _backgroundJobs);
+        var handler = CreateRegisterHandler();
         var result = await handler.Handle(
             new RegisterCommand("new@example.com", "password", "Alice"),
             CancellationToken.None);
@@ -60,12 +78,93 @@ public class AuthCommandTests
             .Returns((User?)null);
         _passwordHasher.Hash("password").Returns("hashed");
 
-        var handler = new RegisterCommandHandler(_userRepo, _passwordHasher, _backgroundJobs);
+        var handler = CreateRegisterHandler();
         await handler.Handle(
             new RegisterCommand("bob@example.com", "password", null),
             CancellationToken.None);
 
         _backgroundJobs.Received(1).EnqueueWelcomeEmail("bob@example.com", "bob");
+    }
+
+    // ---- Register: invite-only gate ----
+
+    [Fact]
+    public async Task Register_RegistrationOpen_IgnoresInviteCode()
+    {
+        GivenRegistrationSettings(registrationEnabled: "true", inviteCode: "SECRET");
+        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((User?)null);
+
+        var result = await CreateRegisterHandler().Handle(
+            new RegisterCommand("new@example.com", "password", "Alice", InviteCode: null),
+            CancellationToken.None);
+
+        // An invite code exists, but while sign-up is open it must not be demanded.
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task Register_RegistrationClosed_CorrectInviteCode_Succeeds()
+    {
+        GivenRegistrationSettings(registrationEnabled: "false", inviteCode: "SECRET");
+        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((User?)null);
+
+        var result = await CreateRegisterHandler().Handle(
+            new RegisterCommand("new@example.com", "password", "Alice", InviteCode: "SECRET"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        _backgroundJobs.Received(1).EnqueueWelcomeEmail("new@example.com", "Alice");
+    }
+
+    [Theory]
+    [InlineData(null)]        // no code supplied
+    [InlineData("")]          // blank must not pass as "no code required"
+    [InlineData("WRONG")]     // wrong code
+    [InlineData("secret")]    // codes are case-sensitive
+    public async Task Register_RegistrationClosed_BadInviteCode_ReturnsFailure(string? code)
+    {
+        GivenRegistrationSettings(registrationEnabled: "false", inviteCode: "SECRET");
+        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((User?)null);
+
+        var result = await CreateRegisterHandler().Handle(
+            new RegisterCommand("new@example.com", "password", "Alice", InviteCode: code),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ResultStatus.Failure, result.Status);
+        await _userRepo.DidNotReceive().AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+        _backgroundJobs.DidNotReceive().EnqueueWelcomeEmail(Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task Register_RegistrationClosed_NoInviteCodeSet_ClosesSignUpEntirely()
+    {
+        // Empty code must not degrade into "any blank code works" — that would silently reopen sign-up.
+        GivenRegistrationSettings(registrationEnabled: "false", inviteCode: "");
+        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((User?)null);
+
+        var result = await CreateRegisterHandler().Handle(
+            new RegisterCommand("new@example.com", "password", "Alice", InviteCode: ""),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("closed", result.ErrorMessage);
+        await _userRepo.DidNotReceive().AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Register_SettingRowMissing_DefaultsToOpen()
+    {
+        // A fresh install with no seeded row must not lock everyone out.
+        _settingRepo.GetByKeyAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((SystemSetting?)null);
+        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((User?)null);
+
+        var result = await CreateRegisterHandler().Handle(
+            new RegisterCommand("new@example.com", "password", "Alice"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
     }
 
     // ---- Login ----

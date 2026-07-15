@@ -1,5 +1,7 @@
 using System.Reflection;
 using FluentValidation;
+using Lexify.Application.Abstractions;
+using Lexify.Application.AI.Services;
 using Lexify.Application.Behaviors;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +27,8 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(assembly);
         services.AddAutoMapper(assembly);
+
+        services.AddScoped<IAiQuotaService, AiQuotaService>();
 
         return services;
     }

@@ -5,6 +5,7 @@ using Lexify.Application.Auth.Commands.Logout;
 using Lexify.Application.Auth.Commands.RefreshToken;
 using Lexify.Application.Auth.Commands.Register;
 using Lexify.Application.Auth.Commands.ResetPassword;
+using Lexify.Application.Auth.Queries.GetRegistrationStatus;
 using Lexify.API.RateLimit;
 using Lexify.API.Requests.Auth;
 using MediatR;
@@ -33,11 +34,17 @@ public sealed class AuthController(ISender sender) : BaseApiController
     public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new RegisterCommand(request.Email, request.Password, request.DisplayName),
+            new RegisterCommand(request.Email, request.Password, request.DisplayName, request.InviteCode),
             cancellationToken);
 
         return ToActionResult(result, id => CreatedAtAction(nameof(Register), new { id }, id));
     }
+
+    /// <summary>Whether sign-up is open, and whether it needs an invite code. Never returns the code itself.</summary>
+    [HttpGet("registration-status")]
+    [ProducesResponseType<RegistrationStatusDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetRegistrationStatus(CancellationToken cancellationToken) =>
+        ToActionResult(await sender.Send(new GetRegistrationStatusQuery(), cancellationToken));
 
     /// <summary>Log in; access token is returned in the body, refresh token is set as an HttpOnly cookie.</summary>
     [HttpPost("login")]
