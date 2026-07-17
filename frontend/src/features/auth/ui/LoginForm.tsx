@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { ROUTES } from '@/shared/config'
 import { useAuthStore } from '@/entities/user'
 import { authApi } from '../api/authApi'
@@ -17,6 +18,7 @@ type FormValues = z.infer<typeof schema>
 export function LoginForm() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const setAuth = useAuthStore((s) => s.setAuth)
 
   const {
@@ -29,6 +31,9 @@ export function LoginForm() {
   const onSubmit = async (values: FormValues) => {
     try {
       const data = await authApi.login(values.email, values.password)
+      // Drop any queries cached for a previously logged-in user before this
+      // identity's screens mount, so no stale data flashes or leaks through.
+      queryClient.clear()
       setAuth(data)
       navigate(ROUTES.DASHBOARD)
     } catch (err: unknown) {
