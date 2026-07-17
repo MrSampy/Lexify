@@ -92,3 +92,10 @@ backend/src/Lexify.API/tts-cache/
 
 # PR body scratch files
 scripts/_pr_*.md
+
+# Mascot: raw auto-traced SVG exports (huge, contain baked checkerboard);
+# the app uses the cleaned PNGs generated from them
+frontend/src/shared/ui/mascot/poses/*.svg
+
+# Mascot: throwaway green-screen intermediates (webm is the committed output)
+Info/mascot-animation/*-green.png

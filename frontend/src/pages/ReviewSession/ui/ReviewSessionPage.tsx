@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { useSpeak } from '@/shared/lib'
-import { SpeakButton, Spinner } from '@/shared/ui'
+import { Mascot, SpeakButton, Spinner } from '@/shared/ui'
 import { useDueWords, useRateWordMutation } from '@/features/review-word'
 import type { Word } from '@/entities/word'
 
@@ -159,7 +159,7 @@ export function ReviewSessionPage() {
     const easyCount = ratings.filter((r) => r.quality >= 3).length
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center">
-        <div className="text-5xl">🎉</div>
+        <Mascot pose="celebrate" size={140} animate />
         <div className="ds-h2">{t('review.complete')}</div>
         <p className="ds-body text-[var(--fg-3)]">
           {t('review.reviewed', { count: ratings.length })}
@@ -278,7 +278,7 @@ export function ReviewSessionPage() {
   if (words.length === 0) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <div className="text-5xl">📖</div>
+        <Mascot pose="sleep" size={140} animate />
         <div className="ds-h3">{t('review.noneDue')}</div>
         <p className="ds-body text-[var(--fg-3)]">{t('review.comeBack')}</p>
         <Link to={ROUTES.BLOCKS} className="no-underline">

@@ -44,6 +44,8 @@ export { ConfidenceBadge } from './ConfidenceBadge'
 export { useConfirm } from './ConfirmDialog'
 export { LanguageBadge } from './LanguageBadge'
 export { SpeakButton } from './SpeakButton'
+export { Mascot } from './mascot/Mascot'
+export type { MascotPose } from './mascot/Mascot'
 
 // Hooks
 export { useSSE } from './SSEListener/useSSE'

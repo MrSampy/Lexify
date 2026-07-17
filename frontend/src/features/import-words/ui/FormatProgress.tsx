@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Spinner } from '@/shared/ui'
+import { Mascot } from '@/shared/ui'
 import { useImportWordsStore } from '../model/store'
 
 export function FormatProgress() {
@@ -9,7 +9,7 @@ export function FormatProgress() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Spinner size="sm" />
+        <Mascot pose="diving" size={44} animate />
         <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
           {t('import.formatting')}
         </span>

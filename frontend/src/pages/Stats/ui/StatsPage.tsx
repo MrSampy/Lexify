@@ -15,7 +15,7 @@ import {
   CartesianGrid,
 } from 'recharts'
 import { ROUTES } from '@/shared/config'
-import { Spinner } from '@/shared/ui'
+import { Mascot, Spinner } from '@/shared/ui'
 import { masteryInfoFor } from '@/shared/lib'
 import {
   useActivityStats,
@@ -314,9 +314,12 @@ export function StatsPage() {
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <p className="ds-sm" style={{ color: 'var(--fg-4)', margin: '0 0 10px' }}>
-              {t('stats.problemWordsHint')}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 10px' }}>
+              <Mascot pose="confused" size={48} />
+              <p className="ds-sm" style={{ color: 'var(--fg-4)', margin: 0 }}>
+                {t('stats.problemWordsHint')}
+              </p>
+            </div>
             {problemWords.map((w) => (
               <Link
                 key={w.wordId}

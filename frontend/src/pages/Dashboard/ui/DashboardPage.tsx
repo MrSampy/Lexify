@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Flame, Library, Type, CheckCircle2, FileText, ArrowRight, RotateCcw } from 'lucide-react'
 import { ROUTES, LANGUAGES } from '@/shared/config'
-import { Spinner } from '@/shared/ui'
+import { Mascot, Spinner } from '@/shared/ui'
 import { useAuthStore, useProfile, useUserStats } from '@/entities/user'
 import { useBlocks } from '@/entities/block'
 import { useTests } from '@/entities/test'
@@ -142,6 +142,7 @@ export function DashboardPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <Mascot pose={due > 0 ? 'pointing' : 'greeting'} size={84} float />
           {streak > 0 && (
             <span
               title={t('dashboard.statStreak')}

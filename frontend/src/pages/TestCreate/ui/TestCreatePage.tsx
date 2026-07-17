@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
-import { Spinner } from '@/shared/ui'
+import { Mascot } from '@/shared/ui'
 import { useGenerateTestMutation } from '@/entities/test'
 import {
   useGenerateTestStore,
@@ -61,7 +61,7 @@ export function TestCreatePage() {
           gap: 20,
         }}
       >
-        <Spinner size="lg" />
+        <Mascot pose="diving" size={150} animate />
         <div className="ds-h3" style={{ color: 'var(--accent-color)' }}>
           {t('testCreate.generating')}
         </div>
