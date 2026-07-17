@@ -1,15 +1,27 @@
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import {
+  LayoutDashboard,
+  Users,
+  Bot,
+  Settings,
+  Globe,
+  ScrollText,
+  Home,
+  type LucideIcon,
+} from 'lucide-react'
 import { ROUTES } from '@/shared/config'
 import { useAuthStore } from '@/entities/user'
 
-const NAV_ITEMS = [
-  { labelKey: 'adminNav.dashboard', to: ROUTES.ADMIN.DASHBOARD, end: true, emoji: '📊' },
-  { labelKey: 'adminNav.users', to: ROUTES.ADMIN.USERS, emoji: '👥' },
-  { labelKey: 'adminNav.aiMonitor', to: ROUTES.ADMIN.AI_MONITOR, emoji: '🤖' },
-  { labelKey: 'adminNav.settings', to: ROUTES.ADMIN.SETTINGS, emoji: '⚙️' },
-  { labelKey: 'adminNav.languages', to: ROUTES.ADMIN.LANGUAGES, emoji: '🌐' },
-  { labelKey: 'adminNav.audit', to: ROUTES.ADMIN.AUDIT, emoji: '📋' },
+const NAV_ICON_SIZE = 18
+
+const NAV_ITEMS: { labelKey: string; to: string; end?: boolean; icon: LucideIcon }[] = [
+  { labelKey: 'adminNav.dashboard', to: ROUTES.ADMIN.DASHBOARD, end: true, icon: LayoutDashboard },
+  { labelKey: 'adminNav.users', to: ROUTES.ADMIN.USERS, icon: Users },
+  { labelKey: 'adminNav.aiMonitor', to: ROUTES.ADMIN.AI_MONITOR, icon: Bot },
+  { labelKey: 'adminNav.settings', to: ROUTES.ADMIN.SETTINGS, icon: Settings },
+  { labelKey: 'adminNav.languages', to: ROUTES.ADMIN.LANGUAGES, icon: Globe },
+  { labelKey: 'adminNav.audit', to: ROUTES.ADMIN.AUDIT, icon: ScrollText },
 ]
 
 interface AdminNavProps {
@@ -88,14 +100,14 @@ export function AdminNav({ inDrawer = false }: AdminNavProps) {
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
-        {NAV_ITEMS.map(({ labelKey, to, end, emoji }) => (
+        {NAV_ITEMS.map(({ labelKey, to, end, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
           >
-            <span style={{ fontSize: 16 }}>{emoji}</span>
+            <Icon size={NAV_ICON_SIZE} strokeWidth={2} style={{ flexShrink: 0 }} />
             <span>{t(labelKey)}</span>
           </NavLink>
         ))}
@@ -120,7 +132,7 @@ export function AdminNav({ inDrawer = false }: AdminNavProps) {
           </div>
         )}
         <NavLink to={ROUTES.DASHBOARD} className="lx-nav-item">
-          <span style={{ fontSize: 16 }}>🏠</span>
+          <Home size={NAV_ICON_SIZE} strokeWidth={2} style={{ flexShrink: 0 }} />
           <span>{t('adminNav.backToApp')}</span>
         </NavLink>
       </div>
