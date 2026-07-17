@@ -19,6 +19,7 @@ import {
   SingleChoiceQuestion,
   MultiSelectQuestion,
   OpenAnswerQuestion,
+  FillInSentenceQuestion,
 } from '@/features/run-test'
 
 function QuestionView({
@@ -44,6 +45,16 @@ function QuestionView({
   if (type === 'open_answer') {
     return (
       <OpenAnswerQuestion
+        key={question.id}
+        question={question}
+        onSubmit={onSubmit}
+        disabled={disabled}
+      />
+    )
+  }
+  if (type === 'fill_in_sentence') {
+    return (
+      <FillInSentenceQuestion
         key={question.id}
         question={question}
         onSubmit={onSubmit}

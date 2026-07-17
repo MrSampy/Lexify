@@ -4,6 +4,8 @@ using Lexify.Application.Words.Dtos;
 
 namespace Lexify.Application.Blocks.Queries.GetBlockById;
 
+/// <param name="FlaggedCount">Confidence-flagged words in the whole block, not just the current page.</param>
 public sealed record BlockDetailDto(
     WordBlockDto Block,
-    PagedResult<WordDto> Words);
+    PagedResult<WordDto> Words,
+    int FlaggedCount);

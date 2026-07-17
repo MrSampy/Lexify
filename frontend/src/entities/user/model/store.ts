@@ -9,16 +9,21 @@ interface AuthStore {
   user: User | null
   accessToken: string | null
   isAuthenticated: boolean
+  /** Set while an admin is acting as another user; holds the admin's own session to restore. */
+  impersonation: { originalToken: string; originalUser: User } | null
 
   setAuth: (response: AuthResponse) => void
   logout: () => void
   refreshToken: () => Promise<boolean>
+  startImpersonation: (token: string) => void
+  stopImpersonation: () => void
 }
 
-export const useAuthStore = create<AuthStore>()((set) => ({
+export const useAuthStore = create<AuthStore>()((set, get) => ({
   user: null,
   accessToken: null,
   isAuthenticated: false,
+  impersonation: null,
 
   setAuth: (response: AuthResponse) => {
     const user = userFromJwt(response.accessToken)
@@ -26,7 +31,7 @@ export const useAuthStore = create<AuthStore>()((set) => ({
   },
 
   logout: () => {
-    set({ user: null, accessToken: null, isAuthenticated: false })
+    set({ user: null, accessToken: null, isAuthenticated: false, impersonation: null })
   },
 
   refreshToken: async () => {
@@ -34,12 +39,33 @@ export const useAuthStore = create<AuthStore>()((set) => ({
       // Refresh token cookie is attached automatically (withCredentials)
       const { data } = await apiClient.post<AuthResponse>('/api/auth/refresh')
       const user = userFromJwt(data.accessToken)
-      set({ user, accessToken: data.accessToken, isAuthenticated: true })
+      // The refresh cookie belongs to the real admin, so a refresh always ends impersonation.
+      set({ user, accessToken: data.accessToken, isAuthenticated: true, impersonation: null })
       return true
     } catch {
-      set({ user: null, accessToken: null, isAuthenticated: false })
+      set({ user: null, accessToken: null, isAuthenticated: false, impersonation: null })
       return false
     }
+  },
+
+  startImpersonation: (token: string) => {
+    const { user, accessToken } = get()
+    if (!user || !accessToken) return
+    set({
+      impersonation: { originalToken: accessToken, originalUser: user },
+      user: userFromJwt(token),
+      accessToken: token,
+    })
+  },
+
+  stopImpersonation: () => {
+    const { impersonation } = get()
+    if (!impersonation) return
+    set({
+      user: impersonation.originalUser,
+      accessToken: impersonation.originalToken,
+      impersonation: null,
+    })
   },
 }))
 

@@ -12,6 +12,7 @@ public class GenerateTestCommandTests
     private readonly IWordBlockRepository _blockRepo;
     private readonly IWordRepository _wordRepo;
     private readonly ITestRepository _testRepo;
+    private readonly ISystemSettingRepository _settingRepo;
     private readonly IBackgroundJobService _bgJobService;
     private readonly IAiQuotaService _aiQuota;
     private readonly IUnitOfWork _unitOfWork;
@@ -22,6 +23,7 @@ public class GenerateTestCommandTests
         _blockRepo = Substitute.For<IWordBlockRepository>();
         _wordRepo = Substitute.For<IWordRepository>();
         _testRepo = Substitute.For<ITestRepository>();
+        _settingRepo = Substitute.For<ISystemSettingRepository>();
         _bgJobService = Substitute.For<IBackgroundJobService>();
         _aiQuota = Substitute.For<IAiQuotaService>();
         _unitOfWork = Substitute.For<IUnitOfWork>();
@@ -31,7 +33,7 @@ public class GenerateTestCommandTests
             .Returns(AiQuotaCheck.Unlimited);
 
         _handler = new AppGenerateTest.GenerateTestCommandHandler(
-            _blockRepo, _wordRepo, _testRepo, _bgJobService, _aiQuota, _unitOfWork);
+            _blockRepo, _wordRepo, _testRepo, _settingRepo, _bgJobService, _aiQuota, _unitOfWork);
     }
 
     [Fact]

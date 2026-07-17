@@ -11,6 +11,8 @@ public sealed class User : BaseEntity
     public string Status { get; private set; } = default!;
     /// <summary>CEFR level (A1..C2); null = not set, tests are generated without difficulty targeting.</summary>
     public string? EnglishLevel { get; private set; }
+    /// <summary>Max never-reviewed words introduced into the review queue per UTC day (0 = none).</summary>
+    public int NewWordsPerDay { get; private set; } = DefaultNewWordsPerDay;
     public DateTimeOffset? LastActiveAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
@@ -77,6 +79,17 @@ public sealed class User : BaseEntity
         if (string.IsNullOrWhiteSpace(newPasswordHash))
             throw new DomainException("Password hash cannot be empty.");
         PasswordHash = newPasswordHash;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public const int DefaultNewWordsPerDay = 10;
+    public const int MaxNewWordsPerDay = 100;
+
+    public void SetNewWordsPerDay(int count)
+    {
+        if (count < 0 || count > MaxNewWordsPerDay)
+            throw new DomainException($"New words per day must be between 0 and {MaxNewWordsPerDay}.");
+        NewWordsPerDay = count;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

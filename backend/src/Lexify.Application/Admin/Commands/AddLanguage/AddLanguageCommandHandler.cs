@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Lexify.Application.Abstractions;
 using Lexify.Application.Admin.Dtos;
 using Lexify.Application.Common;
 using Lexify.Domain.Entities;
@@ -8,6 +10,7 @@ namespace Lexify.Application.Admin.Commands.AddLanguage;
 
 public sealed class AddLanguageCommandHandler(
     ILanguageRepository languageRepository,
+    IAuditService auditService,
     IUnitOfWork unitOfWork)
     : IRequestHandler<AddLanguageCommand, Result<LanguageDto>>
 {
@@ -19,6 +22,12 @@ public sealed class AddLanguageCommandHandler(
 
         var language = new Language(request.Code, request.Name, request.NativeName, true, request.SortOrder);
         await languageRepository.AddAsync(language, cancellationToken);
+
+        await auditService.LogAsync(
+            "add_language", "Language", language.Code,
+            newValueJson: JsonSerializer.Serialize($"{language.Name} ({language.NativeName})"),
+            ct: cancellationToken);
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Ok(new LanguageDto(

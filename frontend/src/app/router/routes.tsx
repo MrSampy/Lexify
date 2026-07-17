@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { LoginPage } from '@/pages/Login/ui/LoginPage'
 import { RegisterPage } from '@/pages/Register/ui/RegisterPage'
@@ -12,6 +12,7 @@ import { TestCreatePage } from '@/pages/TestCreate/ui/TestCreatePage'
 import { TestRunnerPage } from '@/pages/TestRunner/ui/TestRunnerPage'
 import { TestResultsPage } from '@/pages/TestResults/ui/TestResultsPage'
 import { ReviewSessionPage } from '@/pages/ReviewSession/ui/ReviewSessionPage'
+import { StatsPage } from '@/pages/Stats/ui/StatsPage'
 import { DashboardPage } from '@/pages/Dashboard/ui/DashboardPage'
 import { SearchResultsPage } from '@/pages/Search/ui/SearchResultsPage'
 import { ProfilePage } from '@/pages/Profile/ui/ProfilePage'
@@ -21,6 +22,7 @@ import { AdminAiMonitorPage } from '@/pages/AdminAiMonitor/ui/AdminAiMonitorPage
 import { AdminSettingsPage } from '@/pages/AdminSettings/ui/AdminSettingsPage'
 import { AdminLanguagesPage } from '@/pages/AdminLanguages/ui/AdminLanguagesPage'
 import { AdminAuditPage } from '@/pages/AdminAudit/ui/AdminAuditPage'
+import { NotFoundPage } from '@/pages/NotFound/ui/NotFoundPage'
 import { AdminLayout } from '@/app/layouts/AdminLayout'
 import { UserLayout } from '@/app/layouts/UserLayout'
 import { AuthGuard } from './guards/AuthGuard'
@@ -46,8 +48,11 @@ const router = createBrowserRouter([
           { path: '/tests/:id/run', element: <TestRunnerPage /> },
           { path: '/tests/:id/results', element: <TestResultsPage /> },
           { path: ROUTES.REVIEW, element: <ReviewSessionPage /> },
+          { path: ROUTES.STATS, element: <StatsPage /> },
           { path: ROUTES.SEARCH, element: <SearchResultsPage /> },
           { path: ROUTES.PROFILE, element: <ProfilePage /> },
+          // Inside the layout so the sidebar stays available on a dead link.
+          { path: '*', element: <NotFoundPage /> },
         ],
       },
       {
@@ -68,7 +73,6 @@ const router = createBrowserRouter([
       },
     ],
   },
-  { path: '*', element: <Navigate to={ROUTES.DASHBOARD} replace /> },
 ])
 
 export function AppRouter() {

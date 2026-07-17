@@ -9,6 +9,7 @@ namespace Lexify.Application.Words.Commands.CreateWord;
 public sealed class CreateWordCommandHandler(
     IWordBlockRepository blockRepository,
     IWordRepository wordRepository,
+    ISystemSettingRepository settingRepository,
     ICurrentUserService currentUser)
     : IRequestHandler<CreateWordCommand, Result<Guid>>
 {
@@ -20,6 +21,15 @@ public sealed class CreateWordCommandHandler(
 
         if (block.UserId != currentUser.UserId)
             return Result.Forbidden<Guid>("You do not have access to this block.");
+
+        var maxWords = await settingRepository.GetIntAsync(
+            SystemSetting.Keys.MaxWordsPerBlock, fallback: 0, cancellationToken);
+        if (maxWords > 0)
+        {
+            var existing = await wordRepository.CountByBlockIdAsync(request.BlockId, ct: cancellationToken);
+            if (existing >= maxWords)
+                return Result.Failure<Guid>($"Block word limit reached ({existing}/{maxWords}).");
+        }
 
         var word = Word.Create(
             request.BlockId,

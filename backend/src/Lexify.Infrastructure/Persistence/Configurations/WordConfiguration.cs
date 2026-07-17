@@ -71,6 +71,13 @@ public sealed class WordConfiguration : IEntityTypeConfiguration<Word>
             .HasColumnName("next_review_at")
             .IsRequired();
 
+        builder.Property(w => w.LastReviewedAt).HasColumnName("last_reviewed_at");
+
+        builder.Property(w => w.LapseCount)
+            .HasColumnName("lapse_count")
+            .HasDefaultValue(0)
+            .IsRequired();
+
         builder.ToTable(t =>
         {
             t.HasCheckConstraint("chk_words_type",
@@ -78,6 +85,7 @@ public sealed class WordConfiguration : IEntityTypeConfiguration<Word>
             t.HasCheckConstraint("chk_words_ease", "ease_factor >= 1.3");
             t.HasCheckConstraint("chk_words_interval", "interval_days >= 1");
             t.HasCheckConstraint("chk_words_reps", "repetitions >= 0");
+            t.HasCheckConstraint("chk_words_lapses", "lapse_count >= 0");
             t.HasCheckConstraint("chk_words_term", "LENGTH(TRIM(term)) > 0");
             t.HasCheckConstraint("chk_words_trans", "LENGTH(TRIM(translation)) > 0");
         });

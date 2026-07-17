@@ -9,7 +9,7 @@ namespace Lexify.Application.Admin.Commands.UpdateSystemSetting;
 
 public sealed class UpdateSystemSettingCommandHandler(
     ISystemSettingRepository settingRepository,
-    IAuditLogRepository auditLogRepository,
+    IAuditService auditService,
     ICacheService cacheService,
     ICurrentUserService currentUser,
     IUnitOfWork unitOfWork)
@@ -28,15 +28,12 @@ public sealed class UpdateSystemSettingCommandHandler(
         setting.Update(request.Value, currentUser.UserId);
         await settingRepository.UpdateAsync(setting, cancellationToken);
 
-        var log = new AuditLog(
-            adminId: currentUser.UserId,
-            action: "update_system_setting",
-            targetType: "SystemSetting",
-            targetId: request.Key,
-            oldValue: ToJsonAuditValue(oldValue, setting.ValueType),
-            newValue: ToJsonAuditValue(request.Value, setting.ValueType));
+        await auditService.LogAsync(
+            "update_system_setting", "SystemSetting", request.Key,
+            oldValueJson: ToJsonAuditValue(oldValue, setting.ValueType),
+            newValueJson: ToJsonAuditValue(request.Value, setting.ValueType),
+            ct: cancellationToken);
 
-        await auditLogRepository.AddAsync(log, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         await cacheService.RemoveAsync("admin:settings", cancellationToken);

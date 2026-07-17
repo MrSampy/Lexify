@@ -12,6 +12,8 @@ public class FinishAttemptCommandTests
     private readonly ITestAttemptRepository _attemptRepo;
     private readonly IQuestionRepository _questionRepo;
     private readonly IWordRepository _wordRepo;
+    private readonly IWordBlockRepository _blockRepo;
+    private readonly IReviewLogRepository _reviewLogRepo;
     private readonly IUnitOfWork _unitOfWork;
     private readonly AppFinishAttempt.FinishAttemptCommandHandler _handler;
 
@@ -20,9 +22,11 @@ public class FinishAttemptCommandTests
         _attemptRepo = Substitute.For<ITestAttemptRepository>();
         _questionRepo = Substitute.For<IQuestionRepository>();
         _wordRepo = Substitute.For<IWordRepository>();
+        _blockRepo = Substitute.For<IWordBlockRepository>();
+        _reviewLogRepo = Substitute.For<IReviewLogRepository>();
         _unitOfWork = Substitute.For<IUnitOfWork>();
         _handler = new AppFinishAttempt.FinishAttemptCommandHandler(
-            _attemptRepo, _questionRepo, _wordRepo, _unitOfWork);
+            _attemptRepo, _questionRepo, _wordRepo, _blockRepo, _reviewLogRepo, _unitOfWork);
     }
 
     private static void InjectAnswers(TestAttempt attempt, IEnumerable<AttemptAnswer> answers)
@@ -153,5 +157,40 @@ public class FinishAttemptCommandTests
         Assert.True(result.IsSuccess);
         Assert.NotEqual(initialEaseFactor, word.EaseFactor); // SM-2 penalty reduced ease factor
         Assert.Equal(0, word.Repetitions); // quality=0 resets repetitions
+    }
+
+    [Fact]
+    public async Task Handle_CorrectAnswer_AdvancesLinkedWordAndWritesTestReviewLog()
+    {
+        var userId = Guid.NewGuid();
+        var testId = Guid.NewGuid();
+        var attempt = new TestAttempt(testId, userId);
+        var blockId = Guid.NewGuid();
+        var word = new Word(blockId, "apple", "яблуко");
+        var block = new WordBlock(userId, 3, "Fruits");
+
+        var question = new Question(
+            testId, word.Id, Question.QuestionTypes.OpenAnswer,
+            "Translate apple", "яблуко", 0, "hash");
+
+        InjectAnswers(attempt, [new AttemptAnswer(attempt.Id, question.Id, "яблуко", true)]);
+
+        _attemptRepo.GetByIdWithAnswersAsync(attempt.Id, Arg.Any<CancellationToken>()).Returns(attempt);
+        _questionRepo.GetByTestIdAsync(testId, Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<Question>)[question]);
+        _wordRepo.GetByIdAsync(word.Id, Arg.Any<CancellationToken>()).Returns(word);
+        _blockRepo.GetByIdAsync(blockId, Arg.Any<CancellationToken>()).Returns(block);
+
+        var result = await _handler.Handle(
+            new AppFinishAttempt.FinishAttemptCommand(attempt.Id, userId),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        // A correct answer now advances the schedule (previously only wrong answers were applied).
+        Assert.Equal(1, word.Repetitions);
+        await _reviewLogRepo.Received(1).AddRangeAsync(
+            Arg.Is<IEnumerable<WordReviewLog>>(logs =>
+                logs.Any(l => l.WordId == word.Id && l.Quality == 4 && l.Source == WordReviewLog.Sources.Test)),
+            Arg.Any<CancellationToken>());
     }
 }

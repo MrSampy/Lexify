@@ -7,6 +7,7 @@ import {
   useUpdateDisplayNameMutation,
   useChangePasswordMutation,
   useUpdateEnglishLevelMutation,
+  useUpdateReviewSettingsMutation,
   ENGLISH_LEVELS,
   type EnglishLevel,
 } from '@/entities/user'
@@ -54,10 +55,13 @@ export function ProfilePage() {
   const updateDisplayName = useUpdateDisplayNameMutation()
   const updateLevel = useUpdateEnglishLevelMutation()
   const changePassword = useChangePasswordMutation()
+  const updateReviewSettings = useUpdateReviewSettingsMutation()
 
   // null = untouched by the user → show the profile value; avoids setState-in-effect
   const [displayNameDraft, setDisplayNameDraft] = useState<string | null>(null)
   const displayName = displayNameDraft ?? profile?.displayName ?? ''
+  const [newWordsDraft, setNewWordsDraft] = useState<string | null>(null)
+  const newWordsPerDay = newWordsDraft ?? String(profile?.newWordsPerDay ?? 10)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -86,6 +90,21 @@ export function ProfilePage() {
       toast.success(t('profile.levelUpdated'))
     } catch {
       toast.error(t('profile.levelUpdateFailed'))
+    }
+  }
+
+  const handleSaveReviewSettings = async () => {
+    const parsed = Number(newWordsPerDay)
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 100) {
+      toast.error(t('profile.newWordsInvalid'))
+      return
+    }
+    try {
+      await updateReviewSettings.mutateAsync(parsed)
+      setNewWordsDraft(null)
+      toast.success(t('profile.reviewSettingsUpdated'))
+    } catch {
+      toast.error(t('profile.reviewSettingsUpdateFailed'))
     }
   }
 
@@ -155,6 +174,33 @@ export function ProfilePage() {
             />
             <span className="ds-sm" style={{ color: 'var(--fg-4)' }}>
               {t('profile.cefrHint')}
+            </span>
+          </div>
+        </SectionCard>
+
+        <SectionCard title={t('profile.reviewSettings')}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <input
+              className="lx-input"
+              type="number"
+              min={0}
+              max={100}
+              style={{ width: 100 }}
+              value={newWordsPerDay}
+              onChange={(e) => setNewWordsDraft(e.target.value)}
+            />
+            <button
+              className="lx-btn-primary"
+              onClick={() => void handleSaveReviewSettings()}
+              disabled={
+                updateReviewSettings.isPending ||
+                String(profile?.newWordsPerDay ?? 10) === newWordsPerDay.trim()
+              }
+            >
+              {t('common.save')}
+            </button>
+            <span className="ds-sm" style={{ color: 'var(--fg-4)' }}>
+              {t('profile.newWordsHint')}
             </span>
           </div>
         </SectionCard>

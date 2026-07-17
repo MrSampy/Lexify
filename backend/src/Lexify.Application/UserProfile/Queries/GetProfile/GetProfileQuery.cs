@@ -8,4 +8,5 @@ public sealed record GetProfileQuery(Guid UserId) : IRequest<Result<ProfileDto>>
 public sealed record ProfileDto(
     string Email,
     string? DisplayName,
-    string? EnglishLevel);
+    string? EnglishLevel,
+    int NewWordsPerDay);

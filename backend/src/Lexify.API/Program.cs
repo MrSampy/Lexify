@@ -109,6 +109,7 @@ builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy<string, AiRateLimiterPolicy>(AiRateLimiterPolicy.PolicyName);
     options.AddPolicy<string, AuthRateLimiterPolicy>(AuthRateLimiterPolicy.PolicyName);
+    options.AddPolicy<string, TtsRateLimiterPolicy>(TtsRateLimiterPolicy.PolicyName);
 });
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
@@ -182,6 +183,8 @@ app.UseCors();
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseAuthentication();
 app.UseMiddleware<CurrentUserMiddleware>();
+// After authentication so admins (identified by their role claim) bypass maintenance mode.
+app.UseMiddleware<MaintenanceModeMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.UseHttpMetrics();

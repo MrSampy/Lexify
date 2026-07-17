@@ -61,10 +61,13 @@ public sealed partial class DataSeeder(
             new(SystemSetting.Keys.RegistrationEnabled, "true", "bool", "Allow new user registrations"),
             new(SystemSetting.Keys.InviteCode,   "",         "string",
                 "Shared invite code. Only used when registration is disabled; empty then closes sign-up entirely."),
-            new("features.max_words_per_block",  "200",      "int",    "Max words per block (0 = unlimited)"),
-            new("features.max_blocks_per_user",  "0",        "int",    "Max blocks per user (0 = unlimited)"),
-            new("test.max_questions",            "50",       "int",    "Max questions per test"),
-            new("maintenance.enabled",           "false",    "bool",   "Maintenance mode"),
+            new(SystemSetting.Keys.MaxWordsPerBlock, "200",  "int",    "Max words per block (0 = unlimited)"),
+            new(SystemSetting.Keys.MaxBlocksPerUser, "0",    "int",    "Max blocks per user (0 = unlimited)"),
+            new(SystemSetting.Keys.TestMaxQuestions, "50",   "int",    "Max questions per test"),
+            new(SystemSetting.Keys.MaintenanceEnabled, "false", "bool",
+                "Maintenance mode: non-admin API requests get 503 (sign-in and health stay open)"),
+            new(SystemSetting.Keys.TtsEnabled,   "true",     "bool",
+                "Enable server-side neural TTS (Piper). Off = clients use browser speech synthesis."),
         };
 
         var existingKeys = await db.SystemSettings

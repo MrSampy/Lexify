@@ -1,14 +1,15 @@
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ROUTES } from '@/shared/config'
 import { useAuthStore } from '@/entities/user'
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', to: ROUTES.ADMIN.DASHBOARD, end: true, emoji: '📊' },
-  { label: 'Users', to: ROUTES.ADMIN.USERS, emoji: '👥' },
-  { label: 'AI Monitor', to: ROUTES.ADMIN.AI_MONITOR, emoji: '🤖' },
-  { label: 'Settings', to: ROUTES.ADMIN.SETTINGS, emoji: '⚙️' },
-  { label: 'Languages', to: ROUTES.ADMIN.LANGUAGES, emoji: '🌐' },
-  { label: 'Audit log', to: ROUTES.ADMIN.AUDIT, emoji: '📋' },
+  { labelKey: 'adminNav.dashboard', to: ROUTES.ADMIN.DASHBOARD, end: true, emoji: '📊' },
+  { labelKey: 'adminNav.users', to: ROUTES.ADMIN.USERS, emoji: '👥' },
+  { labelKey: 'adminNav.aiMonitor', to: ROUTES.ADMIN.AI_MONITOR, emoji: '🤖' },
+  { labelKey: 'adminNav.settings', to: ROUTES.ADMIN.SETTINGS, emoji: '⚙️' },
+  { labelKey: 'adminNav.languages', to: ROUTES.ADMIN.LANGUAGES, emoji: '🌐' },
+  { labelKey: 'adminNav.audit', to: ROUTES.ADMIN.AUDIT, emoji: '📋' },
 ]
 
 interface AdminNavProps {
@@ -17,6 +18,7 @@ interface AdminNavProps {
 }
 
 export function AdminNav({ inDrawer = false }: AdminNavProps) {
+  const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
 
   const content = (
@@ -82,11 +84,11 @@ export function AdminNav({ inDrawer = false }: AdminNavProps) {
           color: 'var(--fg-4)',
         }}
       >
-        Admin panel
+        {t('nav.adminPanel')}
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
-        {NAV_ITEMS.map(({ label, to, end, emoji }) => (
+        {NAV_ITEMS.map(({ labelKey, to, end, emoji }) => (
           <NavLink
             key={to}
             to={to}
@@ -94,7 +96,7 @@ export function AdminNav({ inDrawer = false }: AdminNavProps) {
             className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
           >
             <span style={{ fontSize: 16 }}>{emoji}</span>
-            <span>{label}</span>
+            <span>{t(labelKey)}</span>
           </NavLink>
         ))}
       </nav>
@@ -119,7 +121,7 @@ export function AdminNav({ inDrawer = false }: AdminNavProps) {
         )}
         <NavLink to={ROUTES.DASHBOARD} className="lx-nav-item">
           <span style={{ fontSize: 16 }}>🏠</span>
-          <span>Back to app</span>
+          <span>{t('adminNav.backToApp')}</span>
         </NavLink>
       </div>
     </>

@@ -66,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IPasswordHasher, PasswordHasherService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IAuditService, AuditService>();
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -74,6 +75,7 @@ public static class DependencyInjection
         services.AddScoped<IWordBlockRepository, WordBlockRepository>();
         services.AddScoped<IWordRepository, WordRepository>();
         services.AddScoped<IAiCallLogRepository, AiCallLogRepository>();
+        services.AddScoped<IReviewLogRepository, ReviewLogRepository>();
         services.AddScoped<ITestRepository, TestRepository>();
         services.AddScoped<IQuestionRepository, QuestionRepository>();
         services.AddScoped<ITestAttemptRepository, TestAttemptRepository>();
@@ -126,6 +128,17 @@ public static class DependencyInjection
         }
 
         services.AddScoped<IAIProvider, AIOrchestrator>();
+
+        // Piper TTS — one HTTP client to the sidecar; the retry policy above is reused.
+        services.Configure<PiperSettings>(configuration.GetSection("Piper"));
+        var piperSettings = configuration.GetSection("Piper").Get<PiperSettings>() ?? new PiperSettings();
+        services.AddHttpClient("piper", client =>
+            {
+                client.BaseAddress = new Uri(piperSettings.BaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(piperSettings.TimeoutSeconds);
+            })
+            .AddPolicyHandler(retryPolicy);
+        services.AddScoped<ITtsService, PiperTtsService>();
 
         // Redis connection and cache service (optional — falls back to no-op when not configured)
         var redisConnectionString = configuration.GetConnectionString("Redis");

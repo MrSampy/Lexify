@@ -26,6 +26,20 @@ services:
       timeout: 5s
       retries: 5
 
+  # Dev-only email catcher: the `dotnet run` backend sends SMTP to localhost:1025
+  # (see appsettings.Development.json). View caught mail at http://localhost:8025.
+  # Not part of docker-compose.prod.yml — production uses a real SMTP provider.
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # web UI
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+
   backend:
     build:
       context: ./backend
@@ -50,17 +64,42 @@ services:
       - AiProviders__0__TimeoutSeconds=180
       - AiProviders__0__SupportsJsonSchema=false
       - Hangfire__ConnectionString=${DATABASE_URL}
+      - Piper__Enabled=${PIPER_ENABLED:-true}
+      - Piper__BaseUrl=${PIPER_BASE_URL:-http://piper:5000}
+      - Piper__CacheDir=/app/tts-cache
+    volumes:
+      - tts_cache:/app/tts-cache
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # No service_healthy gate: a TTS outage must not block backend startup — the client
+      # transparently falls back to browser speech synthesis.
+      piper:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+
+  piper:
+    build:
+      context: ./piper
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # Published in dev so a host-run `dotnet run` backend (BaseUrl localhost:5000) can reach it,
+    # and for manual voice auditioning. Prod publishes NO ports (backend talks to it in-network).
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/voices"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend:
     build:
@@ -76,3 +115,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  tts_cache:

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useLocation, NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Menu } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { Menu, Sun, Moon } from 'lucide-react'
 import { ROUTES } from '@/shared/config'
 import { useIsMobile } from '@/shared/lib'
 import { MobileDrawer } from '@/shared/ui'
@@ -14,6 +15,7 @@ const APP_NAV = [
   { labelKey: 'nav.blocks', to: ROUTES.BLOCKS, emoji: '📚' },
   { labelKey: 'nav.tests', to: ROUTES.TESTS, emoji: '📝' },
   { labelKey: 'nav.review', to: ROUTES.REVIEW, emoji: '🔄' },
+  { labelKey: 'nav.stats', to: ROUTES.STATS, emoji: '📊' },
   { labelKey: 'nav.search', to: ROUTES.SEARCH, emoji: '🔍' },
   { labelKey: 'nav.profile', to: ROUTES.PROFILE, emoji: '👤' },
 ]
@@ -22,6 +24,40 @@ const LANG_OPTIONS = [
   { code: 'en', label: 'EN' },
   { code: 'uk', label: 'УК' },
 ]
+
+/** Compact light/dark switch for the top bar (Profile still has the full Light/Dark/System control). */
+function ThemeToggle() {
+  const { t } = useTranslation()
+  const { resolvedTheme, setTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+
+  return (
+    <button
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      aria-label={t('nav.toggleTheme')}
+      title={t('nav.toggleTheme')}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 36,
+        height: 36,
+        flexShrink: 0,
+        border: '1.5px solid var(--line-2)',
+        borderRadius: 'var(--r-pill)',
+        background: 'var(--bg-1)',
+        color: 'var(--fg-2)',
+        cursor: 'pointer',
+      }}
+    >
+      {isDark ? (
+        <Sun style={{ width: 17, height: 17 }} />
+      ) : (
+        <Moon style={{ width: 17, height: 17 }} />
+      )}
+    </button>
+  )
+}
 
 /** Sidebar inner content — shared between the desktop sticky aside and the mobile drawer. */
 function SidebarContent({
@@ -163,9 +199,11 @@ function SidebarContent({
 }
 
 export function UserLayout() {
-  const { i18n } = useTranslation()
+  const { i18n, t } = useTranslation()
   const logout = useAuthStore((s) => s.logout)
   const user = useAuthStore((s) => s.user)
+  const impersonation = useAuthStore((s) => s.impersonation)
+  const stopImpersonation = useAuthStore((s) => s.stopImpersonation)
   const { data: profile } = useProfile()
   const navigate = useNavigate()
   const location = useLocation()
@@ -238,6 +276,43 @@ export function UserLayout() {
           background: 'var(--bg-0)',
         }}
       >
+        {/* Impersonation banner — always visible while acting as another user */}
+        {impersonation && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              gap: 12,
+              padding: '8px 16px',
+              background: 'var(--danger)',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          >
+            <span>{t('nav.impersonating', { email: user?.email })}</span>
+            <button
+              onClick={() => {
+                stopImpersonation()
+                navigate(ROUTES.ADMIN.USERS)
+              }}
+              style={{
+                border: '1.5px solid rgba(255,255,255,0.7)',
+                borderRadius: 'var(--r-pill)',
+                background: 'transparent',
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 800,
+                padding: '3px 12px',
+                cursor: 'pointer',
+              }}
+            >
+              {t('nav.stopImpersonating')}
+            </button>
+          </div>
+        )}
         {/* Top bar */}
         <div
           style={{
@@ -277,6 +352,7 @@ export function UserLayout() {
           <div style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
             <SearchBar />
           </div>
+          <ThemeToggle />
           {/* Language switcher */}
           <div
             style={{

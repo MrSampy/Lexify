@@ -18,6 +18,9 @@ public sealed class LanguageRepository(AppDbContext context) : ILanguageReposito
     public Task<Language?> GetByCodeAsync(string code, CancellationToken ct = default) =>
         context.Languages.FirstOrDefaultAsync(l => l.Code == code, ct);
 
+    public Task<Language?> GetByIdAsync(short id, CancellationToken ct = default) =>
+        context.Languages.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id, ct);
+
     public async Task AddAsync(Language language, CancellationToken ct = default) =>
         await context.Languages.AddAsync(language, ct);
 

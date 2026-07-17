@@ -10,6 +10,7 @@ public class ReviewWordCommandTests
 {
     private readonly IWordRepository _wordRepo;
     private readonly IWordBlockRepository _blockRepo;
+    private readonly IReviewLogRepository _reviewLogRepo;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ReviewWordCommandHandler _handler;
 
@@ -17,8 +18,9 @@ public class ReviewWordCommandTests
     {
         _wordRepo = Substitute.For<IWordRepository>();
         _blockRepo = Substitute.For<IWordBlockRepository>();
+        _reviewLogRepo = Substitute.For<IReviewLogRepository>();
         _unitOfWork = Substitute.For<IUnitOfWork>();
-        _handler = new ReviewWordCommandHandler(_wordRepo, _blockRepo, _unitOfWork);
+        _handler = new ReviewWordCommandHandler(_wordRepo, _blockRepo, _reviewLogRepo, _unitOfWork);
     }
 
     [Fact]
@@ -40,6 +42,29 @@ public class ReviewWordCommandTests
     }
 
     [Fact]
+    public async Task Handle_Success_WritesReviewLog()
+    {
+        var userId = Guid.NewGuid();
+        var blockId = Guid.NewGuid();
+        var word = new Word(blockId, "apple", "яблуко");
+        var block = new WordBlock(userId, 7, "Block");
+
+        _wordRepo.GetByIdAsync(word.Id, Arg.Any<CancellationToken>()).Returns(word);
+        _blockRepo.GetByIdAsync(blockId, Arg.Any<CancellationToken>()).Returns(block);
+
+        await _handler.Handle(new ReviewWordCommand(word.Id, userId, 4), CancellationToken.None);
+
+        await _reviewLogRepo.Received(1).AddAsync(
+            Arg.Is<WordReviewLog>(l =>
+                l.WordId == word.Id &&
+                l.UserId == userId &&
+                l.LanguageId == 7 &&
+                l.Quality == 4 &&
+                l.Source == WordReviewLog.Sources.Review),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Handle_Quality0_RepetitionsResetToZero()
     {
         var userId = Guid.NewGuid();
@@ -58,6 +83,25 @@ public class ReviewWordCommandTests
         Assert.True(result.IsSuccess);
         Assert.Equal(0, word.Repetitions);
         Assert.Equal(1, word.IntervalDays);
+    }
+
+    [Fact]
+    public async Task Handle_Success_ReturnsPostReviewSchedule()
+    {
+        var userId = Guid.NewGuid();
+        var blockId = Guid.NewGuid();
+        var word = new Word(blockId, "apple", "яблуко");
+        var block = new WordBlock(userId, 1, "Block");
+
+        _wordRepo.GetByIdAsync(word.Id, Arg.Any<CancellationToken>()).Returns(word);
+        _blockRepo.GetByIdAsync(blockId, Arg.Any<CancellationToken>()).Returns(block);
+
+        var result = await _handler.Handle(new ReviewWordCommand(word.Id, userId, 5), CancellationToken.None);
+
+        Assert.NotNull(result.Value);
+        Assert.Equal(word.IntervalDays, result.Value.IntervalDays);
+        Assert.Equal(word.NextReviewAt, result.Value.NextReviewAt);
+        Assert.False(result.Value.IsLeech);
     }
 
     [Fact]

@@ -4,6 +4,7 @@ using Lexify.API.RateLimit;
 using Lexify.API.Requests.Words;
 using Lexify.Application.Abstractions;
 using Lexify.Application.AI.Commands.FormatWords;
+using Lexify.Application.Review.Queries.GetWordHistory;
 using Lexify.Application.Words.Commands.BulkDeleteWords;
 using Lexify.Application.Words.Commands.BulkMoveWords;
 using Lexify.Application.Words.Commands.CreateWord;
@@ -134,6 +135,18 @@ public sealed class WordsController(ISender sender, ICurrentUserService currentU
     {
         var command = new BulkMoveWordsCommand(blockId, request.TargetBlockId, request.WordIds);
         return ToActionResult(await sender.Send(command, cancellationToken));
+    }
+
+    /// <summary>One word's review history (newest first). A foreign word id returns an empty list.</summary>
+    [HttpGet("/api/words/{wordId:guid}/history")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetWordHistory(
+        Guid wordId,
+        [FromQuery] int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetWordHistoryQuery(currentUser.UserId, wordId, limit);
+        return ToActionResult(await sender.Send(query, cancellationToken));
     }
 
     /// <summary>Formats raw vocabulary text via AI and streams SSE events (parsing → streaming → done/error).</summary>

@@ -10,6 +10,8 @@ interface UserDetailModalProps {
   onSuspend: (id: string) => void
   onRestore: (id: string) => void
   onDelete: (id: string, email: string) => void
+  /** Provided only for superadmins — renders the "Sign in as user" button. */
+  onImpersonate?: (id: string) => void
 }
 
 export function UserDetailModal({
@@ -20,6 +22,7 @@ export function UserDetailModal({
   onSuspend,
   onRestore,
   onDelete,
+  onImpersonate,
 }: UserDetailModalProps) {
   if (!user) return null
 
@@ -96,6 +99,18 @@ export function UserDetailModal({
               }}
             >
               Delete
+            </Button>
+          )}
+          {onImpersonate && user.status === 'active' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onImpersonate(user.id)
+                onClose()
+              }}
+            >
+              Sign in as user
             </Button>
           )}
           <Button variant="ghost" size="sm" onClick={onClose} className="ml-auto">

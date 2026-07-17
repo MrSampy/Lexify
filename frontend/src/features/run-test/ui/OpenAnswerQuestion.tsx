@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Question } from '@/entities/test'
 import { levenshtein } from '@/shared/lib'
 
@@ -9,6 +10,7 @@ interface OpenAnswerQuestionProps {
 }
 
 export function OpenAnswerQuestion({ question, onSubmit, disabled }: OpenAnswerQuestionProps) {
+  const { t } = useTranslation()
   const [value, setValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -46,7 +48,7 @@ export function OpenAnswerQuestion({ question, onSubmit, disabled }: OpenAnswerQ
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="type your answer…"
+          placeholder={t('runTest.typeAnswer')}
           disabled={disabled}
           autoFocus
           style={{ flex: 1, height: 50, fontSize: 17 }}
@@ -57,12 +59,12 @@ export function OpenAnswerQuestion({ question, onSubmit, disabled }: OpenAnswerQ
           disabled={disabled || !value.trim()}
           style={{ padding: '0 22px' }}
         >
-          Check
+          {t('runTest.check')}
         </button>
       </div>
       {showCloseHint && (
         <p style={{ marginTop: 8, color: 'var(--warning)', fontSize: 11, fontWeight: 600 }}>
-          Almost — double-check your spelling.
+          {t('runTest.almostSpelling')}
         </p>
       )}
     </div>

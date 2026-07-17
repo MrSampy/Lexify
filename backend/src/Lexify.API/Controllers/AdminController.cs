@@ -10,15 +10,18 @@ using Lexify.Application.Admin.Commands.UpdateSystemSetting;
 using Lexify.Application.Admin.Queries.GetAdminUsers;
 using Lexify.Application.Admin.Queries.GetAiCallsChart;
 using Lexify.Application.Admin.Queries.GetAiLogs;
+using Lexify.Application.Admin.Queries.GetAuditLogs;
 using Lexify.Application.Admin.Queries.GetAiStats;
 using Lexify.Application.Admin.Queries.GetAiStatus;
 using Lexify.Application.Admin.Queries.GetDashboardStats;
 using Lexify.Application.Admin.Queries.GetLanguages;
 using Lexify.Application.Admin.Queries.GetRegistrationsChart;
 using Lexify.Application.Admin.Queries.GetSystemSettings;
+using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Lexify.API.Controllers;
 
@@ -32,6 +35,52 @@ public sealed class AdminController(ISender sender) : BaseApiController
     [HttpGet("stats")]
     public async Task<IActionResult> GetDashboardStats(CancellationToken ct) =>
         ToActionResult(await sender.Send(new GetDashboardStatsQuery(), ct));
+
+    /// <summary>
+    /// Operational snapshot for the admin dashboard: health-check results, Hangfire failed-job
+    /// count, and the age of the newest database backup (when the backup volume is mounted).
+    /// </summary>
+    [HttpGet("system-health")]
+    public async Task<IActionResult> GetSystemHealth(
+        [FromServices] HealthCheckService healthChecks,
+        [FromServices] IConfiguration configuration,
+        CancellationToken ct)
+    {
+        var report = await healthChecks.CheckHealthAsync(ct);
+        var checks = report.Entries
+            .Select(e => new { Name = e.Key, Status = e.Value.Status.ToString() })
+            .ToList();
+
+        long? failedJobs = null;
+        try
+        {
+            failedJobs = JobStorage.Current.GetMonitoringApi().FailedCount();
+        }
+        catch
+        {
+            // Hangfire storage unavailable — surfaced as null rather than failing the endpoint.
+        }
+
+        DateTimeOffset? lastBackupAt = null;
+        var backupsPath = configuration["Backups:Path"];
+        if (!string.IsNullOrEmpty(backupsPath) && Directory.Exists(backupsPath))
+        {
+            lastBackupAt = Directory
+                .EnumerateFiles(backupsPath, "*", SearchOption.AllDirectories)
+                .Select(f => (DateTimeOffset?)System.IO.File.GetLastWriteTimeUtc(f))
+                .DefaultIfEmpty(null)
+                .Max();
+        }
+
+        return Ok(new
+        {
+            Status = report.Status.ToString(),
+            Checks = checks,
+            FailedJobs = failedJobs,
+            LastBackupAt = lastBackupAt,
+            BackupMonitored = !string.IsNullOrEmpty(backupsPath),
+        });
+    }
 
     [HttpGet("charts/registrations")]
     public async Task<IActionResult> GetRegistrationsChart(
@@ -90,6 +139,20 @@ public sealed class AdminController(ISender sender) : BaseApiController
     public async Task<IActionResult> UpdateSystemSetting(
         string key, [FromBody] UpdateSystemSettingRequest body, CancellationToken ct) =>
         ToActionResult(await sender.Send(new UpdateSystemSettingCommand(key, body.Value), ct));
+
+    // --- Audit Log ---
+
+    [HttpGet("audit")]
+    public async Task<IActionResult> GetAuditLogs(
+        [FromQuery] string? action,
+        [FromQuery] Guid? adminId,
+        [FromQuery] DateTimeOffset? dateFrom,
+        [FromQuery] DateTimeOffset? dateTo,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default) =>
+        ToActionResult(await sender.Send(
+            new GetAuditLogsQuery(action, adminId, dateFrom, dateTo, page, pageSize), ct));
 
     // --- AI Monitoring ---
 

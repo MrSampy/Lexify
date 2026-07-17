@@ -11,6 +11,7 @@ public sealed class GenerateTestCommandHandler(
     IWordBlockRepository blockRepository,
     IWordRepository wordRepository,
     ITestRepository testRepository,
+    ISystemSettingRepository settingRepository,
     IBackgroundJobService backgroundJobService,
     IAiQuotaService aiQuota,
     IUnitOfWork unitOfWork)
@@ -25,6 +26,13 @@ public sealed class GenerateTestCommandHandler(
         if (quota.IsExceeded)
             return Result.Failure<GenerateTestResult>(
                 $"Daily AI limit reached ({quota.Used}/{quota.Limit}). It resets at midnight UTC.");
+
+        // Runtime cap on top of the validator's static 5–50 range, so the admin can lower it live.
+        var maxQuestions = await settingRepository.GetIntAsync(
+            SystemSetting.Keys.TestMaxQuestions, fallback: 50, cancellationToken);
+        if (maxQuestions > 0 && request.QuestionCount > maxQuestions)
+            return Result.Failure<GenerateTestResult>(
+                $"Question count {request.QuestionCount} exceeds the current limit of {maxQuestions}.");
 
         // Verify all blocks exist and belong to the requesting user
         var blocks = new List<WordBlock>();

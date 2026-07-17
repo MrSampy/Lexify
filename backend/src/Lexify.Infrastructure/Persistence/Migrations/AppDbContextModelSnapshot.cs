@@ -742,6 +742,12 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_active_at");
 
+                    b.Property<int>("NewWordsPerDay")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(10)
+                        .HasColumnName("new_words_per_day");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text")
@@ -783,6 +789,8 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                     b.ToTable("users", null, t =>
                         {
                             t.HasCheckConstraint("chk_users_english_level", "english_level IS NULL OR english_level IN ('A1', 'A2', 'B1', 'B2', 'C1', 'C2')");
+
+                            t.HasCheckConstraint("chk_users_new_words", "new_words_per_day >= 0 AND new_words_per_day <= 100");
 
                             t.HasCheckConstraint("chk_users_role", "role IN ('user', 'moderator', 'admin')");
 
@@ -837,6 +845,16 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(1)
                         .HasColumnName("interval_days");
+
+                    b.Property<int>("LapseCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("lapse_count");
+
+                    b.Property<DateTimeOffset?>("LastReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_reviewed_at");
 
                     b.Property<DateTimeOffset>("NextReviewAt")
                         .HasColumnType("timestamp with time zone")
@@ -917,6 +935,8 @@ namespace Lexify.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("chk_words_interval", "interval_days >= 1");
 
+                            t.HasCheckConstraint("chk_words_lapses", "lapse_count >= 0");
+
                             t.HasCheckConstraint("chk_words_reps", "repetitions >= 0");
 
                             t.HasCheckConstraint("chk_words_term", "LENGTH(TRIM(term)) > 0");
@@ -985,6 +1005,67 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("chk_word_blocks_count", "word_count >= 0");
 
                             t.HasCheckConstraint("chk_word_blocks_title", "LENGTH(TRIM(title)) > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.WordReviewLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BlockId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("block_id");
+
+                    b.Property<double>("EaseFactorAfter")
+                        .HasColumnType("double precision")
+                        .HasColumnName("ease_factor_after");
+
+                    b.Property<int>("IntervalDaysAfter")
+                        .HasColumnType("integer")
+                        .HasColumnName("interval_days_after");
+
+                    b.Property<short>("LanguageId")
+                        .HasColumnType("smallint")
+                        .HasColumnName("language_id");
+
+                    b.Property<int>("Quality")
+                        .HasColumnType("integer")
+                        .HasColumnName("quality");
+
+                    b.Property<DateTimeOffset>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("source");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("word_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "ReviewedAt")
+                        .HasDatabaseName("idx_review_logs_user_time");
+
+                    b.HasIndex("WordId", "ReviewedAt")
+                        .HasDatabaseName("idx_review_logs_word_time");
+
+                    b.ToTable("word_review_logs", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_review_logs_quality", "quality BETWEEN 0 AND 5");
+
+                            t.HasCheckConstraint("chk_review_logs_source", "source IN ('review', 'test')");
                         });
                 });
 
@@ -1181,6 +1262,16 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_word_blocks_user");
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.WordReviewLog", b =>
+                {
+                    b.HasOne("Lexify.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_review_logs_user");
                 });
 
             modelBuilder.Entity("Lexify.Domain.Entities.Question", b =>

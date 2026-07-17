@@ -103,6 +103,86 @@ public class WordTests
     }
 
     [Fact]
+    public void Create_HasNoReviewHistoryState()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+
+        Assert.Null(word.LastReviewedAt);
+        Assert.Equal(0, word.LapseCount);
+        Assert.False(word.IsLeech);
+    }
+
+    [Fact]
+    public void ApplyReviewResult_SetsLastReviewedAt()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+
+        word.ApplyReviewResult(0);
+
+        Assert.NotNull(word.LastReviewedAt);
+    }
+
+    [Fact]
+    public void ApplyReviewResult_Lapse_IncrementsLapseCount()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+
+        word.ApplyReviewResult(0);
+        word.ApplyReviewResult(2);
+
+        Assert.Equal(2, word.LapseCount);
+    }
+
+    [Fact]
+    public void ApplyReviewResult_SuccessfulRecall_ResetsLapseCount()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+        word.ApplyReviewResult(0);
+        word.ApplyReviewResult(0);
+
+        word.ApplyReviewResult(4);
+
+        Assert.Equal(0, word.LapseCount);
+    }
+
+    [Fact]
+    public void ApplyReviewResult_ReachingLeechThreshold_AutoSetsConfidenceFlag()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+
+        for (var i = 0; i < Word.LeechThreshold; i++)
+            word.ApplyReviewResult(0);
+
+        Assert.True(word.IsLeech);
+        Assert.True(word.ConfidenceFlag);
+        Assert.NotNull(word.ConfidenceNote);
+    }
+
+    [Fact]
+    public void ApplyReviewResult_LeechThreshold_DoesNotOverwriteUserConfidenceNote()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+        word.SetConfidence(true, "my own note");
+
+        for (var i = 0; i < Word.LeechThreshold; i++)
+            word.ApplyReviewResult(0);
+
+        Assert.Equal("my own note", word.ConfidenceNote);
+    }
+
+    [Fact]
+    public void ApplyReviewResult_BelowLeechThreshold_DoesNotFlag()
+    {
+        var word = Word.Create(ValidBlockId, "apple", "яблуко");
+
+        for (var i = 0; i < Word.LeechThreshold - 1; i++)
+            word.ApplyReviewResult(0);
+
+        Assert.False(word.IsLeech);
+        Assert.False(word.ConfidenceFlag);
+    }
+
+    [Fact]
     public void ApplyReviewResult_RaisesWordReviewedEvent()
     {
         var word = Word.Create(ValidBlockId, "apple", "яблуко");

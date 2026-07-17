@@ -76,17 +76,42 @@ services:
       - AiProviders__0__ApiKey=${OLLAMA_API_KEY:?OLLAMA_API_KEY is required}
       - AiProviders__0__TimeoutSeconds=180
       - AiProviders__0__SupportsJsonSchema=false
+
+      # Server-side neural TTS (Piper). Runtime on/off is the features.tts_enabled setting.
+      - Piper__Enabled=${PIPER_ENABLED:-true}
+      - Piper__BaseUrl=${PIPER_BASE_URL:-http://piper:5000}
+      - Piper__CacheDir=/app/tts-cache
+
+      # Read-only view of the postgres-backup volume, so the admin dashboard can show backup age
+      - Backups__Path=/backups
+    volumes:
+      - tts_cache:/app/tts-cache
+      - pgbackups:/backups:ro
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # No health gate: a TTS outage must not block backend startup (client falls back to browser TTS).
+      piper:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+
+  piper:
+    image: ghcr.io/mrsampy/lexify/piper:latest
+    restart: unless-stopped
+    # No host ports — reachable only on the internal network via http://piper:5000.
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/voices"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend:
     image: ghcr.io/mrsampy/lexify/frontend:latest
@@ -158,3 +183,4 @@ volumes:
   pgbackups:
   caddy_data:
   caddy_config:
+  tts_cache:
