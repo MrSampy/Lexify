@@ -33,11 +33,12 @@ public sealed class GetBlockByIdQueryHandler(
         var total = await wordRepository.CountByBlockIdAsync(
             request.BlockId, null, cancellationToken);
         var tags = await tagRepository.GetTagNamesByBlockIdAsync(request.BlockId, cancellationToken);
+        var flagged = await wordRepository.CountFlaggedByBlockIdAsync(request.BlockId, cancellationToken);
 
         var blockDto = mapper.Map<WordBlockDto>(block) with { Tags = tags };
         var wordDtos = mapper.Map<IReadOnlyList<WordDto>>(words);
         var pagedWords = new PagedResult<WordDto>(wordDtos, total, request.WordsPage, request.WordsPageSize);
 
-        return Result.Ok(new BlockDetailDto(blockDto, pagedWords));
+        return Result.Ok(new BlockDetailDto(blockDto, pagedWords, flagged));
     }
 }

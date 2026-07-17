@@ -33,6 +33,7 @@ jobs:
           REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_BACKEND=${REPO_LC}/backend" >> $GITHUB_ENV
           echo "IMAGE_FRONTEND=${REPO_LC}/frontend" >> $GITHUB_ENV
+          echo "IMAGE_PIPER=${REPO_LC}/piper" >> $GITHUB_ENV
 
       - name: Build and push backend
         uses: docker/build-push-action@v6
@@ -54,6 +55,17 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_FRONTEND }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Piper TTS sidecar — voices are baked in, so this image is large but rebuilds rarely.
+      - name: Build and push piper
+        uses: docker/build-push-action@v6
+        with:
+          context: ./piper
+          file: ./piper/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PIPER }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

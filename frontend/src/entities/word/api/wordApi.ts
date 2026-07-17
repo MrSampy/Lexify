@@ -40,6 +40,25 @@ const wordApi = {
       .then((r) => r.data),
 }
 
+/** One past review of a word, with the SM-2 state it produced. */
+export interface WordReviewEntry {
+  quality: number
+  source: 'review' | 'test'
+  easeFactorAfter: number
+  intervalDaysAfter: number
+  reviewedAt: string
+}
+
+export function useWordHistory(wordId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['words', 'history', wordId],
+    queryFn: () =>
+      apiClient.get<WordReviewEntry[]>(`/api/words/${wordId}/history`).then((r) => r.data),
+    enabled,
+    staleTime: 60_000,
+  })
+}
+
 export function useWords(blockId: string, search?: string, page = 1) {
   return useQuery({
     queryKey: wordKeys.list(blockId, { search, page }),

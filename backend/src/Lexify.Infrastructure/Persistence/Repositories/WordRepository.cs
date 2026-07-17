@@ -31,6 +31,9 @@ public sealed class WordRepository(AppDbContext context) : IWordRepository
         CancellationToken ct = default) =>
         BuildBlockQuery(blockId, search).CountAsync(ct);
 
+    public Task<int> CountFlaggedByBlockIdAsync(Guid blockId, CancellationToken ct = default) =>
+        context.Words.CountAsync(w => w.BlockId == blockId && w.ConfidenceFlag, ct);
+
     public async Task<IReadOnlyList<Word>> GetDistractorPoolAsync(
         Guid userId,
         short languageId,
@@ -46,13 +49,106 @@ public sealed class WordRepository(AppDbContext context) : IWordRepository
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<Word>> GetDueForReviewAsync(
-        Guid userId, int limit = 20, CancellationToken ct = default) =>
-        await context.Words
-            .Where(w => w.NextReviewAt <= DateTimeOffset.UtcNow
-                        && context.WordBlocks
-                            .Any(wb => wb.Id == w.BlockId && wb.UserId == userId))
+        Guid userId, int limit = 20, Guid? blockId = null, bool cram = false, CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var query = context.Words
+            .Where(w => context.WordBlocks.Any(wb => wb.Id == w.BlockId && wb.UserId == userId));
+
+        if (blockId.HasValue)
+            query = query.Where(w => w.BlockId == blockId.Value);
+
+        // Cram = practise everything in scope regardless of schedule; otherwise only what's due.
+        if (!cram)
+            query = query.Where(w => w.NextReviewAt <= now);
+
+        return await query
             .OrderBy(w => w.NextReviewAt)
             .Take(limit)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Word>> GetReviewQueueAsync(
+        Guid userId, int limit, int newWordAllowance, Guid? blockId = null, CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var owned = context.Words
+            .Where(w => context.WordBlocks.Any(wb => wb.Id == w.BlockId && wb.UserId == userId));
+
+        if (blockId.HasValue)
+            owned = owned.Where(w => w.BlockId == blockId.Value);
+
+        // Scheduled reviews come first — clearing the backlog matters more than novelty.
+        var reviews = await owned
+            .Where(w => w.LastReviewedAt != null && w.NextReviewAt <= now)
+            .OrderBy(w => w.NextReviewAt)
+            .Take(limit)
+            .ToListAsync(ct);
+
+        var newTake = Math.Min(newWordAllowance, limit - reviews.Count);
+        if (newTake <= 0)
+            return reviews;
+
+        var fresh = await owned
+            .Where(w => w.LastReviewedAt == null)
+            .OrderBy(w => w.CreatedAt)
+            .Take(newTake)
+            .ToListAsync(ct);
+
+        return [.. reviews, .. fresh];
+    }
+
+    public async Task<DueCounts> GetDueCountsAsync(Guid userId, CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var owned = context.Words
+            .Where(w => context.WordBlocks.Any(wb => wb.Id == w.BlockId && wb.UserId == userId));
+
+        var fresh = await owned.CountAsync(w => w.LastReviewedAt == null, ct);
+        var due = await owned.CountAsync(w => w.LastReviewedAt != null && w.NextReviewAt <= now, ct);
+
+        return new DueCounts(fresh, due);
+    }
+
+    public async Task<MasteryCounts> GetMasteryCountsAsync(Guid userId, CancellationToken ct = default)
+    {
+        var owned = context.Words
+            .Where(w => context.WordBlocks.Any(wb => wb.Id == w.BlockId && wb.UserId == userId));
+
+        // Buckets are mutually exclusive; "New" is repetitions == 0 (never successfully recalled),
+        // the rest split the maturing interval. Four indexed counts beat loading every word.
+        var neu = await owned.CountAsync(w => w.Repetitions == 0, ct);
+        var learning = await owned.CountAsync(w => w.Repetitions > 0 && w.IntervalDays < 7, ct);
+        var young = await owned.CountAsync(w => w.Repetitions > 0 && w.IntervalDays >= 7 && w.IntervalDays <= 30, ct);
+        var mature = await owned.CountAsync(w => w.Repetitions > 0 && w.IntervalDays > 30, ct);
+
+        return new MasteryCounts(neu, learning, young, mature);
+    }
+
+    public async Task<IReadOnlyList<ProblemWord>> GetProblemWordsAsync(
+        Guid userId, int limit = 20, CancellationToken ct = default) =>
+        // Sort/limit on entity columns first — EF cannot translate ordering by a member of a
+        // record constructed inside the query.
+        await context.Words
+            .Where(w => w.LapseCount >= Word.LeechThreshold || w.ConfidenceFlag)
+            .Join(context.WordBlocks.Where(wb => wb.UserId == userId),
+                w => w.BlockId,
+                wb => wb.Id,
+                (w, wb) => new { w, wb })
+            .OrderByDescending(x => x.w.LapseCount)
+            .ThenBy(x => x.w.EaseFactor)
+            .Take(limit)
+            .Select(x => new ProblemWord(
+                x.w.Id, x.wb.Id, x.wb.Title, x.w.Term, x.w.Translation,
+                x.w.LapseCount, x.w.EaseFactor, x.w.IntervalDays, x.w.NextReviewAt, x.w.ConfidenceFlag))
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<DateTimeOffset>> GetScheduledReviewTimesAsync(
+        Guid userId, DateTimeOffset until, CancellationToken ct = default) =>
+        await context.Words
+            .Where(w => context.WordBlocks.Any(wb => wb.Id == w.BlockId && wb.UserId == userId))
+            .Where(w => w.LastReviewedAt != null && w.NextReviewAt < until)
+            .Select(w => w.NextReviewAt)
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<Word>> GetByBlockIdsAsync(

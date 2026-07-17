@@ -8,6 +8,8 @@ export interface Profile {
   email: string
   displayName: string | null
   englishLevel: EnglishLevel | null
+  /** Max new (never-reviewed) words introduced into the review queue per day. */
+  newWordsPerDay: number
 }
 
 export function useProfile() {
@@ -33,6 +35,20 @@ export function useUpdateDisplayNameMutation() {
     mutationFn: (displayName: string | null) =>
       apiClient.put('/api/profile/display-name', { displayName }).then((r) => r.data),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['user', 'profile'] }),
+  })
+}
+
+export function useUpdateReviewSettingsMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (newWordsPerDay: number) =>
+      apiClient.put('/api/profile/review-settings', { newWordsPerDay }).then((r) => r.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['user', 'profile'] })
+      // The setting changes what "due" means for the dashboard counter and review queue.
+      void queryClient.invalidateQueries({ queryKey: ['user', 'stats'] })
+      void queryClient.invalidateQueries({ queryKey: ['review'] })
+    },
   })
 }
 

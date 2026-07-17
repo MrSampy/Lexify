@@ -10,7 +10,119 @@ import {
   CartesianGrid,
 } from 'recharts'
 import { Spinner } from '@/shared/ui'
-import { useDashboardStats, useRegistrationsChart, useAiCallsChart } from '@/entities/admin'
+import {
+  useDashboardStats,
+  useRegistrationsChart,
+  useAiCallsChart,
+  useSystemHealth,
+} from '@/entities/admin'
+
+const HEALTH_COLORS: Record<string, string> = {
+  Healthy: 'var(--success)',
+  Degraded: 'var(--warning)',
+  Unhealthy: 'var(--danger)',
+}
+
+function hoursAgo(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000)
+}
+
+/** Health-check dots, failed-jobs count, backup age, and a Hangfire link, in one quiet strip. */
+function SystemHealthStrip() {
+  const { data: health } = useSystemHealth()
+  if (!health) return null
+
+  const backupText = !health.backupMonitored
+    ? null
+    : health.lastBackupAt
+      ? `backup ${hoursAgo(health.lastBackupAt)}h ago`
+      : 'no backups found'
+  const backupStale = health.backupMonitored
+    ? !health.lastBackupAt || hoursAgo(health.lastBackupAt!) > 26
+    : false
+
+  return (
+    <div
+      style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 20 }}
+    >
+      {health.checks.map((c) => (
+        <span
+          key={c.name}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 14px',
+            background: 'var(--bg-2)',
+            border: '1px solid var(--line-2)',
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'var(--fg-2)',
+          }}
+        >
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: HEALTH_COLORS[c.status] ?? 'var(--fg-4)',
+              flexShrink: 0,
+            }}
+          />
+          {c.name}
+        </span>
+      ))}
+      {health.failedJobs !== null && (
+        <span
+          style={{
+            padding: '6px 14px',
+            background: 'var(--bg-2)',
+            border: '1px solid var(--line-2)',
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 600,
+            color: health.failedJobs > 0 ? 'var(--danger)' : 'var(--fg-2)',
+          }}
+        >
+          {health.failedJobs} failed jobs
+        </span>
+      )}
+      {backupText && (
+        <span
+          style={{
+            padding: '6px 14px',
+            background: 'var(--bg-2)',
+            border: '1px solid var(--line-2)',
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 600,
+            color: backupStale ? 'var(--danger)' : 'var(--fg-2)',
+          }}
+        >
+          {backupText}
+        </span>
+      )}
+      <a
+        href="/hangfire"
+        target="_blank"
+        rel="noreferrer"
+        style={{
+          padding: '6px 14px',
+          borderRadius: 999,
+          border: '1px solid var(--line-2)',
+          background: 'var(--bg-2)',
+          fontSize: 12,
+          fontWeight: 700,
+          color: 'var(--accent-color)',
+          textDecoration: 'none',
+        }}
+      >
+        Hangfire →
+      </a>
+    </div>
+  )
+}
 
 const chartTooltipStyle = {
   backgroundColor: 'var(--bg-3)',
@@ -48,6 +160,8 @@ export function AdminDashboardPage() {
       <h1 className="ds-h2" style={{ margin: '0 0 24px' }}>
         Dashboard
       </h1>
+
+      <SystemHealthStrip />
 
       {statsLoading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>

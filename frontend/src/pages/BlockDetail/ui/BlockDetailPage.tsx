@@ -126,7 +126,7 @@ export function BlockDetailPage() {
     )
   }
 
-  const { block, words } = data
+  const { block, words, flaggedCount } = data
   const langCode = LANGUAGES[block.languageId]?.code ?? String(block.languageId)
   const displayedWords = confidenceOnly ? words.items.filter((w) => w.confidenceFlag) : words.items
 
@@ -180,18 +180,19 @@ export function BlockDetailPage() {
           </div>
           <p className="ds-body" style={{ margin: 0, color: 'var(--fg-3)' }}>
             {t('blocks.wordCount', { count: block.wordCount })}
-            {words.items.filter((w) => w.confidenceFlag).length > 0 && (
-              <>
-                {' '}
-                ·{' '}
-                {t('blockDetail.flagged', {
-                  count: words.items.filter((w) => w.confidenceFlag).length,
-                })}
-              </>
-            )}
+            {flaggedCount > 0 && <> · {t('blockDetail.flagged', { count: flaggedCount })}</>}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <Link to={`${ROUTES.REVIEW}?blockId=${block.id}`} style={{ textDecoration: 'none' }}>
+            <button className="lx-btn-primary">{t('blockDetail.reviewBlock')}</button>
+          </Link>
+          <Link
+            to={`${ROUTES.REVIEW}?blockId=${block.id}&mode=cram`}
+            style={{ textDecoration: 'none' }}
+          >
+            <button className="lx-btn-secondary">{t('blockDetail.cramBlock')}</button>
+          </Link>
           <button
             className="lx-btn-secondary"
             onClick={() => exportBlock.mutate(block.id)}

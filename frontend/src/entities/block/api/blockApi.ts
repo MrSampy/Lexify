@@ -18,6 +18,8 @@ export const blockKeys = {
 export interface BlockDetail {
   block: WordBlock
   words: PagedResult<WordInBlock>
+  /** Confidence-flagged words in the whole block, not just the current page. */
+  flaggedCount: number
 }
 
 const blockApi = {

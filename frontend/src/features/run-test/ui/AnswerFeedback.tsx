@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 interface AnswerFeedbackProps {
   isCorrect: boolean
   correctAnswer: string
@@ -13,6 +15,7 @@ export function AnswerFeedback({
   isLast,
   onNext,
 }: AnswerFeedbackProps) {
+  const { t } = useTranslation()
   return (
     <div
       style={{
@@ -42,16 +45,17 @@ export function AnswerFeedback({
             color: isCorrect ? 'var(--success)' : 'var(--danger)',
           }}
         >
-          {isCorrect ? 'Correct!' : 'Incorrect'}
+          {isCorrect ? t('runTest.correctLabel') : t('runTest.incorrectLabel')}
         </span>
       </div>
       {!isCorrect && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
           <div style={{ color: 'var(--fg-4)', fontSize: 11, fontWeight: 600 }}>
-            your answer: <span style={{ color: 'var(--danger)' }}>{givenAnswer || '—'}</span>
+            {t('runTest.yourAnswer')}:{' '}
+            <span style={{ color: 'var(--danger)' }}>{givenAnswer || '—'}</span>
           </div>
           <div style={{ color: 'var(--fg-4)', fontSize: 11, fontWeight: 600 }}>
-            correct:{' '}
+            {t('runTest.correctAnswer')}:{' '}
             <span style={{ color: 'var(--success)', fontWeight: 600 }}>{correctAnswer}</span>
           </div>
         </div>
@@ -61,7 +65,7 @@ export function AnswerFeedback({
         style={{ padding: '8px 20px', fontSize: 13 }}
         onClick={onNext}
       >
-        {isLast ? 'Finish →' : 'Next →'}
+        {isLast ? t('runTest.finish') : t('runTest.next')}
       </button>
     </div>
   )

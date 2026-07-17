@@ -8,6 +8,9 @@ namespace Lexify.Domain.Services;
 /// </summary>
 public sealed class SpacedRepetitionService
 {
+    /// <summary>Minimum quality that counts as a successful recall (0–2 = lapse, 3–5 = success).</summary>
+    public const int RecallThreshold = 3;
+
     /// <summary>
     /// Computes new SM-2 state given the current state and review quality (0–5).
     /// Quality: 0–2 = failed recall, 3–5 = successful recall.
@@ -24,7 +27,7 @@ public sealed class SpacedRepetitionService
         int newInterval;
         int newRepetitions;
 
-        if (quality >= 3)
+        if (quality >= RecallThreshold)
         {
             newInterval = repetitions switch
             {

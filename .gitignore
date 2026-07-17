@@ -86,3 +86,9 @@ frontend/.env.production
 TestResults/
 !frontend/src/pages/TestResults/
 lcov.info
+
+# TTS runtime cache (generated WAVs)
+backend/src/Lexify.API/tts-cache/
+
+# PR body scratch files
+scripts/_pr_*.md

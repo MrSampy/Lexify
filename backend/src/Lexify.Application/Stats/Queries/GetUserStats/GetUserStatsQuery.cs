@@ -9,5 +9,8 @@ public sealed record UserStatsDto(
     int TotalBlocks,
     int TotalWords,
     int DueWordsCount,
+    int DueNewCount,
+    int DueReviewCount,
     int WordsAnsweredThisWeek,
-    int TestsCompletedThisWeek);
+    int TestsCompletedThisWeek,
+    int CurrentStreak);

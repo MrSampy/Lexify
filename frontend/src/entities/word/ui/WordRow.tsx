@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import { Button, Checkbox, SpeakButton, useConfirm, ChipListInput } from '@/shared/ui'
+import { masteryInfo } from '@/shared/lib'
 import { useUpdateWordMutation, useDeleteWordMutation } from '../api/wordApi'
 import type { Word } from '../model/types'
 import { WordTypeBadge } from './WordTypeBadge'
+import { WordHistoryPanel } from './WordHistoryPanel'
 
 interface WordRowProps {
   word: Word
@@ -18,9 +20,13 @@ interface WordRowProps {
 
 export function WordRow({ word, blockId, languageId, selected, onSelectedChange }: WordRowProps) {
   const { t } = useTranslation()
-  const [editField, setEditField] = useState<'translation' | 'notes' | 'synonyms' | null>(null)
+  const [editField, setEditField] = useState<
+    'translation' | 'notes' | 'synonyms' | 'example' | null
+  >(null)
   const [draftTranslation, setDraftTranslation] = useState(word.translation)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [draftNotes, setDraftNotes] = useState(word.notes ?? '')
+  const [draftExample, setDraftExample] = useState(word.exampleSentence ?? '')
   // Synonyms auto-save on every add/remove (like tags) rather than via an explicit ✓/✕ —
   // so there is no "cancel" that could discard an addition and no save-reads-stale-draft race.
   const [synonyms, setSynonyms] = useState<string[]>(word.synonyms ?? [])
@@ -42,7 +48,7 @@ export function WordRow({ word, blockId, languageId, selected, onSelectedChange 
       input: {
         translation: draftTranslation,
         notes: draftNotes || undefined,
-        exampleSentence: word.exampleSentence ?? undefined,
+        exampleSentence: draftExample || undefined,
         confidenceFlag: word.confidenceFlag,
         confidenceNote: word.confidenceNote ?? undefined,
         alternativeTranslations: word.alternativeTranslations ?? undefined,
@@ -55,8 +61,28 @@ export function WordRow({ word, blockId, languageId, selected, onSelectedChange 
   const handleCancel = () => {
     setDraftTranslation(word.translation)
     setDraftNotes(word.notes ?? '')
+    setDraftExample(word.exampleSentence ?? '')
     setEditField(null)
   }
+
+  // The confidence flag marks a word as needing extra attention; toggle it in place, preserving
+  // every other field (the update command replaces the whole word).
+  const toggleConfidence = () => {
+    updateWord.mutate({
+      wordId: word.id,
+      input: {
+        translation: word.translation,
+        notes: word.notes ?? undefined,
+        exampleSentence: word.exampleSentence ?? undefined,
+        confidenceFlag: !word.confidenceFlag,
+        confidenceNote: word.confidenceNote ?? undefined,
+        alternativeTranslations: word.alternativeTranslations ?? undefined,
+        synonyms,
+      },
+    })
+  }
+
+  const mastery = masteryInfo(word.repetitions, word.intervalDays)
 
   const persistSynonyms = (next: string[]) => {
     setSynonyms(next)
@@ -117,7 +143,34 @@ export function WordRow({ word, blockId, languageId, selected, onSelectedChange 
         }}
       >
         <span>{word.term}</span>
-        <SpeakButton text={word.term} languageId={languageId} />
+        <SpeakButton text={word.term} wordId={word.id} languageId={languageId} />
+        {/* Mastery dot doubles as the review-history trigger */}
+        <button
+          onClick={() => setHistoryOpen(true)}
+          title={`${t(mastery.labelKey)} — ${t('words.showHistory')}`}
+          aria-label={t('words.showHistory')}
+          className="cursor-pointer border-none bg-transparent p-0 leading-none"
+          style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
+        >
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: mastery.color,
+            }}
+          />
+        </button>
+        <button
+          onClick={toggleConfidence}
+          disabled={updateWord.isPending}
+          title={t('words.toggleConfidence')}
+          aria-pressed={word.confidenceFlag}
+          className="cursor-pointer border-none bg-transparent p-0 text-[13px] leading-none transition-opacity"
+          style={{ opacity: word.confidenceFlag ? 1 : 0.35 }}
+        >
+          🚩
+        </button>
       </div>
 
       {/* Translation */}
@@ -238,6 +291,43 @@ export function WordRow({ word, blockId, languageId, selected, onSelectedChange 
             {word.notes ?? t('words.addNote')}
           </Button>
         )}
+
+        {/* Example sentence — same inline-edit pattern as notes */}
+        {editField === 'example' ? (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+            <input
+              className="lx-input"
+              style={{ padding: '5px 10px', fontSize: 13 }}
+              value={draftExample}
+              onChange={(e) => setDraftExample(e.target.value)}
+              placeholder={t('words.addExample')}
+              autoFocus
+            />
+            <button
+              onClick={handleSave}
+              disabled={updateWord.isPending}
+              className="lx-btn-primary"
+              style={{ padding: '5px 10px', fontSize: 12 }}
+            >
+              ✓
+            </button>
+            <button
+              onClick={handleCancel}
+              className="lx-btn-secondary"
+              style={{ padding: '5px 10px', fontSize: 12 }}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditField('example')}
+            className="mt-1 block w-fit cursor-pointer border-none bg-transparent p-0 text-left text-xs italic transition-colors duration-100 [font-family:var(--font-body)]"
+            style={{ color: word.exampleSentence ? 'var(--fg-4)' : 'var(--fg-4)' }}
+          >
+            {word.exampleSentence ? `“${word.exampleSentence}”` : t('words.addExample')}
+          </button>
+        )}
       </div>
 
       {/* Delete — pinned to the card's top-right corner on mobile, last column on desktop */}
@@ -251,6 +341,9 @@ export function WordRow({ word, blockId, languageId, selected, onSelectedChange 
         </button>
       </div>
       {confirmDialog}
+      {historyOpen && (
+        <WordHistoryPanel word={word} open={historyOpen} onOpenChange={setHistoryOpen} />
+      )}
     </div>
   )
 }

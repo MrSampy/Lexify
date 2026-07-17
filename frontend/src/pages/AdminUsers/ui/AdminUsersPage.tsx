@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { debounce } from '@/shared/lib'
+import { ROUTES } from '@/shared/config'
 import { LxSelect, useConfirm } from '@/shared/ui'
 import { useAuthStore } from '@/entities/user'
 import {
@@ -9,6 +11,7 @@ import {
   useRestoreUserMutation,
   useDeleteUserMutation,
   useChangeRoleMutation,
+  useImpersonateUserMutation,
 } from '@/entities/admin'
 import type { AdminUser, AdminUsersParams } from '@/entities/admin'
 import { UsersTable, UserDetailModal } from '@/features/admin-users'
@@ -16,7 +19,9 @@ import { UsersTable, UserDetailModal } from '@/features/admin-users'
 const PAGE_SIZE = 20
 
 export function AdminUsersPage() {
+  const navigate = useNavigate()
   const currentUserRole = useAuthStore((s) => s.user?.role)
+  const startImpersonation = useAuthStore((s) => s.startImpersonation)
   const canManageUsers = currentUserRole === 'admin'
   const [page, setPage] = useState(1)
   const [role, setRole] = useState<string>('')
@@ -43,7 +48,18 @@ export function AdminUsersPage() {
   const restore = useRestoreUserMutation()
   const deleteUser = useDeleteUserMutation()
   const changeRole = useChangeRoleMutation()
+  const impersonate = useImpersonateUserMutation()
   const { confirm, confirmDialog } = useConfirm()
+
+  const handleImpersonate = async (id: string) => {
+    try {
+      const token = await impersonate.mutateAsync(id)
+      startImpersonation(token)
+      navigate(ROUTES.DASHBOARD)
+    } catch {
+      toast.error('Failed to impersonate user')
+    }
+  }
 
   const handleDelete = async (id: string, userEmail: string) => {
     if (
@@ -161,6 +177,7 @@ export function AdminUsersPage() {
         onSuspend={(id) => void suspend.mutateAsync(id)}
         onRestore={(id) => void restore.mutateAsync(id)}
         onDelete={(id, email) => void handleDelete(id, email)}
+        onImpersonate={canManageUsers ? (id) => void handleImpersonate(id) : undefined}
       />
       {confirmDialog}
     </div>

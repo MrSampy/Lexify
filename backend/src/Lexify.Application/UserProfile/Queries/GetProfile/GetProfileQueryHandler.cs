@@ -13,6 +13,6 @@ public sealed class GetProfileQueryHandler(IUserRepository userRepository)
         if (user is null)
             return Result.NotFound<ProfileDto>("User not found.");
 
-        return Result.Ok(new ProfileDto(user.Email, user.DisplayName, user.EnglishLevel));
+        return Result.Ok(new ProfileDto(user.Email, user.DisplayName, user.EnglishLevel, user.NewWordsPerDay));
     }
 }

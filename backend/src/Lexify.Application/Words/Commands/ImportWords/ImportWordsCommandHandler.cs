@@ -9,6 +9,7 @@ namespace Lexify.Application.Words.Commands.ImportWords;
 public sealed class ImportWordsCommandHandler(
     IWordBlockRepository blockRepository,
     IWordRepository wordRepository,
+    ISystemSettingRepository settingRepository,
     ICurrentUserService currentUser)
     : IRequestHandler<ImportWordsCommand, Result<int>>
 {
@@ -20,6 +21,16 @@ public sealed class ImportWordsCommandHandler(
 
         if (block.UserId != currentUser.UserId)
             return Result.Forbidden<int>("You do not have access to this block.");
+
+        var maxWords = await settingRepository.GetIntAsync(
+            SystemSetting.Keys.MaxWordsPerBlock, fallback: 0, cancellationToken);
+        if (maxWords > 0)
+        {
+            var existing = await wordRepository.CountByBlockIdAsync(request.BlockId, ct: cancellationToken);
+            if (existing + request.Words.Count > maxWords)
+                return Result.Failure<int>(
+                    $"Block word limit is {maxWords}; it has {existing} and the import adds {request.Words.Count}.");
+        }
 
         var words = request.Words.Select(item =>
         {

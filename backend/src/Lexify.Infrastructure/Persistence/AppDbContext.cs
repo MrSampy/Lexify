@@ -22,6 +22,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<AttemptAnswer> AttemptAnswers => Set<AttemptAnswer>();
     public DbSet<AiCallLog> AiCallLogs => Set<AiCallLog>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<WordReviewLog> WordReviewLogs => Set<WordReviewLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

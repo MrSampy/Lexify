@@ -2,6 +2,7 @@ using Lexify.Application.Abstractions;
 using Lexify.Application.UserProfile.Commands.ChangePassword;
 using Lexify.Application.UserProfile.Commands.UpdateDisplayName;
 using Lexify.Application.UserProfile.Commands.UpdateEnglishLevel;
+using Lexify.Application.UserProfile.Commands.UpdateReviewSettings;
 using Lexify.Application.UserProfile.Queries.GetProfile;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -38,6 +39,15 @@ public sealed class ProfileController(ISender sender, ICurrentUserService curren
         ToActionResult(await sender.Send(
             new UpdateDisplayNameCommand(currentUser.UserId, request.DisplayName), ct));
 
+    /// <summary>Sets how many new (never-reviewed) words enter the review queue per day (0–100).</summary>
+    [HttpPut("review-settings")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateReviewSettings(
+        UpdateReviewSettingsRequest request, CancellationToken ct) =>
+        ToActionResult(await sender.Send(
+            new UpdateReviewSettingsCommand(currentUser.UserId, request.NewWordsPerDay), ct));
+
     /// <summary>Changes the current user's password; all other sessions are revoked.</summary>
     [HttpPut("password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -50,6 +60,8 @@ public sealed class ProfileController(ISender sender, ICurrentUserService curren
 }
 
 public sealed record UpdateEnglishLevelRequest(string? EnglishLevel);
+
+public sealed record UpdateReviewSettingsRequest(int NewWordsPerDay);
 
 public sealed record UpdateDisplayNameRequest(string? DisplayName);
 

@@ -10,9 +10,12 @@ import type {
   AiProviderStatus,
   AiStats,
   AddLanguageInput,
+  AuditLog,
+  AuditLogsParams,
   DashboardStats,
   Language,
   RegistrationDataPoint,
+  SystemHealth,
   SystemSetting,
 } from '../model/types'
 
@@ -22,6 +25,7 @@ export const adminKeys = {
   aiCallsChart: (hours: number) => ['admin', 'chart', 'ai-calls', hours] as const,
   users: (params: AdminUsersParams) => ['admin', 'users', params] as const,
   aiLogs: (params: AiLogsParams) => ['admin', 'ai', 'logs', params] as const,
+  auditLogs: (params: AuditLogsParams) => ['admin', 'audit', params] as const,
   aiStats: (hours: number) => ['admin', 'ai', 'stats', hours] as const,
   aiStatus: () => ['admin', 'ai', 'status'] as const,
   settings: () => ['admin', 'settings'] as const,
@@ -30,6 +34,9 @@ export const adminKeys = {
 
 const adminApi = {
   getDashboardStats: () => apiClient.get<DashboardStats>('/api/admin/stats').then((r) => r.data),
+
+  getSystemHealth: () =>
+    apiClient.get<SystemHealth>('/api/admin/system-health').then((r) => r.data),
 
   getRegistrationsChart: (days: number) =>
     apiClient
@@ -55,6 +62,12 @@ const adminApi = {
 
   getAiLogs: (params: AiLogsParams) =>
     apiClient.get<PagedResult<AiLog>>('/api/admin/ai/logs', { params }).then((r) => r.data),
+
+  getAuditLogs: (params: AuditLogsParams) =>
+    apiClient.get<PagedResult<AuditLog>>('/api/admin/audit', { params }).then((r) => r.data),
+
+  impersonateUser: (id: string) =>
+    apiClient.post<string>(`/api/admin/users/${id}/impersonate`).then((r) => r.data),
 
   getAiStats: (hours: number) =>
     apiClient.get<AiStats>('/api/admin/ai/stats', { params: { hours } }).then((r) => r.data),
@@ -82,6 +95,15 @@ export function useDashboardStats() {
     queryKey: adminKeys.dashboardStats(),
     queryFn: adminApi.getDashboardStats,
     staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useSystemHealth() {
+  return useQuery({
+    queryKey: ['admin', 'system-health'],
+    queryFn: adminApi.getSystemHealth,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
   })
 }
 
@@ -115,6 +137,18 @@ export function useAiLogs(params: AiLogsParams) {
     queryFn: () => adminApi.getAiLogs(params),
     staleTime: 2 * 60 * 1000,
   })
+}
+
+export function useAuditLogs(params: AuditLogsParams) {
+  return useQuery({
+    queryKey: adminKeys.auditLogs(params),
+    queryFn: () => adminApi.getAuditLogs(params),
+    staleTime: 60_000,
+  })
+}
+
+export function useImpersonateUserMutation() {
+  return useMutation({ mutationFn: adminApi.impersonateUser })
 }
 
 export function useAiStats(hours = 24) {

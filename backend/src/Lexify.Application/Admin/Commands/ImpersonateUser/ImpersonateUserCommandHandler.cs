@@ -9,7 +9,7 @@ namespace Lexify.Application.Admin.Commands.ImpersonateUser;
 
 public sealed class ImpersonateUserCommandHandler(
     IUserRepository userRepository,
-    IAuditLogRepository auditLogRepository,
+    IAuditService auditService,
     IJwtService jwtService,
     ICurrentUserService currentUser,
     IUnitOfWork unitOfWork)
@@ -24,14 +24,11 @@ public sealed class ImpersonateUserCommandHandler(
         var token = jwtService.GenerateImpersonationToken(
             target.Id, target.Email, target.Role, currentUser.UserId);
 
-        var log = new AuditLog(
-            adminId: currentUser.UserId,
-            action: "impersonate_user",
-            targetType: "User",
-            targetId: target.Id.ToString(),
-            newValue: JsonSerializer.Serialize($"impersonated as {target.Email}"));
+        await auditService.LogAsync(
+            "impersonate_user", "User", target.Id.ToString(),
+            newValueJson: JsonSerializer.Serialize($"impersonated as {target.Email}"),
+            ct: cancellationToken);
 
-        await auditLogRepository.AddAsync(log, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Ok(token);

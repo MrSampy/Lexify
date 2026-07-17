@@ -30,6 +30,18 @@ public sealed class Word
     public int IntervalDays { get; private set; }
     public int Repetitions { get; private set; }
     public DateTimeOffset NextReviewAt { get; private set; }
+    /// <summary>
+    /// Null until the word is reviewed for the first time — this, not <see cref="Repetitions"/>,
+    /// distinguishes "new" words from lapsed ones (a failed review resets Repetitions to 0).
+    /// </summary>
+    public DateTimeOffset? LastReviewedAt { get; private set; }
+    /// <summary>Consecutive failed reviews (quality &lt; 3); reset to 0 by any successful recall.</summary>
+    public int LapseCount { get; private set; }
+
+    /// <summary>Consecutive lapses at which a word is considered a leech and auto-flagged.</summary>
+    public const int LeechThreshold = 4;
+
+    public bool IsLeech => LapseCount >= LeechThreshold;
 
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
@@ -82,6 +94,19 @@ public sealed class Word
         IntervalDays = result.IntervalDays;
         Repetitions = result.Repetitions;
         NextReviewAt = result.NextReviewAt;
+        LastReviewedAt = DateTimeOffset.UtcNow;
+
+        if (quality < SpacedRepetitionService.RecallThreshold)
+        {
+            LapseCount++;
+            // Auto-flag leeches, but never clobber a note the user set themselves.
+            if (LapseCount == LeechThreshold && !ConfidenceFlag)
+                SetConfidence(true, "Leech: forgotten several reviews in a row.");
+        }
+        else
+        {
+            LapseCount = 0;
+        }
 
         _domainEvents.Add(new WordReviewedEvent(Id, quality, result.EaseFactor, result.IntervalDays));
     }

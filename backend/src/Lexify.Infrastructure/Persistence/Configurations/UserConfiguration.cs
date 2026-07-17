@@ -42,6 +42,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasColumnName("english_level")
             .HasMaxLength(2);
 
+        builder.Property(u => u.NewWordsPerDay)
+            .HasColumnName("new_words_per_day")
+            .HasDefaultValue(User.DefaultNewWordsPerDay)
+            .IsRequired();
+
         builder.Property(u => u.LastActiveAt).HasColumnName("last_active_at");
         builder.Property(u => u.DeletedAt).HasColumnName("deleted_at");
         builder.Property(u => u.CreatedAt).HasColumnName("created_at").IsRequired();
@@ -53,6 +58,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             t.HasCheckConstraint("chk_users_status", "status IN ('active', 'suspended', 'deleted')");
             t.HasCheckConstraint("chk_users_english_level",
                 "english_level IS NULL OR english_level IN ('A1', 'A2', 'B1', 'B2', 'C1', 'C2')");
+            t.HasCheckConstraint("chk_users_new_words",
+                "new_words_per_day >= 0 AND new_words_per_day <= 100");
         });
 
         // Functional unique index LOWER(email) is added via raw SQL in the migration

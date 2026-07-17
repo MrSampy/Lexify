@@ -11,6 +11,7 @@ public class ImportWordsCommandTests
 {
     private readonly IWordBlockRepository _blockRepo;
     private readonly IWordRepository _wordRepo;
+    private readonly ISystemSettingRepository _settingRepo;
     private readonly ICurrentUserService _currentUser;
     private readonly ImportWordsCommandHandler _handler;
 
@@ -18,8 +19,9 @@ public class ImportWordsCommandTests
     {
         _blockRepo = Substitute.For<IWordBlockRepository>();
         _wordRepo = Substitute.For<IWordRepository>();
+        _settingRepo = Substitute.For<ISystemSettingRepository>();
         _currentUser = Substitute.For<ICurrentUserService>();
-        _handler = new ImportWordsCommandHandler(_blockRepo, _wordRepo, _currentUser);
+        _handler = new ImportWordsCommandHandler(_blockRepo, _wordRepo, _settingRepo, _currentUser);
     }
 
     private static List<ImportWordItem> BuildWords(int count) =>

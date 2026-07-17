@@ -113,6 +113,44 @@ export interface AdminUsersParams {
   email?: string
 }
 
+export interface SystemHealthCheck {
+  name: string
+  status: 'Healthy' | 'Degraded' | 'Unhealthy'
+}
+
+export interface SystemHealth {
+  status: 'Healthy' | 'Degraded' | 'Unhealthy'
+  checks: SystemHealthCheck[]
+  /** Hangfire failed-job count; null when the job storage is unreachable. */
+  failedJobs: number | null
+  /** Newest file in the backup volume; null when none found or not monitored. */
+  lastBackupAt: string | null
+  /** False when the backup volume isn't mounted into the backend (e.g. local dev). */
+  backupMonitored: boolean
+}
+
+export interface AuditLog {
+  id: string
+  adminId: string
+  adminEmail: string | null
+  action: string
+  targetType: string | null
+  targetId: string | null
+  oldValue: string | null
+  newValue: string | null
+  ipAddress: string | null
+  createdAt: string
+}
+
+export interface AuditLogsParams {
+  page: number
+  pageSize?: number
+  action?: string
+  adminId?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
 export interface AiLogsParams {
   page: number
   pageSize?: number
