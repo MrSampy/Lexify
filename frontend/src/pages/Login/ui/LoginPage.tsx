@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ROUTES } from '@/shared/config'
+import { Mascot } from '@/shared/ui'
 import { LoginForm } from '@/features/auth'
 
 export function LoginPage() {
@@ -17,6 +18,9 @@ export function LoginPage() {
       }}
     >
       <div style={{ width: '100%', maxWidth: 400 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+          <Mascot pose="greeting" size={110} float />
+        </div>
         {/* Logo */}
         <div
           style={{

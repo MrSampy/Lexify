@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   Badge,
   LxSelect,
+  Mascot,
   Spinner,
   Table,
   TableBody,
@@ -100,7 +101,10 @@ export function AdminAuditPage() {
           <Spinner size="lg" />
         </div>
       ) : logs.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">No audit entries found.</p>
+        <div className="flex flex-col items-center gap-2 py-8">
+          <Mascot pose="scientist" size={96} />
+          <p className="text-center text-sm text-muted-foreground">No audit entries found.</p>
+        </div>
       ) : (
         <div className="overflow-auto rounded-lg border">
           <Table>

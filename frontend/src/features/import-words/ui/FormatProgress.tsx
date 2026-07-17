@@ -1,35 +1,51 @@
 import { useTranslation } from 'react-i18next'
-import { Spinner } from '@/shared/ui'
+import { Mascot } from '@/shared/ui'
 import { useImportWordsStore } from '../model/store'
 
 export function FormatProgress() {
   const { t } = useTranslation()
   const streamingText = useImportWordsStore((s) => s.streamingText)
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Spinner size="sm" />
-        <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
-          {t('import.formatting')}
-        </span>
-      </div>
+  // Show progress without exposing the raw JSON structure to the user: count how
+  // many word objects have streamed in so far (each carries one "term" key).
+  const wordsFound = (streamingText.match(/"term"\s*:/g) ?? []).length
 
-      {streamingText && (
-        <div className="term" style={{ maxHeight: 280, overflowY: 'auto' }}>
-          <pre
-            style={{
-              whiteSpace: 'pre-wrap',
-              margin: 0,
-              fontFamily: 'var(--font-body)',
-              fontSize: 12,
-              color: 'var(--fg-2)',
-              lineHeight: 1.6,
-            }}
-          >
-            {streamingText}
-          </pre>
-        </div>
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 14,
+        textAlign: 'center',
+        padding: 'clamp(24px, 6vw, 48px) 16px',
+      }}
+    >
+      <Mascot pose="diving" size={140} animate />
+
+      <div className="ds-h4" style={{ margin: 0 }}>
+        {t('import.formatting')}
+      </div>
+      <p className="ds-sm" style={{ margin: 0, color: 'var(--fg-3)', maxWidth: 360 }}>
+        {t('import.formattingHint')}
+      </p>
+
+      {wordsFound > 0 && (
+        <span
+          aria-live="polite"
+          style={{
+            marginTop: 4,
+            padding: '5px 14px',
+            borderRadius: 'var(--r-pill)',
+            background: 'var(--accent-ghost)',
+            border: '1px solid var(--accent-line)',
+            color: 'var(--accent-dim)',
+            fontSize: 13,
+            fontWeight: 700,
+          }}
+        >
+          {t('import.wordsFound', { count: wordsFound })}
+        </span>
       )}
     </div>
   )

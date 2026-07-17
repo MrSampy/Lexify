@@ -290,26 +290,17 @@ export function WordImportPage() {
         {/* Step 2 — formatting (SSE streaming) */}
         {step === 'formatting' && (
           <div>
-            {/* Terminal header */}
+            {/* Header: title + cancel, no raw-output framing */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
                 padding: '10px 16px',
-                background: 'var(--bg-3)',
                 borderBottom: '1px solid var(--line-2)',
               }}
             >
-              <div style={{ display: 'flex', gap: 6 }}>
-                {['#FF5F57', '#FEBC2E', '#28C840'].map((c) => (
-                  <div
-                    key={c}
-                    style={{ width: 10, height: 10, borderRadius: '50%', background: c }}
-                  />
-                ))}
-              </div>
-              <span style={{ color: 'var(--fg-4)', fontSize: 11, flex: 1, fontWeight: 600 }}>
+              <span style={{ color: 'var(--fg-3)', fontSize: 12, flex: 1, fontWeight: 700 }}>
                 {t('wordImport.streamingHeader')}
               </span>
               <button

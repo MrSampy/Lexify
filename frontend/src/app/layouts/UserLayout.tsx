@@ -2,7 +2,21 @@ import { useState } from 'react'
 import { useNavigate, useLocation, NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from 'next-themes'
-import { Menu, Sun, Moon } from 'lucide-react'
+import {
+  Menu,
+  Sun,
+  Moon,
+  Home,
+  Library,
+  FileText,
+  RefreshCw,
+  BarChart3,
+  Search,
+  User,
+  Shield,
+  LogOut,
+  type LucideIcon,
+} from 'lucide-react'
 import { ROUTES } from '@/shared/config'
 import { useIsMobile } from '@/shared/lib'
 import { MobileDrawer } from '@/shared/ui'
@@ -10,14 +24,16 @@ import { useAuthStore, useProfile } from '@/entities/user'
 import { authApi } from '@/features/auth'
 import { SearchBar } from '@/widgets/SearchBar'
 
-const APP_NAV = [
-  { labelKey: 'nav.dashboard', to: ROUTES.DASHBOARD, emoji: '🏠' },
-  { labelKey: 'nav.blocks', to: ROUTES.BLOCKS, emoji: '📚' },
-  { labelKey: 'nav.tests', to: ROUTES.TESTS, emoji: '📝' },
-  { labelKey: 'nav.review', to: ROUTES.REVIEW, emoji: '🔄' },
-  { labelKey: 'nav.stats', to: ROUTES.STATS, emoji: '📊' },
-  { labelKey: 'nav.search', to: ROUTES.SEARCH, emoji: '🔍' },
-  { labelKey: 'nav.profile', to: ROUTES.PROFILE, emoji: '👤' },
+const NAV_ICON_SIZE = 18
+
+const APP_NAV: { labelKey: string; to: string; icon: LucideIcon }[] = [
+  { labelKey: 'nav.dashboard', to: ROUTES.DASHBOARD, icon: Home },
+  { labelKey: 'nav.blocks', to: ROUTES.BLOCKS, icon: Library },
+  { labelKey: 'nav.tests', to: ROUTES.TESTS, icon: FileText },
+  { labelKey: 'nav.review', to: ROUTES.REVIEW, icon: RefreshCw },
+  { labelKey: 'nav.stats', to: ROUTES.STATS, icon: BarChart3 },
+  { labelKey: 'nav.search', to: ROUTES.SEARCH, icon: Search },
+  { labelKey: 'nav.profile', to: ROUTES.PROFILE, icon: User },
 ]
 
 const LANG_OPTIONS = [
@@ -127,14 +143,14 @@ function SidebarContent({
 
       {/* Nav items */}
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
-        {APP_NAV.map(({ labelKey, to, emoji }) => (
+        {APP_NAV.map(({ labelKey, to, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             end={to === ROUTES.DASHBOARD}
             className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
           >
-            <span style={{ fontSize: 16 }}>{emoji}</span>
+            <Icon size={NAV_ICON_SIZE} strokeWidth={2} style={{ flexShrink: 0 }} />
             <span>{t(labelKey)}</span>
           </NavLink>
         ))}
@@ -160,7 +176,7 @@ function SidebarContent({
             className={({ isActive }) => `lx-nav-item${isActive ? ' active' : ''}`}
             style={({ isActive }) => ({ color: isActive ? 'var(--warning)' : 'var(--fg-3)' })}
           >
-            <span style={{ fontSize: 16 }}>⚙️</span>
+            <Shield size={NAV_ICON_SIZE} strokeWidth={2} style={{ flexShrink: 0 }} />
             <span>{t('nav.adminPanel')}</span>
           </NavLink>
         </>
@@ -190,7 +206,7 @@ function SidebarContent({
           className="lx-nav-item"
           style={{ color: 'var(--danger)', width: '100%' }}
         >
-          <span style={{ fontSize: 16 }}>👋</span>
+          <LogOut size={NAV_ICON_SIZE} strokeWidth={2} style={{ flexShrink: 0 }} />
           <span>{t('nav.signOut')}</span>
         </button>
       </div>
@@ -406,7 +422,7 @@ export function UserLayout() {
                 fontWeight: 700,
               }}
             >
-              <span>👤</span>
+              <User size={15} strokeWidth={2.2} />
               {displayName}
             </div>
           )}

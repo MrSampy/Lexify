@@ -14,9 +14,11 @@ public class GetForecastQueryTests
     [Fact]
     public async Task Handle_BucketsTimesPerDay_AndFillsZeros()
     {
-        var now = DateTimeOffset.UtcNow;
+        // Anchor to UTC midnight and keep every offset within its own calendar day,
+        // so bucketing (by DayNumber) is independent of the wall-clock time the test runs.
+        var today = new DateTimeOffset(DateTime.UtcNow.Date, TimeSpan.Zero);
         IReadOnlyList<DateTimeOffset> times =
-            [now.AddHours(1), now.AddDays(2), now.AddDays(2).AddHours(3)];
+            [today.AddHours(6), today.AddDays(2).AddHours(6), today.AddDays(2).AddHours(9)];
         _wordRepo.GetScheduledReviewTimesAsync(_userId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns(times);
 
@@ -34,8 +36,10 @@ public class GetForecastQueryTests
     [Fact]
     public async Task Handle_OverdueCollapsesIntoToday()
     {
-        var now = DateTimeOffset.UtcNow;
-        IReadOnlyList<DateTimeOffset> times = [now.AddDays(-30), now.AddDays(-1), now.AddMinutes(5)];
+        // Overdue days and a same-day future time all collapse to day 0; anchor to UTC
+        // midnight so the "today" entry can't roll into tomorrow near midnight.
+        var today = new DateTimeOffset(DateTime.UtcNow.Date, TimeSpan.Zero);
+        IReadOnlyList<DateTimeOffset> times = [today.AddDays(-30), today.AddDays(-1), today.AddHours(12)];
         _wordRepo.GetScheduledReviewTimesAsync(_userId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns(times);
 

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
+import { Mascot } from '@/shared/ui'
 
 export function NotFoundPage() {
   const { t } = useTranslation()
@@ -17,10 +18,11 @@ export function NotFoundPage() {
         padding: 24,
       }}
     >
+      <Mascot pose="lost" size={160} float />
       <div
         style={{
           fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(64px, 15vw, 110px)',
+          fontSize: 'clamp(44px, 10vw, 72px)',
           fontWeight: 800,
           lineHeight: 1,
           color: 'var(--accent-color)',
