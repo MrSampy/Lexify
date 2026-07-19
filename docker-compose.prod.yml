@@ -42,6 +42,12 @@ services:
     restart: unless-stopped
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+      # Behind a TLS-terminating proxy the app only ever sees plain HTTP, so UseHttpsRedirection
+      # cannot infer the public HTTPS port and silently stops redirecting ("Failed to determine the
+      # https port for redirect" in the logs). Stating it explicitly makes the app issue the
+      # http→https redirect itself — needed when the edge proxy can't do it (see docs/deployment.md
+      # A.5: Apache forbids ProxyPass inside <If>, so the :80 vhost cannot be handled separately).
+      - ASPNETCORE_HTTPS_PORT=443
       - ConnectionStrings__DefaultConnection=${DATABASE_URL:?DATABASE_URL is required}
       - ConnectionStrings__Redis=${REDIS_URL:?REDIS_URL is required}
       - Hangfire__ConnectionString=${DATABASE_URL}
