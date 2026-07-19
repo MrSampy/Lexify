@@ -171,7 +171,18 @@ if (app.Environment.IsDevelopment())
 // KnownNetworks/KnownProxies are cleared because the proxy's container IP is not stable.
 var forwardedHeaders = new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+
+    // TWO proxies sit in front, not one: the edge (Caddy, or a panel-managed Apache) forwards to the
+    // frontend container, whose nginx appends the edge's address to X-Forwarded-For before calling
+    // the backend. The default ForwardLimit of 1 pops only the last hop, leaving RemoteIpAddress set
+    // to the edge proxy — identical for every visitor. AuthRateLimiterPolicy partitions on that
+    // address, so its 10-requests-per-15-minutes budget became global: a handful of users, or one
+    // person testing login, locks /api/auth/* for everyone with 429s.
+    // Raising the limit to 2 unwinds both hops and yields the real client IP. It stays spoof-safe:
+    // a client-supplied X-Forwarded-For gets the true address appended by Apache, so the two entries
+    // consumed here are the ones the proxies wrote, never the attacker's.
+    ForwardLimit = 2
 };
 forwardedHeaders.KnownNetworks.Clear();
 forwardedHeaders.KnownProxies.Clear();
