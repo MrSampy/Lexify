@@ -116,7 +116,11 @@ services:
   frontend:
     image: ghcr.io/mrsampy/lexify/frontend:latest
     restart: unless-stopped
-    # No host ports — Caddy is the only public entrypoint.
+    # Bound to loopback only: whatever terminates TLS on this host (Caddy in the `edge` profile, or
+    # a panel-managed Apache/nginx that already owns 80/443) proxies to 127.0.0.1:8081. Never
+    # publish this on 0.0.0.0 — it would expose the app on plain HTTP, bypassing TLS.
+    ports:
+      - "127.0.0.1:8081:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -161,7 +165,13 @@ services:
       # Lets the container stop/start others around a backup; not used here, but the image expects it.
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
+  # Optional edge. Starts ONLY with `--profile edge`, because on a host where a control panel
+  # (Webuzo/cPanel) already owns 80/443 Caddy cannot bind and the whole stack fails to come up.
+  # There, the panel's web server terminates TLS and proxies to 127.0.0.1:8081 instead.
+  #   Caddy as edge:  docker compose -f docker-compose.prod.yml --profile edge up -d
+  #   Panel as edge:  docker compose -f docker-compose.prod.yml up -d
   caddy:
+    profiles: ["edge"]
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
@@ -169,7 +179,9 @@ services:
       - "443:443"
     environment:
       - DOMAIN=${DOMAIN}
-      - ACME_EMAIL=${ACME_EMAIL:?ACME_EMAIL is required}
+      # Not `:?required` — compose interpolates this even when the `edge` profile is inactive, and a
+      # panel-fronted deploy has no reason to set it. Caddy itself fails loudly if it's empty.
+      - ACME_EMAIL=${ACME_EMAIL:-}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data      # certificates — losing this volume means re-issuing certs
