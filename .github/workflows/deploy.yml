@@ -74,14 +74,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     environment: production
-    if: ${{ secrets.DEPLOY_HOST != '' }}
+
+    # The `secrets` context is NOT available in a job-level `if` — using it there makes the whole
+    # workflow fail to compile (0s run, no jobs, build-and-push never executes either). Hoisting the
+    # secret into `env` and testing that in step-level `if` is the supported way to skip deployment
+    # on forks/clones where DEPLOY_HOST was never configured.
+    env:
+      DEPLOY_CONFIGURED: ${{ secrets.DEPLOY_HOST != '' }}
 
     steps:
       - uses: actions/checkout@v4
+        if: env.DEPLOY_CONFIGURED == 'true'
 
       # Ship the stack definition itself, so the server never drifts from the repo.
       # `.env` (all secrets) lives only on the server and is never copied or overwritten.
       - name: Copy compose stack to server
+        if: env.DEPLOY_CONFIGURED == 'true'
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -92,6 +100,7 @@ jobs:
           overwrite: true
 
       - name: Deploy via SSH
+        if: env.DEPLOY_CONFIGURED == 'true'
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
