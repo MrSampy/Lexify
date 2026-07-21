@@ -10,9 +10,11 @@ namespace Lexify.Infrastructure.Jobs;
 
 /// <summary>
 /// Builds a test's questions almost entirely in code from the user's own words: translate_to_native,
-/// translate_to_foreign, multi_select_theme, and open_answer need no LLM call at all. Only
-/// fill_in_sentence needs the LLM (one short example sentence per word, cached on Word afterward),
-/// and only the real-word distractor pool running dry falls back to LLM-invented distractors.
+/// translate_to_foreign, multi_select_theme, open_answer, matching_pairs, listen_and_type, and
+/// word_scramble need no LLM call at all. fill_in_sentence and sentence_builder need one short
+/// example sentence per word (shared cache on Word.ExampleSentence), definition_match needs one
+/// monolingual definition per word (cached on Word.Definition), and only the real-word distractor
+/// pool running dry falls back to LLM-invented distractors.
 /// </summary>
 public sealed partial class GenerateTestJob(
     IWordRepository wordRepository,
@@ -26,6 +28,9 @@ public sealed partial class GenerateTestJob(
     ILogger<GenerateTestJob> logger)
 {
     private const int FillSentenceBatchSize = 5;
+    private const int MatchingPairsGroupSize = 5;
+    private const int MatchingPairsMinGroupSize = 4;
+    private const int SentenceBuilderMaxTokens = 12;
 
     public async Task RunAsync(
         Guid testId,
@@ -77,19 +82,46 @@ public sealed partial class GenerateTestJob(
         var rng = new Random(testId.GetHashCode());
         var shuffledWords = words.OrderBy(_ => rng.Next()).ToList();
 
-        var plan = PlanQuestions(shuffledWords, requestedTypes, questionCount, usedHashes, languageNameByWordId);
-
-        var wordsNeedingSentence = plan
-            .Where(p => p.Type == Question.QuestionTypes.FillInSentence)
-            .Select(p => p.Word)
-            .Distinct()
-            .ToList();
-        var blankedSentenceByWordId = await ResolveFillSentencesAsync(
-            wordsNeedingSentence, languageNameByWordId, user?.EnglishLevel, cancellationToken);
-
         var assembledQuestions = new List<AssembledQuestion>();
         var seenHashesThisTest = new HashSet<string>();
         var assembledPairs = new HashSet<(Guid WordId, string Type)>();
+
+        // matching_pairs spans several words, so it can't go through the per-(word, type) planner —
+        // assemble its groups up front and let the planner fill the remaining slots.
+        var remainingCount = questionCount;
+        if (requestedTypes.Remove(Question.QuestionTypes.MatchingPairs))
+        {
+            foreach (var matching in BuildMatchingPairsQuestions(shuffledWords, blockLanguageIds, questionCount))
+            {
+                var hash = Question.ComputeContentHash(matching.QuestionType, matching.QuestionText);
+                if (!seenHashesThisTest.Add(hash)) continue;
+                assembledQuestions.Add(matching);
+            }
+
+            remainingCount = questionCount - assembledQuestions.Count;
+            if (requestedTypes.Count == 0)
+                requestedTypes = [Question.QuestionTypes.TranslateToNative];
+        }
+
+        var plan = PlanQuestions(shuffledWords, requestedTypes, remainingCount, usedHashes, languageNameByWordId);
+
+        // fill_in_sentence and sentence_builder share the same LLM sentence (and Word cache):
+        // the former consumes the blanked variant, the latter the raw one.
+        var wordsNeedingSentence = plan
+            .Where(p => p.Type is Question.QuestionTypes.FillInSentence or Question.QuestionTypes.SentenceBuilder)
+            .Select(p => p.Word)
+            .Distinct()
+            .ToList();
+        var sentenceByWordId = await ResolveExampleSentencesAsync(
+            wordsNeedingSentence, languageNameByWordId, user?.EnglishLevel, cancellationToken);
+
+        var wordsNeedingDefinition = plan
+            .Where(p => p.Type == Question.QuestionTypes.DefinitionMatch)
+            .Select(p => p.Word)
+            .Distinct()
+            .ToList();
+        var definitionByWordId = await ResolveDefinitionsAsync(
+            wordsNeedingDefinition, languageNameByWordId, user?.EnglishLevel, cancellationToken);
 
         foreach (var (word, type) in plan)
         {
@@ -123,15 +155,51 @@ public sealed partial class GenerateTestJob(
                     break;
                 case Question.QuestionTypes.FillInSentence:
                 {
-                    if (blankedSentenceByWordId.TryGetValue(word.Id, out var sentence))
+                    if (sentenceByWordId.TryGetValue(word.Id, out var sentence))
                     {
                         var distractors = await GetTermDistractorsAsync(pool, word, 3, rng, cancellationToken);
-                        assembled = TestQuestionAssembler.FillInSentence(word, sentence, distractors);
+                        assembled = TestQuestionAssembler.FillInSentence(word, sentence.Blanked, distractors);
                     }
                     else if (!assembledPairs.Contains((word.Id, Question.QuestionTypes.TranslateToNative)))
                     {
                         // Sentence generation failed twice — fall back to a question type that
                         // never needs the LLM rather than dropping this word's slot entirely.
+                        var distractors = await GetTranslationDistractorsAsync(pool, word, 3, rng, cancellationToken);
+                        assembled = TestQuestionAssembler.TranslateToNative(word, distractors);
+                    }
+                    break;
+                }
+                case Question.QuestionTypes.ListenAndType:
+                    assembled = TestQuestionAssembler.ListenAndType(word);
+                    break;
+                case Question.QuestionTypes.WordScramble:
+                    assembled = TestQuestionAssembler.WordScramble(word);
+                    break;
+                case Question.QuestionTypes.SentenceBuilder:
+                {
+                    // Long sentences make a terrible chip puzzle — cap the token count and fall
+                    // back the same way fill_in_sentence does when no usable sentence exists.
+                    if (sentenceByWordId.TryGetValue(word.Id, out var sentence) &&
+                        sentence.Raw.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length <= SentenceBuilderMaxTokens)
+                    {
+                        assembled = TestQuestionAssembler.SentenceBuilder(word, sentence.Raw);
+                    }
+                    else if (!assembledPairs.Contains((word.Id, Question.QuestionTypes.TranslateToNative)))
+                    {
+                        var distractors = await GetTranslationDistractorsAsync(pool, word, 3, rng, cancellationToken);
+                        assembled = TestQuestionAssembler.TranslateToNative(word, distractors);
+                    }
+                    break;
+                }
+                case Question.QuestionTypes.DefinitionMatch:
+                {
+                    if (definitionByWordId.TryGetValue(word.Id, out var definition))
+                    {
+                        var distractors = await GetTermDistractorsAsync(pool, word, 3, rng, cancellationToken);
+                        assembled = TestQuestionAssembler.DefinitionMatch(word, definition, distractors);
+                    }
+                    else if (!assembledPairs.Contains((word.Id, Question.QuestionTypes.TranslateToNative)))
+                    {
                         var distractors = await GetTranslationDistractorsAsync(pool, word, 3, rng, cancellationToken);
                         assembled = TestQuestionAssembler.TranslateToNative(word, distractors);
                     }
@@ -161,8 +229,14 @@ public sealed partial class GenerateTestJob(
         // whenever enough unique pairs exist.
         if (assembledQuestions.Count < questionCount)
         {
+            // LLM-dependent types (fill_in_sentence, sentence_builder, definition_match) and the
+            // multi-word matching_pairs can't be refilled here — top-up only draws from types that
+            // assemble instantly from a single word.
             var topUpTypes = requestedTypes
-                .Where(t => t != Question.QuestionTypes.FillInSentence)
+                .Where(t => t is not (Question.QuestionTypes.FillInSentence
+                    or Question.QuestionTypes.SentenceBuilder
+                    or Question.QuestionTypes.DefinitionMatch
+                    or Question.QuestionTypes.MatchingPairs))
                 .Concat([
                     Question.QuestionTypes.TranslateToNative,
                     Question.QuestionTypes.TranslateToForeign,
@@ -178,6 +252,10 @@ public sealed partial class GenerateTestJob(
                     if (assembledPairs.Contains((word.Id, type))) continue;
                     if (type == Question.QuestionTypes.MultiSelectTheme && word.AlternativeTranslations.Count == 0)
                         continue;
+                    if (type == Question.QuestionTypes.WordScramble && !IsWordScrambleEligible(word))
+                        continue;
+                    if (type == Question.QuestionTypes.ListenAndType && !IsListenAndTypeEligible(word))
+                        continue;
 
                     var pool = poolsByLanguage[blockLanguageIds[word.BlockId]];
                     AssembledQuestion topUp = type switch
@@ -188,6 +266,8 @@ public sealed partial class GenerateTestJob(
                         Question.QuestionTypes.MultiSelectTheme => TestQuestionAssembler.MultiSelectTheme(
                             word, await GetTranslationDistractorsAsync(pool, word, 3, rng, cancellationToken)),
                         Question.QuestionTypes.OpenAnswer => TestQuestionAssembler.OpenAnswer(word),
+                        Question.QuestionTypes.ListenAndType => TestQuestionAssembler.ListenAndType(word),
+                        Question.QuestionTypes.WordScramble => TestQuestionAssembler.WordScramble(word),
                         _ => TestQuestionAssembler.TranslateToNative(
                             word, await GetTranslationDistractorsAsync(pool, word, 3, rng, cancellationToken)),
                     };
@@ -244,8 +324,8 @@ public sealed partial class GenerateTestJob(
         test.MarkReady(questions.Count);
         await testRepository.UpdateAsync(test, cancellationToken);
 
-        // Also persists any Word.SetExampleSentence write-backs from ResolveFillSentencesAsync —
-        // same DbContext, same SaveChanges call.
+        // Also persists any Word.SetExampleSentence / Word.SetDefinition write-backs from the
+        // resolvers — same DbContext, same SaveChanges call.
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         LogTestReady(logger, testId, questions.Count);
@@ -323,7 +403,13 @@ public sealed partial class GenerateTestJob(
                 Question.ComputeContentHash(type, QuestionTemplates.MultiSelectTheme(w.Term)),
             Question.QuestionTypes.OpenAnswer =>
                 Question.ComputeContentHash(type, QuestionTemplates.OpenAnswer(w.Term)),
-            _ => null // fill_in_sentence: text depends on a sentence that doesn't exist yet
+            Question.QuestionTypes.ListenAndType =>
+                Question.ComputeContentHash(type, QuestionTemplates.ListenAndType(w.Translation)),
+            Question.QuestionTypes.WordScramble =>
+                Question.ComputeContentHash(type, QuestionTemplates.WordScramble(w.Translation)),
+            Question.QuestionTypes.SentenceBuilder =>
+                Question.ComputeContentHash(type, QuestionTemplates.SentenceBuilder(w.Translation)),
+            _ => null // fill_in_sentence / definition_match: text depends on LLM output that doesn't exist yet
         };
 
         var chosen = new List<(Word Word, string Type)>();
@@ -358,8 +444,10 @@ public sealed partial class GenerateTestJob(
 
     /// <summary>
     /// Rotates through the requested types starting at <paramref name="startOffset"/>, skipping
-    /// multi_select_theme for words that can't support it (fewer than 2 correct answers). When no
-    /// other requested type exists, falls back to translate_to_native — an always-valid, LLM-free type.
+    /// per-type ineligible words (multi_select_theme needs 2+ correct answers, word_scramble a
+    /// scrambleable single-token term, listen_and_type a term that survives the fuzzy grader's
+    /// ','/'/' splitting). matching_pairs never appears here — it's assembled in a pre-phase.
+    /// When no requested type fits, falls back to translate_to_native — always valid and LLM-free.
     /// </summary>
     private static string PickEligibleType(Word word, List<string> requestedTypes, int startOffset)
     {
@@ -368,31 +456,98 @@ public sealed partial class GenerateTestJob(
             var type = requestedTypes[(startOffset + offset) % requestedTypes.Count];
             if (type == Question.QuestionTypes.MultiSelectTheme && word.AlternativeTranslations.Count == 0)
                 continue;
+            if (type == Question.QuestionTypes.WordScramble && !IsWordScrambleEligible(word))
+                continue;
+            if (type == Question.QuestionTypes.ListenAndType && !IsListenAndTypeEligible(word))
+                continue;
+            if (type == Question.QuestionTypes.MatchingPairs)
+                continue;
             return type;
         }
 
         return Question.QuestionTypes.TranslateToNative;
     }
 
+    /// <summary>Single whitespace-free token of 4-12 chars — longer or multi-word terms make a hopeless letter puzzle.</summary>
+    private static bool IsWordScrambleEligible(Word word) =>
+        word.Term.Length is >= 4 and <= 12 && !word.Term.Any(char.IsWhiteSpace);
+
+    /// <summary>The fuzzy grader splits accepted answers on ',' and '/', which would fragment such a term.</summary>
+    private static bool IsListenAndTypeEligible(Word word) =>
+        word.Term.Length >= 2 && !word.Term.Contains(',') && !word.Term.Contains('/');
+
+    /// <summary>'|' and ';' are the matching_pairs encoding delimiters — a term or translation containing them would corrupt the wire format.</summary>
+    private static bool IsMatchingPairsEligible(Word word) =>
+        !word.Term.Contains('|') && !word.Term.Contains(';') &&
+        !word.Translation.Contains('|') && !word.Translation.Contains(';');
+
     /// <summary>
-    /// Resolves a ready-to-use (already blanked) sentence for every given word: reuses a cached
-    /// ExampleSentence when it contains the term, otherwise generates one via the LLM (batched,
-    /// grouped by language) and caches the result back onto the word for future tests. A word whose
-    /// generation fails twice is simply absent from the returned dictionary.
+    /// Chunks matching-eligible words into groups of 4-5 per language (terms and translations
+    /// unique within a group so every pairing is unambiguous), capped at questionCount/5 groups so
+    /// one multi-word question type doesn't crowd out the rest of the requested mix.
     /// </summary>
-    private async Task<Dictionary<Guid, string>> ResolveFillSentencesAsync(
+    private static List<AssembledQuestion> BuildMatchingPairsQuestions(
+        List<Word> shuffledWords, Dictionary<Guid, short> blockLanguageIds, int questionCount)
+    {
+        var result = new List<AssembledQuestion>();
+        var maxGroups = Math.Max(1, questionCount / MatchingPairsGroupSize);
+
+        foreach (var languageGroup in shuffledWords
+                     .Where(IsMatchingPairsEligible)
+                     .GroupBy(w => blockLanguageIds[w.BlockId]))
+        {
+            var group = new List<Word>();
+            var usedTerms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var usedTranslations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var word in languageGroup)
+            {
+                if (result.Count >= maxGroups) break;
+                if (usedTerms.Contains(word.Term) || usedTranslations.Contains(word.Translation))
+                    continue; // duplicate side would make the pairing ambiguous — take the next word
+
+                group.Add(word);
+                usedTerms.Add(word.Term);
+                usedTranslations.Add(word.Translation);
+
+                if (group.Count == MatchingPairsGroupSize)
+                {
+                    result.Add(TestQuestionAssembler.MatchingPairs(group));
+                    group = [];
+                    usedTerms.Clear();
+                    usedTranslations.Clear();
+                }
+            }
+
+            if (result.Count < maxGroups && group.Count >= MatchingPairsMinGroupSize)
+                result.Add(TestQuestionAssembler.MatchingPairs(group));
+
+            if (result.Count >= maxGroups) break;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Resolves a validated example sentence for every given word, in both raw form (sentence_builder)
+    /// and blanked form (fill_in_sentence): reuses a cached ExampleSentence when it contains the term,
+    /// otherwise generates one via the LLM (batched, grouped by language) and caches the result back
+    /// onto the word for future tests. A word whose generation fails twice is simply absent from the
+    /// returned dictionary.
+    /// </summary>
+    private async Task<Dictionary<Guid, (string Raw, string Blanked)>> ResolveExampleSentencesAsync(
         IReadOnlyList<Word> wordsNeedingSentence,
         Dictionary<Guid, string> languageNameByWordId,
         string? englishLevel,
         CancellationToken ct)
     {
-        var blankedByWordId = new Dictionary<Guid, string>();
+        var sentenceByWordId = new Dictionary<Guid, (string Raw, string Blanked)>();
         var toGenerate = new List<Word>();
 
         foreach (var word in wordsNeedingSentence)
         {
-            if (FillSentenceValidator.Check(word.ExampleSentence, word.Term) is { IsValid: true })
-                blankedByWordId[word.Id] = FillSentenceValidator.Blank(word.ExampleSentence!, word.Term);
+            if (FillSentenceValidator.Check(word.ExampleSentence, word.Term) is { IsValid: true, Sentence: { } cached })
+                sentenceByWordId[word.Id] = (cached, FillSentenceValidator.Blank(cached, word.Term));
             else
                 toGenerate.Add(word);
         }
@@ -409,12 +564,107 @@ public sealed partial class GenerateTestJob(
                 {
                     if (string.IsNullOrEmpty(word.ExampleSentence))
                         word.SetExampleSentence(sentence);
-                    blankedByWordId[word.Id] = FillSentenceValidator.Blank(sentence, word.Term);
+                    sentenceByWordId[word.Id] = (sentence, FillSentenceValidator.Blank(sentence, word.Term));
                 }
             }
         }
 
-        return blankedByWordId;
+        return sentenceByWordId;
+    }
+
+    /// <summary>
+    /// Structural mirror of <see cref="ResolveExampleSentencesAsync"/> for definition_match: reuses a
+    /// cached Word.Definition when it still passes validation, otherwise generates via the LLM
+    /// (batched, grouped by language, one retry with the failure reason) and caches the result back
+    /// onto the word. A word whose generation fails twice is absent from the returned dictionary.
+    /// </summary>
+    private async Task<Dictionary<Guid, string>> ResolveDefinitionsAsync(
+        IReadOnlyList<Word> wordsNeedingDefinition,
+        Dictionary<Guid, string> languageNameByWordId,
+        string? englishLevel,
+        CancellationToken ct)
+    {
+        var definitionByWordId = new Dictionary<Guid, string>();
+        var toGenerate = new List<Word>();
+
+        foreach (var word in wordsNeedingDefinition)
+        {
+            if (DefinitionValidator.Check(word.Definition, word.Term, word.Translation) is { IsValid: true, Definition: { } cached })
+                definitionByWordId[word.Id] = cached;
+            else
+                toGenerate.Add(word);
+        }
+
+        foreach (var languageGroup in toGenerate.GroupBy(w => languageNameByWordId.GetValueOrDefault(w.Id, "the")))
+        {
+            foreach (var batch in languageGroup.Chunk(FillSentenceBatchSize))
+            {
+                var wordById = batch.ToDictionary(w => w.Id);
+                var resolved = await GenerateAndValidateDefinitionsAsync(
+                    batch, languageGroup.Key, englishLevel, wordById, ct);
+
+                foreach (var (word, definition) in resolved)
+                {
+                    if (string.IsNullOrEmpty(word.Definition))
+                        word.SetDefinition(definition);
+                    definitionByWordId[word.Id] = definition;
+                }
+            }
+        }
+
+        return definitionByWordId;
+    }
+
+    private async Task<List<(Word Word, string Definition)>> GenerateAndValidateDefinitionsAsync(
+        IReadOnlyList<Word> batch,
+        string targetLanguage,
+        string? englishLevel,
+        Dictionary<Guid, Word> wordById,
+        CancellationToken ct)
+    {
+        var valid = new List<(Word, string)>();
+
+        var requests = batch.Select(w => new DefinitionRequest(w.Id, w.Term, w.Translation)).ToList();
+        var atoms = await aiProvider.GenerateDefinitionsAsync(requests, targetLanguage, englishLevel, ct);
+        var atomByWordId = atoms.ToDictionary(a => a.WordId);
+
+        var failed = new Dictionary<Guid, string>();
+        foreach (var req in requests)
+        {
+            if (!atomByWordId.TryGetValue(req.WordId, out var atom))
+            {
+                failed[req.WordId] = "No definition was returned for this word.";
+                continue;
+            }
+
+            var check = DefinitionValidator.Check(atom.Definition, req.Term, req.Translation);
+            if (check.IsValid)
+                valid.Add((wordById[req.WordId], check.Definition!));
+            else
+                failed[req.WordId] = check.ErrorMessage!;
+        }
+
+        if (failed.Count == 0) return valid;
+
+        var retryRequests = failed
+            .Select(kv => wordById[kv.Key])
+            .Select(w => new DefinitionRequest(w.Id, w.Term, w.Translation, failed[w.Id]))
+            .ToList();
+
+        var retryAtoms = await aiProvider.GenerateDefinitionsAsync(retryRequests, targetLanguage, englishLevel, ct);
+        var retryByWordId = retryAtoms.ToDictionary(a => a.WordId);
+
+        foreach (var req in retryRequests)
+        {
+            if (!retryByWordId.TryGetValue(req.WordId, out var atom)) continue;
+
+            var check = DefinitionValidator.Check(atom.Definition, req.Term, req.Translation);
+            if (check.IsValid)
+                valid.Add((wordById[req.WordId], check.Definition!));
+            // Second failure: word gets no definition — the caller falls back to another question type.
+        }
+
+        return valid;
     }
 
     private async Task<List<(Word Word, string Sentence)>> GenerateAndValidateSentencesAsync(

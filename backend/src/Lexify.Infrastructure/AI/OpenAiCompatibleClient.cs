@@ -121,6 +121,50 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
         return atoms;
     }
 
+    public async Task<IReadOnlyList<DefinitionAtom>> GenerateDefinitionsAsync(
+        IReadOnlyList<DefinitionRequest> requests,
+        string targetLanguage,
+        string? englishLevel = null,
+        CancellationToken ct = default)
+    {
+        var userMessage = JsonSerializer.Serialize(requests.Select(r => r.PreviousError is null
+            ? (object)new { id = r.WordId.ToString(), term = r.Term, translation = r.Translation }
+            : new { id = r.WordId.ToString(), term = r.Term, translation = r.Translation, previousError = r.PreviousError }));
+
+        var request = new OpenAIChatRequest
+        {
+            Model = settings.Model,
+            Messages =
+            [
+                new OpenAIMessage { Role = "system", Content = BuildDefinitionsSystemPrompt(targetLanguage, englishLevel) },
+                new OpenAIMessage { Role = "user", Content = userMessage }
+            ],
+            Temperature = 0.7,
+            Stream = false,
+            MaxTokens = Math.Clamp(requests.Count * 80, 200, 2000),
+            ResponseFormat = settings.SupportsJsonSchema
+                ? OpenAIResponseFormat.ForSchema("definitions_result", AiJsonSchemas.DefinitionsResult)
+                : OpenAIResponseFormat.JsonObject()
+        };
+
+        using var response = await http.PostAsJsonAsync("/v1/chat/completions", request, ct);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>(JsonOptions, ct);
+        var content = result?.Choices?[0]?.Message?.Content ?? "{}";
+        var json = AIResponseValidator.ExtractFirstJsonObject(content) ?? "{}";
+
+        var parsed = JsonSerializer.Deserialize<DefinitionsWireResult>(json, JsonOptions);
+        if (parsed?.Definitions is null) return [];
+
+        var atoms = new List<DefinitionAtom>(parsed.Definitions.Count);
+        foreach (var d in parsed.Definitions)
+            if (Guid.TryParse(d.Id, out var wordId))
+                atoms.Add(new DefinitionAtom(wordId, d.Definition));
+
+        return atoms;
+    }
+
     public async Task<IReadOnlyList<string>> GenerateFakeDistractorsAsync(
         string correctAnswer,
         int count,
@@ -283,6 +327,31 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
             - does NOT define, explain, or translate the word{{levelRule}}
             Output exactly one item per input item, using the SAME "id" values — never add, drop, merge, or reorder items.
             Schema: {"sentences":[{"id":"string","sentence":"string"}]}
+            """;
+    }
+
+    /// <summary>
+    /// The definition is the question body for definition_match — it must identify the word without
+    /// giving it away, hence the "no term/derivative/translation" rules (enforced again in code by
+    /// DefinitionValidator, which feeds failures back via previousError on the one retry).
+    /// </summary>
+    private static string BuildDefinitionsSystemPrompt(string targetLanguage, string? englishLevel)
+    {
+        var levelRule = englishLevel is null
+            ? string.Empty
+            : $" Write at CEFR {englishLevel} level — vocabulary and grammar no harder, and not much easier, than that.";
+        return $$"""
+            Return ONLY a valid JSON object — no markdown, no explanation, no extra text before or after the JSON.
+            You write one short monolingual {{targetLanguage}} definition per input word, for a {{targetLanguage}} vocabulary quiz.
+            Input is a JSON array of {"id","term","translation"}, sometimes with "previousError" — if
+            present, your last attempt for that word failed for that reason; fix it this time.
+            For each item, write ONE {{targetLanguage}} definition that:
+            - is 6-20 words long, a single sentence or sentence fragment
+            - does NOT contain the term itself, any derivative of it, or its translation
+            - is entirely in {{targetLanguage}} — never translate the word
+            - would let a learner identify the word among similar options{{levelRule}}
+            Output exactly one item per input item, using the SAME "id" values — never add, drop, merge, or reorder items.
+            Schema: {"definitions":[{"id":"string","definition":"string"}]}
             """;
     }
 

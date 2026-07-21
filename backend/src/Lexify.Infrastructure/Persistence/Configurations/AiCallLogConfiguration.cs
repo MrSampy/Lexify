@@ -74,7 +74,7 @@ public sealed class AiCallLogConfiguration : IEntityTypeConfiguration<AiCallLog>
             // though nothing writes it anymore (test generation no longer makes a single whole-test
             // AI call — see generate_fill_sentences/generate_distractors).
             t.HasCheckConstraint("chk_ai_logs_type",
-                "call_type IN ('format_words', 'generate_test', 'generate_fill_sentences', 'generate_distractors', 'suggest_title')");
+                "call_type IN ('format_words', 'generate_test', 'generate_fill_sentences', 'generate_distractors', 'generate_definitions', 'suggest_title')");
             t.HasCheckConstraint("chk_ai_logs_duration",
                 "duration_ms >= 0");
         });

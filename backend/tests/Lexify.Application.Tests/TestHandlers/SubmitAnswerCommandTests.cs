@@ -349,6 +349,139 @@ public class SubmitAnswerCommandTests
         Assert.True(result.Value!.IsCorrect);
     }
 
+    // ---- New question types ----
+
+    private (TestAttempt attempt, Question question) SetupTypedScenario(
+        Guid userId, string questionType, string correctAnswer,
+        IEnumerable<QuestionOption>? options = null)
+    {
+        var testId = Guid.NewGuid();
+        var attempt = new TestAttempt(testId, userId);
+        var question = new Question(testId, null, questionType, "Question text.", correctAnswer, 0, "hash");
+        if (options is not null) InjectOptions(question, options);
+
+        _attemptRepo.GetByIdWithAnswersAsync(attempt.Id, Arg.Any<CancellationToken>()).Returns(attempt);
+        _questionRepo.GetByIdWithOptionsAsync(question.Id, Arg.Any<CancellationToken>()).Returns(question);
+
+        return (attempt, question);
+    }
+
+    private async Task<bool> SubmitAsync(TestAttempt attempt, Question question, Guid userId, string given)
+    {
+        var result = await _handler.Handle(
+            new AppSubmitAnswer.SubmitAnswerCommand(attempt.Id, question.Id, userId, given, null),
+            CancellationToken.None);
+        Assert.True(result.IsSuccess);
+        return result.Value!.IsCorrect;
+    }
+
+    private (TestAttempt, Question) SetupMatchingPairs(Guid userId) =>
+        SetupTypedScenario(userId, Question.QuestionTypes.MatchingPairs,
+            "dog → собака; cat → кіт",
+            [
+                new QuestionOption(Guid.NewGuid(), "dog|собака", true, 0),
+                new QuestionOption(Guid.NewGuid(), "cat|кіт", true, 1),
+            ]);
+
+    [Fact]
+    public async Task Handle_MatchingPairs_AnyOrder_ReturnsCorrect()
+    {
+        var userId = Guid.NewGuid();
+        var (attempt, question) = SetupMatchingPairs(userId);
+
+        Assert.True(await SubmitAsync(attempt, question, userId, "cat|кіт;dog|собака"));
+    }
+
+    [Fact]
+    public async Task Handle_MatchingPairs_SwappedPair_ReturnsIncorrect()
+    {
+        var userId = Guid.NewGuid();
+        var (attempt, question) = SetupMatchingPairs(userId);
+
+        Assert.False(await SubmitAsync(attempt, question, userId, "dog|кіт;cat|собака"));
+    }
+
+    [Fact]
+    public async Task Handle_MatchingPairs_MissingPair_ReturnsIncorrect()
+    {
+        var userId = Guid.NewGuid();
+        var (attempt, question) = SetupMatchingPairs(userId);
+
+        Assert.False(await SubmitAsync(attempt, question, userId, "dog|собака"));
+    }
+
+    [Fact]
+    public async Task Handle_ListenAndType_SmallTypo_ReturnsCorrect()
+    {
+        var userId = Guid.NewGuid();
+        var (attempt, question) = SetupTypedScenario(userId, Question.QuestionTypes.ListenAndType, "staggering");
+
+        Assert.True(await SubmitAsync(attempt, question, userId, "stagering")); // distance 1
+    }
+
+    [Fact]
+    public async Task Handle_ListenAndType_ThreeTypos_ReturnsIncorrect()
+    {
+        var userId = Guid.NewGuid();
+        var (attempt, question) = SetupTypedScenario(userId, Question.QuestionTypes.ListenAndType, "staggering");
+
+        Assert.False(await SubmitAsync(attempt, question, userId, "stagerxyz"));
+    }
+
+    [Fact]
+    public async Task Handle_WordScramble_ExactOnlyNoTypoTolerance()
+    {
+        var userId = Guid.NewGuid();
+        var (attempt, question) = SetupTypedScenario(
+            userId, Question.QuestionTypes.WordScramble, "courage",
+            "courage".Select((c, i) => new QuestionOption(Guid.NewGuid(), c.ToString(), false, i)));
+
+        Assert.False(await SubmitAsync(attempt, question, userId, "courags")); // 1 letter off = wrong
+    }
+
+    [Fact]
+    public async Task Handle_WordScramble_CaseInsensitive_ReturnsCorrect()
+    {
+        var userId = Guid.NewGuid();
+        var (attempt, question) = SetupTypedScenario(userId, Question.QuestionTypes.WordScramble, "Courage");
+
+        Assert.True(await SubmitAsync(attempt, question, userId, "courage"));
+    }
+
+    [Fact]
+    public async Task Handle_SentenceBuilder_NormalizationDifferences_ReturnCorrect()
+    {
+        var userId = Guid.NewGuid();
+        var (attempt, question) = SetupTypedScenario(
+            userId, Question.QuestionTypes.SentenceBuilder, "The dog sleeps on the floor.");
+
+        Assert.True(await SubmitAsync(attempt, question, userId, "the  dog sleeps on the floor"));
+    }
+
+    [Fact]
+    public async Task Handle_SentenceBuilder_ReorderedWords_ReturnsIncorrect()
+    {
+        var userId = Guid.NewGuid();
+        var (attempt, question) = SetupTypedScenario(
+            userId, Question.QuestionTypes.SentenceBuilder, "The dog sleeps on the floor.");
+
+        Assert.False(await SubmitAsync(attempt, question, userId, "The dog on the floor sleeps."));
+    }
+
+    [Fact]
+    public async Task Handle_DefinitionMatch_GradedViaCorrectOption()
+    {
+        var userId = Guid.NewGuid();
+        var (attempt, question) = SetupTypedScenario(
+            userId, Question.QuestionTypes.DefinitionMatch, "dog",
+            [
+                new QuestionOption(Guid.NewGuid(), "dog", true, 0),
+                new QuestionOption(Guid.NewGuid(), "cat", false, 1),
+            ]);
+
+        Assert.True(await SubmitAsync(attempt, question, userId, "Dog"));
+    }
+
     [Fact]
     public async Task Handle_SingleChoice_WrongOption_ReturnsIncorrect()
     {

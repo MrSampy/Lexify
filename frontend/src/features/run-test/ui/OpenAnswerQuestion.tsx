@@ -1,15 +1,16 @@
 import { useState, useRef } from 'react'
+import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
-import type { Question } from '@/entities/test'
 import { levenshtein } from '@/shared/lib'
+import { cn } from '@/lib/utils'
+import type { QuestionRendererProps } from '../model/types'
 
-interface OpenAnswerQuestionProps {
-  question: Question
-  onSubmit: (answer: string) => void
-  disabled: boolean
-}
-
-export function OpenAnswerQuestion({ question, onSubmit, disabled }: OpenAnswerQuestionProps) {
+export function OpenAnswerQuestion({
+  question,
+  onSubmit,
+  disabled,
+  feedback,
+}: QuestionRendererProps) {
   const { t } = useTranslation()
   const [value, setValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -26,44 +27,41 @@ export function OpenAnswerQuestion({ question, onSubmit, disabled }: OpenAnswerQ
 
   const firstOption = question.options[0]?.optionText ?? ''
   const distance = firstOption ? levenshtein(value.toLowerCase(), firstOption.toLowerCase()) : null
-  const showCloseHint = value.length > 2 && distance !== null && distance > 0 && distance <= 1
+  const showCloseHint =
+    !feedback && value.length > 2 && distance !== null && distance > 0 && distance <= 1
 
   return (
     <div>
-      <p
-        style={{
-          fontSize: 20,
-          fontWeight: 500,
-          color: 'var(--fg-1)',
-          marginBottom: 24,
-          lineHeight: 1.5,
-        }}
-      >
+      <p className="mb-6 text-xl leading-normal font-medium text-[var(--fg-1)]">
         {question.questionText}
       </p>
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div className="flex gap-2.5">
         <input
           ref={inputRef}
-          className="lx-input"
+          className={cn(
+            'lx-input h-[50px] flex-1 text-[17px]',
+            feedback && (feedback.isCorrect ? 'border-[var(--success)]' : 'border-[var(--danger)]'),
+          )}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={t('runTest.typeAnswer')}
-          disabled={disabled}
+          disabled={disabled || !!feedback}
           autoFocus
-          style={{ flex: 1, height: 50, fontSize: 17 }}
         />
-        <button
-          className="lx-btn-primary"
-          onClick={handleCheck}
-          disabled={disabled || !value.trim()}
-          style={{ padding: '0 22px' }}
-        >
-          {t('runTest.check')}
-        </button>
+        {!feedback && (
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            className="lx-btn-primary px-5"
+            onClick={handleCheck}
+            disabled={disabled || !value.trim()}
+          >
+            {t('runTest.check')}
+          </motion.button>
+        )}
       </div>
       {showCloseHint && (
-        <p style={{ marginTop: 8, color: 'var(--warning)', fontSize: 11, fontWeight: 600 }}>
+        <p className="mt-2 text-[11px] font-semibold text-[var(--warning)]">
           {t('runTest.almostSpelling')}
         </p>
       )}

@@ -1,61 +1,60 @@
+import { useState } from 'react'
+import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
-import type { Question } from '@/entities/test'
-
-interface FillInSentenceQuestionProps {
-  question: Question
-  onSubmit: (answer: string) => void
-  disabled: boolean
-}
+import { staggerContainer } from '@/shared/ui'
+import { cn } from '@/lib/utils'
+import type { QuestionRendererProps } from '../model/types'
+import { OptionTile, type OptionTileState } from './OptionTile'
 
 // The backend blanks the target word with three underscores (FillSentenceValidator.Blank).
 const BLANK = '___'
 
 /**
  * Cloze question: shows the sentence with the missing word rendered as a visible blank, then the
- * multiple-choice options. Distinct from a plain single-choice so the user reads the sentence as a
- * gap to fill rather than a bare prompt.
+ * multiple-choice options. Once feedback arrives the blank is filled with the correct word so the
+ * user rereads the complete sentence.
  */
 export function FillInSentenceQuestion({
   question,
   onSubmit,
   disabled,
-}: FillInSentenceQuestionProps) {
+  feedback,
+}: QuestionRendererProps) {
   const { t } = useTranslation()
+  const [chosen, setChosen] = useState<string | null>(null)
   const options = [...question.options].sort((a, b) => a.sortOrder - b.sortOrder)
 
   const [before, ...rest] = question.questionText.split(BLANK)
   const after = rest.join(BLANK)
   const hasBlank = rest.length > 0
 
+  const stateOf = (optionText: string): OptionTileState => {
+    if (!feedback) return 'idle'
+    if (optionText.toLowerCase() === feedback.correctAnswer.toLowerCase()) return 'correct'
+    if (optionText === (chosen ?? feedback.givenAnswer)) return 'incorrect'
+    return 'dimmed'
+  }
+
   return (
     <div>
-      <p className="ds-eyebrow" style={{ color: 'var(--fg-4)', marginBottom: 8 }}>
-        {t('runTest.fillHint')}
-      </p>
-      <p
-        style={{
-          fontSize: 20,
-          fontWeight: 500,
-          color: 'var(--fg-1)',
-          marginBottom: 24,
-          lineHeight: 1.6,
-        }}
-      >
+      <p className="ds-eyebrow mb-2 text-[var(--fg-4)]">{t('runTest.fillHint')}</p>
+      <p className="mb-6 text-xl leading-[1.6] font-medium text-[var(--fg-1)]">
         {hasBlank ? (
           <>
             {before}
             <span
-              style={{
-                display: 'inline-block',
-                minWidth: 72,
-                textAlign: 'center',
-                borderBottom: '2px solid var(--accent-color)',
-                color: 'var(--accent-color)',
-                fontWeight: 700,
-                margin: '0 4px',
-              }}
+              className={cn(
+                'mx-1 inline-block min-w-[84px] border-b-2 text-center font-bold align-baseline',
+                feedback
+                  ? feedback.isCorrect
+                    ? 'border-[var(--success)] text-[var(--success)]'
+                    : 'border-[var(--danger)] text-[var(--success)]'
+                  : 'border-[var(--accent-color)] text-[var(--accent-color)]',
+              )}
             >
-              ?
+              {/* Empty underlined gap before answering (classic cloze blank), filled with the
+                  correct word once feedback arrives. */}
+              {feedback ? feedback.correctAnswer : ' '}
             </span>
             {after}
           </>
@@ -63,18 +62,26 @@ export function FillInSentenceQuestion({
           question.questionText
         )}
       </p>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {options.map((option) => (
-          <button
+      <motion.div
+        variants={staggerContainer(0.06)}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-1 gap-3 md:grid-cols-2"
+      >
+        {options.map((option, i) => (
+          <OptionTile
             key={option.id}
-            onClick={() => onSubmit(option.optionText)}
-            disabled={disabled}
-            className="rounded-[var(--r-md)] border border-[var(--line-2)] bg-[var(--bg-3)] px-5 py-5 text-center text-base leading-[1.4] break-words text-[var(--fg-1)] transition-colors duration-100 [font-family:var(--font-body)] enabled:cursor-pointer enabled:hover:border-[var(--accent-line)] enabled:hover:bg-[var(--accent-ghost)] disabled:cursor-default"
-          >
-            {option.optionText}
-          </button>
+            label={option.optionText}
+            index={i}
+            state={stateOf(option.optionText)}
+            disabled={disabled || !!feedback}
+            onClick={() => {
+              setChosen(option.optionText)
+              onSubmit(option.optionText)
+            }}
+          />
         ))}
-      </div>
+      </motion.div>
     </div>
   )
 }

@@ -65,6 +65,33 @@ public class FinishAttemptCommandTests
     }
 
     [Fact]
+    public async Task Handle_NullWordIdQuestion_FinishesWithoutTouchingSm2()
+    {
+        // matching_pairs spans several words and stores WordId = null — finishing an attempt with
+        // such an answer must succeed and must not feed anything into spaced repetition.
+        var userId = Guid.NewGuid();
+        var testId = Guid.NewGuid();
+        var attempt = new TestAttempt(testId, userId);
+        var question = new Question(
+            testId, null, Question.QuestionTypes.MatchingPairs,
+            "Match each word to its translation: dog, cat.", "dog → собака; cat → кіт", 0, "hash");
+
+        InjectAnswers(attempt, [new AttemptAnswer(attempt.Id, question.Id, "dog|собака;cat|кіт", true)]);
+
+        _attemptRepo.GetByIdWithAnswersAsync(attempt.Id, Arg.Any<CancellationToken>()).Returns(attempt);
+        _questionRepo.GetByTestIdAsync(testId, Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<Question>)[question]);
+
+        var result = await _handler.Handle(
+            new AppFinishAttempt.FinishAttemptCommand(attempt.Id, userId),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(attempt.FinishedAt);
+        await _wordRepo.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Handle_AlreadyFinishedAttempt_ReturnsFailure()
     {
         var userId = Guid.NewGuid();

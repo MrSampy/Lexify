@@ -37,6 +37,7 @@ public sealed class WordConfiguration : IEntityTypeConfiguration<Word>
 
         builder.Property(w => w.Notes).HasColumnName("notes");
         builder.Property(w => w.ExampleSentence).HasColumnName("example_sentence");
+        builder.Property(w => w.Definition).HasColumnName("definition");
 
         builder.Property(w => w.ConfidenceFlag)
             .HasColumnName("confidence_flag")

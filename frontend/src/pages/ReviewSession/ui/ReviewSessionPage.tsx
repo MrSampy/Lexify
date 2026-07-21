@@ -67,7 +67,10 @@ export function ReviewSessionPage() {
   const currentWord = words && !isFinished ? words[currentIndex] : undefined
 
   // Term-language TTS for the visible card — server neural audio when available, browser fallback.
-  const { speak } = useSpeak({ wordId: currentWord?.id, languageId: currentWord?.languageId })
+  const { speak, ready: speakReady } = useSpeak({
+    wordId: currentWord?.id,
+    languageId: currentWord?.languageId,
+  })
 
   useEffect(() => () => clearTimeout(advanceTimeoutRef.current), [])
 
@@ -122,11 +125,13 @@ export function ReviewSessionPage() {
   }
 
   // Auto-play the term whenever a fresh (front-facing) card appears, if the user enabled it.
+  // Gate on speakReady: auto-playing before TTS capabilities settle speaks via the browser first
+  // and then again via Piper once caps arrive — two overlapping voices.
   useEffect(() => {
-    if (autoSpeak && currentWord && !flipped) void speak(currentWord.term)
-    // Trigger on card change / toggle only — not on every flip back.
+    if (autoSpeak && currentWord && !flipped && speakReady) void speak(currentWord.term)
+    // Trigger on card change / toggle / caps-settled only — not on every flip back.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentWord?.id, autoSpeak])
+  }, [currentWord?.id, autoSpeak, speakReady])
 
   // Keyboard shortcuts: Space/Enter flips the card; digit keys 0–5 rate it once flipped.
   useEffect(() => {

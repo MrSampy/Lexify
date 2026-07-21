@@ -61,7 +61,9 @@ public sealed class QuestionConfiguration : IEntityTypeConfiguration<Question>
         builder.ToTable(t => t.HasCheckConstraint(
             "chk_questions_type",
             "question_type IN ('translate_to_native', 'translate_to_foreign', " +
-            "'fill_in_sentence', 'multi_select_theme', 'open_answer')"));
+            "'fill_in_sentence', 'multi_select_theme', 'open_answer', " +
+            "'matching_pairs', 'listen_and_type', 'word_scramble', " +
+            "'sentence_builder', 'definition_match')"));
 
         builder.HasIndex(q => q.TestId)
             .HasDatabaseName("idx_questions_test_id");

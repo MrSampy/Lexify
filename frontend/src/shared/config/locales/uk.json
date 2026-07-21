@@ -337,7 +337,47 @@
     "selected_many": "Вибрано {{count}} блоків.",
     "genFailed": "Не вдалося згенерувати тест — сервіс ШІ може бути недоступний. Спробуйте ще раз.",
     "createFailed": "Не вдалося створити тест. Переконайтеся, що у вибраних блоках є щонайменше 5 слів.",
-    "generate": "⚡ Згенерувати"
+    "generate": "Згенерувати",
+    "loadingBlocks": "Завантажуємо блоки…",
+    "noBlocks": "Блоків не знайдено. Спочатку створіть блок.",
+    "wordCount_one": "{{count}} слово",
+    "wordCount_few": "{{count}} слова",
+    "wordCount_many": "{{count}} слів",
+    "fewerQuestions": "Менше запитань",
+    "moreQuestions": "Більше запитань",
+    "summary": "Ваш тест",
+    "summaryBlocks_one": "{{count}} блок",
+    "summaryBlocks_few": "{{count}} блоки",
+    "summaryBlocks_many": "{{count}} блоків",
+    "summaryWords_one": "{{count}} слово",
+    "summaryWords_few": "{{count}} слова",
+    "summaryWords_many": "{{count}} слів",
+    "summaryQuestions_one": "{{count}} запитання",
+    "summaryQuestions_few": "{{count}} запитання",
+    "summaryQuestions_many": "{{count}} запитань",
+    "needBlocks": "Виберіть хоча б один блок, щоб згенерувати тест",
+    "needTypes": "Виберіть хоча б один тип запитань",
+    "genStep1": "Підбираємо потрібні слова…",
+    "genStep2": "Пишемо запитання й відповіді…",
+    "genStep3": "Перемішуємо все разом…",
+    "types": {
+      "translate_to_native": { "label": "Переклад рідною", "desc": "Виберіть переклад слова" },
+      "translate_to_foreign": {
+        "label": "Переклад іноземною",
+        "desc": "Виберіть слово за перекладом"
+      },
+      "fill_in_sentence": {
+        "label": "Доповнити речення",
+        "desc": "Вставте правильне слово в речення"
+      },
+      "multi_select_theme": { "label": "Мультивибір", "desc": "Виберіть усі правильні переклади" },
+      "open_answer": { "label": "Відкрита відповідь", "desc": "Введіть переклад самостійно" },
+      "matching_pairs": { "label": "Пари відповідностей", "desc": "З'єднайте слова з перекладами" },
+      "listen_and_type": { "label": "Аудіювання", "desc": "Прослухайте слово й наберіть його" },
+      "word_scramble": { "label": "Анаграма", "desc": "Складіть слово з переплутаних літер" },
+      "sentence_builder": { "label": "Конструктор речень", "desc": "Складіть речення зі слів" },
+      "definition_match": { "label": "Визначення", "desc": "Вгадайте слово за визначенням" }
+    }
   },
   "testRunner": {
     "notFound": "Тест не знайдено.",
@@ -348,7 +388,10 @@
     "correct": "✓ {{count}} правильно",
     "incorrect": "✕ {{count}} неправильно",
     "finishing": "завершуємо…",
-    "quit": "вийти з тесту"
+    "quit": "вийти з тесту",
+    "question": "{{n}} / {{total}}",
+    "streak": "{{count}} поспіль!",
+    "shortcutsHint": "Натискайте 1–4 для відповіді · Enter — далі"
   },
   "runTest": {
     "correctLabel": "Правильно!",
@@ -360,10 +403,22 @@
     "check": "Перевірити",
     "typeAnswer": "введіть відповідь…",
     "almostSpelling": "Майже — перевірте правопис.",
-    "fillHint": "Вставте пропущене слово"
+    "fillHint": "Вставте пропущене слово",
+    "matchTitle": "З'єднайте пари",
+    "matchHint": "Торкніться слова, потім його перекладу",
+    "listenPlaceholder": "наберіть почуте…",
+    "replay": "Відтворити ще раз",
+    "ttsUnavailable": "Аудіо недоступне в цьому браузері — слово показано текстом",
+    "scrambleHint": "Торкайтеся літер, щоб додати, перетягуйте для зміни порядку",
+    "builderHint": "Торкайтеся слів, щоб додати, перетягуйте для зміни порядку — відновіть речення",
+    "builderEmpty": "Торкайтеся слів по порядку",
+    "clear": "Очистити"
   },
   "testResults": {
     "notAvailable": "Результати ще недоступні.",
+    "statTime": "Час",
+    "statAccuracy": "Точність",
+    "statStreak": "Краща серія",
     "backToTests": "← До тестів",
     "excellent": "Чудова сесія!",
     "good": "Гарна робота!",

@@ -50,34 +50,78 @@ public sealed class SubmitAnswerCommandHandler(
 
     private static bool CheckAnswer(Question question, string given)
     {
-        if (question.QuestionType == Question.QuestionTypes.OpenAnswer)
-            return CheckFuzzy(question.CorrectAnswer, given);
-
-        if (question.QuestionType == Question.QuestionTypes.MultiSelectTheme)
+        switch (question.QuestionType)
         {
-            var correctTexts = question.Options
-                .Where(o => o.IsCorrect)
-                .Select(o => o.OptionText.Trim().ToLowerInvariant())
-                .Order()
-                .ToArray();
+            // listen_and_type's CorrectAnswer is the bare term; the same typo tolerance applies.
+            case Question.QuestionTypes.OpenAnswer:
+            case Question.QuestionTypes.ListenAndType:
+                return CheckFuzzy(question.CorrectAnswer, given);
 
-            var givenTexts = given
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(s => s.ToLowerInvariant())
-                .Order()
-                .ToArray();
+            case Question.QuestionTypes.MultiSelectTheme:
+            {
+                var correctTexts = question.Options
+                    .Where(o => o.IsCorrect)
+                    .Select(o => o.OptionText.Trim().ToLowerInvariant())
+                    .Order()
+                    .ToArray();
 
-            return correctTexts.SequenceEqual(givenTexts);
+                var givenTexts = given
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(s => s.ToLowerInvariant())
+                    .Order()
+                    .ToArray();
+
+                return correctTexts.SequenceEqual(givenTexts);
+            }
+
+            case Question.QuestionTypes.MatchingPairs:
+                return CheckPairs(question, given);
+
+            // All letters are given — typo tolerance would defeat the exercise.
+            case Question.QuestionTypes.WordScramble:
+                return string.Equals(given, question.CorrectAnswer.Trim(), StringComparison.OrdinalIgnoreCase);
+
+            case Question.QuestionTypes.SentenceBuilder:
+                return NormalizeSentence(given) == NormalizeSentence(question.CorrectAnswer);
+
+            default:
+            {
+                // single choice: translate_to_native, translate_to_foreign, fill_in_sentence, definition_match
+                var correctOption = question.Options.FirstOrDefault(o => o.IsCorrect);
+                if (correctOption is not null)
+                    return string.Equals(given, correctOption.OptionText.Trim(), StringComparison.OrdinalIgnoreCase);
+
+                // fallback for questions without options
+                return CheckFuzzy(question.CorrectAnswer, given);
+            }
         }
-
-        // single_choice: translate_to_native, translate_to_foreign, fill_in_sentence
-        var correctOption = question.Options.FirstOrDefault(o => o.IsCorrect);
-        if (correctOption is not null)
-            return string.Equals(given, correctOption.OptionText.Trim(), StringComparison.OrdinalIgnoreCase);
-
-        // fallback for questions without options
-        return CheckFuzzy(question.CorrectAnswer, given);
     }
+
+    /// <summary>
+    /// Every option is a real "term|translation" pair; the answer is the same segments joined
+    /// with ';' in any order — grading compares the two as sets.
+    /// </summary>
+    private static bool CheckPairs(Question question, string given)
+    {
+        var correctPairs = question.Options
+            .Select(o => o.OptionText.Trim().ToLowerInvariant())
+            .Order()
+            .ToArray();
+
+        var givenPairs = given
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => s.ToLowerInvariant())
+            .Order()
+            .ToArray();
+
+        return correctPairs.SequenceEqual(givenPairs);
+    }
+
+    /// <summary>Word order is what's graded — casing, extra whitespace, and the final '.'/'!'/'?' are not.</summary>
+    private static string NormalizeSentence(string sentence) =>
+        string.Join(' ', sentence.Trim().ToLowerInvariant()
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+            .TrimEnd('.', '!', '?');
 
     private static bool CheckFuzzy(string correctAnswer, string given)
     {

@@ -47,5 +47,18 @@ export { SpeakButton } from './SpeakButton'
 export { Mascot } from './mascot/Mascot'
 export type { MascotPose } from './mascot/Mascot'
 
+// Motion tokens & variants
+export {
+  DUR,
+  EASE,
+  SPRING,
+  SPRING_BOUNCY,
+  fadeInUp,
+  staggerContainer,
+  questionSlide,
+  shake,
+  popIn,
+} from './motion'
+
 // Hooks
 export { useSSE } from './SSEListener/useSSE'

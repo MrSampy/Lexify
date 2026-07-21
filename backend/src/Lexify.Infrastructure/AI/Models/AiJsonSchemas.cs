@@ -64,6 +64,28 @@ internal static class AiJsonSchemas
         }
         """);
 
+    public static readonly JsonElement DefinitionsResult = Parse("""
+        {
+          "type": "object",
+          "required": ["definitions"],
+          "additionalProperties": false,
+          "properties": {
+            "definitions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "definition"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": { "type": "string" },
+                  "definition": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+        """);
+
     public static readonly JsonElement DistractorsResult = Parse("""
         {
           "type": "object",

@@ -23,6 +23,18 @@ public interface IAIProvider
         CancellationToken ct = default);
 
     /// <summary>
+    /// Generates one short monolingual definition per requested word (batched call). Returns an
+    /// empty list (never throws) when the LLM is unavailable or every configured provider fails —
+    /// callers fall back to another question type for words that don't get a definition.
+    /// </summary>
+    /// <param name="englishLevel">Learner's CEFR level (A1..C2); null = no difficulty targeting.</param>
+    Task<IReadOnlyList<DefinitionAtom>> GenerateDefinitionsAsync(
+        IReadOnlyList<DefinitionRequest> requests,
+        string targetLanguage,
+        string? englishLevel = null,
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Generates plausible-but-wrong alternatives to a correct quiz answer, used only when the
     /// real-word distractor pool (DistractorPool) can't supply enough. Returns an empty list (never
     /// throws) when the LLM is unavailable.

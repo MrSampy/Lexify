@@ -34,6 +34,12 @@ public sealed class StreamingStubAIProvider : IAIProvider
         => Task.FromResult<IReadOnlyList<FillSentenceAtom>>(
             requests.Select(r => new FillSentenceAtom(r.WordId, $"This is a sentence with {r.Term} in it.")).ToList());
 
+    public Task<IReadOnlyList<DefinitionAtom>> GenerateDefinitionsAsync(
+        IReadOnlyList<DefinitionRequest> requests, string targetLanguage,
+        string? englishLevel = null, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<DefinitionAtom>>(
+            requests.Select(r => new DefinitionAtom(r.WordId, "A thing used in tests to describe a concept clearly.")).ToList());
+
     public Task<IReadOnlyList<string>> GenerateFakeDistractorsAsync(
         string correctAnswer, int count, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<string>>([]);

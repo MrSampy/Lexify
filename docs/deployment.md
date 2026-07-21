@@ -309,6 +309,21 @@ OLLAMA_API_KEY=<ключ с https://ollama.com>
 ⚠️ Compose требует непустыми: `OLLAMA_API_KEY`, `SMTP_HOST`, `S3_*`, `ACME_EMAIL`.
 Пустой `OLLAMA_API_KEY` в `.env.example` — стек не поднимется, пока не подставите свой.
 
+⚠️ **Никогда не делайте `set -a; . ./.env; set +a`.** Выглядит удобным способом достать пароль для
+разовой команды — кладёт прод. В bash `;` разделяет команды, поэтому строка
+`DATABASE_URL=Host=postgres;Port=5432;...;Password=...` присваивает переменной только
+`Host=postgres`, а хвост пытается выполнить как команды. С `set -a` огрызок ещё и экспортируется, а
+`docker compose` ставит окружение шелла **выше** файла `.env` — backend получает строку подключения
+без пароля и падает с `No password has been provided but the backend requires one
+(in SASL/SCRAM-SHA-256)`, а nginx отдаёт `502`. Сам файл при этом цел, и симптом исчезает после
+выхода из шелла — что делает диагностику особенно запутанной.
+
+Правильный способ достать одно значение:
+
+```bash
+REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' /opt/lexify/.env | cut -d= -f2-)
+```
+
 ### 4.4. Доступ к образам ghcr.io
 
 Проще всего сделать пакеты публичными: GitHub → репозиторий → *Packages* → `backend` / `frontend` /

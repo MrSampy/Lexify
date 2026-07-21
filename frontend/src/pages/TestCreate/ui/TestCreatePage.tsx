@@ -2,14 +2,14 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
-import { Mascot } from '@/shared/ui'
 import { useGenerateTestMutation } from '@/entities/test'
 import {
   useGenerateTestStore,
   useTestStatusPoller,
   BlockSelector,
   QuestionTypeSelector,
-  EnglishLevelSelect,
+  TestSummaryPanel,
+  GeneratingState,
 } from '@/features/generate-test'
 
 export function TestCreatePage() {
@@ -19,7 +19,6 @@ export function TestCreatePage() {
   const selectedBlockIds = useGenerateTestStore((s) => s.selectedBlockIds)
   const questionTypes = useGenerateTestStore((s) => s.questionTypes)
   const questionCount = useGenerateTestStore((s) => s.questionCount)
-  const setQuestionCount = useGenerateTestStore((s) => s.setQuestionCount)
   const reset = useGenerateTestStore((s) => s.reset)
 
   const generateTest = useGenerateTestMutation()
@@ -50,186 +49,51 @@ export function TestCreatePage() {
   }
 
   if (isGenerating) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '60vh',
-          gap: 20,
-        }}
-      >
-        <Mascot pose="diving" size={150} animate />
-        <div className="ds-h3" style={{ color: 'var(--accent-color)' }}>
-          {t('testCreate.generating')}
-        </div>
-        <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
-          {t('testCreate.generatingDesc')}
-        </p>
-      </div>
-    )
+    return <GeneratingState />
   }
 
   return (
     <div>
-      {/* Header */}
       <Link
         to={ROUTES.TESTS}
-        style={{
-          color: 'var(--accent-color)',
-          textDecoration: 'none',
-          display: 'inline-block',
-          marginBottom: 16,
-          fontSize: 14,
-          fontWeight: 700,
-        }}
+        className="mb-4 inline-block text-sm font-bold text-[var(--accent-color)] no-underline"
       >
         {t('testCreate.backToTests')}
       </Link>
-      <h1 className="ds-h2" style={{ margin: '0 0 6px' }}>
-        {t('testCreate.title')}
-      </h1>
-      <p className="ds-body" style={{ margin: '0 0 24px', color: 'var(--fg-3)' }}>
-        {t('testCreate.subtitle')}
-      </p>
+      <h1 className="ds-h2 m-0 mb-1.5">{t('testCreate.title')}</h1>
+      <p className="ds-body m-0 mb-6 text-[var(--fg-3)]">{t('testCreate.subtitle')}</p>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 20,
-          alignItems: 'start',
-        }}
-      >
-        {/* Blocks column */}
-        <div>
-          <div className="lx-section-head" style={{ marginBottom: 14 }}>
-            <h2
-              style={{
-                margin: 0,
-                fontFamily: 'var(--font-body)',
-                fontWeight: 700,
-                fontSize: 13,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'var(--fg-2)',
-              }}
-            >
-              {t('testCreate.blocks')}
-            </h2>
-          </div>
-          <BlockSelector />
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="flex min-w-0 flex-col gap-7">
+          <section>
+            <SectionHeading label={t('testCreate.blocks')} />
+            <BlockSelector />
+          </section>
+
+          <section>
+            <SectionHeading label={t('testCreate.questionTypes')} />
+            <QuestionTypeSelector />
+          </section>
         </div>
 
-        {/* Question types column */}
-        <div>
-          <div className="lx-section-head" style={{ marginBottom: 14 }}>
-            <h2
-              style={{
-                margin: 0,
-                fontFamily: 'var(--font-body)',
-                fontWeight: 700,
-                fontSize: 13,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'var(--fg-2)',
-              }}
-            >
-              {t('testCreate.questionTypes')}
-            </h2>
-          </div>
-          <QuestionTypeSelector />
-
-          {/* Question count */}
-          <div style={{ marginTop: 16 }}>
-            <label className="lx-label" style={{ marginBottom: 6, display: 'block' }}>
-              {t('testCreate.questionCount')}
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <input
-                type="number"
-                min={5}
-                max={50}
-                value={questionCount}
-                onChange={(e) => setQuestionCount(Number(e.target.value))}
-                className="lx-input"
-                style={{ width: 100 }}
-              />
-              <span className="ds-sm" style={{ color: 'var(--fg-4)' }}>
-                5–50
-              </span>
-            </div>
-          </div>
-
-          <EnglishLevelSelect />
-
-          {/* Info banner */}
-          {selectedBlockIds.length > 0 && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '12px 16px',
-                background: 'var(--accent-ghost)',
-                border: '1px solid var(--accent-line)',
-                borderRadius: 'var(--r-md)',
-                marginTop: 16,
-              }}
-            >
-              <span style={{ color: 'var(--accent-color)', fontSize: 15 }}>ℹ️</span>
-              <span className="ds-sm" style={{ color: 'var(--fg-2)' }}>
-                {t('testCreate.selected', { count: selectedBlockIds.length })}
-              </span>
-            </div>
-          )}
-
-          {generationFailed && (
-            <div
-              style={{
-                padding: '10px 14px',
-                background: 'var(--danger-ghost)',
-                border: '1px solid rgba(255,92,108,0.3)',
-                borderRadius: 'var(--r-md)',
-                color: 'var(--danger)',
-                fontSize: 13,
-                fontFamily: 'var(--font-body)',
-                marginTop: 12,
-              }}
-            >
-              {t('testCreate.genFailed')}
-            </div>
-          )}
-
-          {generateTest.isError && (
-            <div
-              style={{
-                padding: '10px 14px',
-                background: 'var(--danger-ghost)',
-                border: '1px solid rgba(255,92,108,0.3)',
-                borderRadius: 'var(--r-md)',
-                color: 'var(--danger)',
-                fontSize: 13,
-                fontFamily: 'var(--font-body)',
-                marginTop: 12,
-              }}
-            >
-              {t('testCreate.createFailed')}
-            </div>
-          )}
-
-          <button
-            className="lx-btn-primary"
-            style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}
-            onClick={() => void handleGenerate()}
-            disabled={!canGenerate || generateTest.isPending}
-          >
-            {t('testCreate.generate')}
-          </button>
-        </div>
+        <TestSummaryPanel
+          canGenerate={canGenerate}
+          isPending={generateTest.isPending}
+          generationFailed={generationFailed}
+          createFailed={generateTest.isError}
+          onGenerate={() => void handleGenerate()}
+        />
       </div>
+    </div>
+  )
+}
+
+function SectionHeading({ label }: { label: string }) {
+  return (
+    <div className="lx-section-head mb-3.5">
+      <h2 className="m-0 text-[13px] font-bold tracking-[0.06em] text-[var(--fg-2)] uppercase [font-family:var(--font-body)]">
+        {label}
+      </h2>
     </div>
   )
 }

@@ -20,7 +20,7 @@
 | Backend | ASP.NET Core 8, Clean Architecture, CQRS + MediatR |
 | База данных | PostgreSQL 16 (JSONB, Full-text search, RLS) |
 | Кэш / Очередь | Redis 7, Hangfire |
-| AI | Ollama Cloud (gemma3:27b), OpenAI-compatible |
+| AI | Ollama Cloud (gemma4:31b), OpenAI-compatible |
 | Frontend | React 18 + TypeScript, Feature-Sliced Design |
 | State | Zustand + TanStack Query v5 |
 | UI | shadcn/ui + Tailwind CSS |
@@ -71,7 +71,7 @@ docker-compose up -d postgres redis
 ### 2. Настроить Ollama Cloud
 
 Приложение использует **Ollama Cloud** (`https://ollama.com`) через OpenAI-совместимый эндпоинт
-`/v1/chat/completions` — локальная модель и GPU не нужны. Модель по умолчанию: **`gemma3:27b`**.
+`/v1/chat/completions` — локальная модель и GPU не нужны. Модель по умолчанию: **`gemma4:31b`**.
 
 API-ключ **не хранится в репозитории**. Для локальной разработки задайте его через user-secrets:
 
@@ -83,7 +83,7 @@ dotnet user-secrets set "AiProviders:0:ApiKey" "<ваш-ключ-Ollama-Cloud>" 
 В Docker/prod ключ берётся из переменной окружения `OLLAMA_API_KEY` (см. `.env.example`).
 
 **Локальный Ollama вместо облака** (опционально): установите с https://ollama.com/download/windows,
-`ollama serve`, `ollama pull gemma3:27b`, затем в `appsettings.Development.json` поменяйте `BaseUrl`
+`ollama serve`, `ollama pull gemma4:31b`, затем в `appsettings.Development.json` поменяйте `BaseUrl`
 провайдера на `http://localhost:11434` и оставьте `ApiKey` пустым.
 
 ### 3. Запустить Backend

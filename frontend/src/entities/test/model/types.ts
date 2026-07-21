@@ -4,6 +4,11 @@ export type QuestionType =
   | 'fill_in_sentence'
   | 'multi_select_theme'
   | 'open_answer'
+  | 'matching_pairs'
+  | 'listen_and_type'
+  | 'word_scramble'
+  | 'sentence_builder'
+  | 'definition_match'
 
 export type TestStatus = 'generating' | 'ready' | 'failed' | 'archived'
 
@@ -19,6 +24,12 @@ export interface Question {
   questionText: string
   sortOrder: number
   options: QuestionOption[]
+  /** Populated only for listen_and_type — the text the client speaks via TTS. */
+  audioText?: string | null
+  /** listen_and_type only: enables server neural audio (Piper) for the spoken word. */
+  wordId?: string | null
+  /** listen_and_type only: selects the TTS voice / language for the spoken word. */
+  languageId?: number | null
 }
 
 export interface Test {

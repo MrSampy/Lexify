@@ -21,11 +21,9 @@ export function EnglishLevelSelect() {
   }
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <label className="lx-label" style={{ marginBottom: 6, display: 'block' }}>
-        {t('genTest.yourLevel')}
-      </label>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div>
+      <label className="lx-label mb-1.5 block">{t('genTest.yourLevel')}</label>
+      <div className="flex items-center gap-3">
         <LxSelect
           value={profile?.englishLevel ?? ''}
           disabled={isLoading || updateLevel.isPending}
@@ -36,9 +34,7 @@ export function EnglishLevelSelect() {
             ...ENGLISH_LEVELS.map((level) => ({ value: level, label: level })),
           ]}
         />
-        <span className="ds-sm" style={{ color: 'var(--fg-4)' }}>
-          {t('genTest.cefrHint')}
-        </span>
+        <span className="text-xs font-semibold text-[var(--fg-4)]">{t('genTest.cefrHint')}</span>
       </div>
     </div>
   )
