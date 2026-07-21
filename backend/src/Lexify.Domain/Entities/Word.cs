@@ -20,6 +20,8 @@ public sealed class Word
     public string WordType { get; private set; } = default!;
     public string? Notes { get; private set; }
     public string? ExampleSentence { get; private set; }
+    /// <summary>LLM-generated monolingual definition, cached for definition-match quiz questions.</summary>
+    public string? Definition { get; private set; }
     public bool ConfidenceFlag { get; private set; }
     public string? ConfidenceNote { get; private set; }
     public int SortOrder { get; private set; }
@@ -135,6 +137,16 @@ public sealed class Word
     {
         if (string.IsNullOrWhiteSpace(sentence)) throw new DomainException("Example sentence cannot be empty.");
         ExampleSentence = sentence;
+    }
+
+    /// <summary>
+    /// Caches an LLM-generated monolingual definition, mirroring <see cref="SetExampleSentence"/> —
+    /// persisted so future definition-match questions can reuse it without another LLM call.
+    /// </summary>
+    public void SetDefinition(string definition)
+    {
+        if (string.IsNullOrWhiteSpace(definition)) throw new DomainException("Definition cannot be empty.");
+        Definition = definition;
     }
 
     public void SetConfidence(bool flag, string? note)

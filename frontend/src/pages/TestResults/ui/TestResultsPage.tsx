@@ -1,8 +1,26 @@
+import { useEffect } from 'react'
+import { motion } from 'motion/react'
+import { Check, X } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ROUTES } from '@/shared/config'
-import { Spinner } from '@/shared/ui'
+import { fireConfetti } from '@/shared/lib'
+import { Mascot, Spinner, fadeInUp, staggerContainer } from '@/shared/ui'
 import { useAttemptResults } from '@/entities/test'
+import { ScoreRing } from './ScoreRing'
+import { StatsRow } from './StatsRow'
+
+/** Matching-pairs answers travel as "term|trans;term|trans" — render them human-readable. */
+function prettifyAnswer(questionType: string, answer: string): string {
+  if (questionType !== 'matching_pairs') return answer
+  return answer
+    .split(';')
+    .filter(Boolean)
+    .map((pair) => pair.replace('|', ' → '))
+    .join('; ')
+}
+
+const CONFETTI_DELAY_MS = 600
 
 export function TestResultsPage() {
   const { t } = useTranslation()
@@ -11,9 +29,18 @@ export function TestResultsPage() {
 
   const { data, isLoading, isError } = useAttemptResults(attemptId ?? '')
 
+  const scorePercent = data ? Math.round(data.score * 100) : 0
+
+  // Confetti for top scores, timed to land as the ring count-up finishes.
+  useEffect(() => {
+    if (!data || scorePercent < 90) return
+    const timer = setTimeout(fireConfetti, CONFETTI_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [data, scorePercent])
+
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+      <div className="flex justify-center py-20">
         <Spinner size="lg" />
       </div>
     )
@@ -21,29 +48,15 @@ export function TestResultsPage() {
 
   if (isError || !data) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 16,
-          padding: '80px 0',
-        }}
-      >
-        <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-          {t('testResults.notAvailable')}
-        </p>
-        <Link
-          to={ROUTES.TESTS}
-          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
-        >
+      <div className="flex flex-col items-center gap-4 py-20">
+        <p className="ds-sm m-0 text-[var(--fg-3)]">{t('testResults.notAvailable')}</p>
+        <Link to={ROUTES.TESTS} className="font-bold text-[var(--accent-color)] no-underline">
           {t('testResults.backToTests')}
         </Link>
       </div>
     )
   }
 
-  const scorePercent = Math.round(data.score * 100)
   const wrongAnswers = data.answers.filter((a) => !a.isCorrect)
 
   const getMessage = () => {
@@ -53,118 +66,89 @@ export function TestResultsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
-      {/* Score circle */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          marginBottom: 30,
-        }}
-      >
-        <div style={{ position: 'relative', width: 148, height: 148, marginBottom: 18 }}>
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: '50%',
-              background: `conic-gradient(var(--accent-color) 0% ${scorePercent}%, var(--bg-3) ${scorePercent}% 100%)`,
-            }}
+    <div className="mx-auto max-w-[720px]">
+      {/* Score header */}
+      <div className="mb-7 flex flex-col items-center text-center">
+        <div className="mb-4 flex items-end gap-2">
+          {scorePercent >= 60 && <Mascot pose="celebrate" size={110} animate />}
+          <ScoreRing
+            percent={scorePercent}
+            correct={data.correctAnswers}
+            total={data.totalQuestions}
           />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 10,
-              borderRadius: '50%',
-              background: 'var(--bg-1)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 700,
-                fontSize: 40,
-                color: 'var(--fg-1)',
-              }}
-            >
-              {scorePercent}%
-            </span>
-            <span style={{ color: 'var(--fg-3)', fontSize: 12, fontWeight: 600 }}>
-              {data.correctAnswers} / {data.totalQuestions}
-            </span>
-          </div>
         </div>
 
-        <h1 className="ds-h3" style={{ margin: '0 0 4px' }}>
-          {getMessage()}
-        </h1>
-        <p className="ds-body" style={{ margin: 0, color: 'var(--fg-3)' }}>
-          {wrongAnswers.length > 0
-            ? t('testResults.moved', { count: wrongAnswers.length })
-            : t('testResults.allCorrect')}
-        </p>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <h1 className="ds-h3 m-0 mb-1">{getMessage()}</h1>
+          <p className="ds-body m-0 text-[var(--fg-3)]">
+            {wrongAnswers.length > 0
+              ? t('testResults.moved', { count: wrongAnswers.length })
+              : t('testResults.allCorrect')}
+          </p>
+        </motion.div>
       </div>
+
+      <StatsRow result={data} />
 
       {/* Answer breakdown */}
       {data.answers.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+        <motion.div
+          variants={staggerContainer(0.05)}
+          initial="hidden"
+          animate="visible"
+          className="mb-6 flex flex-col gap-2"
+        >
           {data.answers.map((r) => (
-            <div
+            <motion.div
               key={r.questionId}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: '13px 18px',
-                background: 'var(--bg-2)',
-                border: '1px solid var(--line-2)',
-                borderRadius: 'var(--r-md)',
-                borderLeft: `3px solid ${r.isCorrect ? 'var(--success)' : 'var(--danger)'}`,
-              }}
+              variants={fadeInUp}
+              className={`flex items-center gap-3.5 rounded-[var(--r-md)] border border-l-3 border-[var(--line-2)] bg-[var(--bg-2)] px-4.5 py-3 ${
+                r.isCorrect ? 'border-l-[var(--success)]' : 'border-l-[var(--danger)]'
+              }`}
             >
-              <span
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  color: r.isCorrect ? 'var(--success)' : 'var(--danger)',
-                  fontSize: 15,
-                  width: 16,
-                }}
-              >
-                {r.isCorrect ? '✓' : '✕'}
+              <span className={r.isCorrect ? 'text-[var(--success)]' : 'text-[var(--danger)]'}>
+                {r.isCorrect ? (
+                  <Check size={16} strokeWidth={3} />
+                ) : (
+                  <X size={16} strokeWidth={3} />
+                )}
               </span>
-              <span style={{ flex: 1, color: 'var(--fg-1)', fontSize: 14 }}>{r.questionText}</span>
+              <span className="min-w-0 flex-1 text-sm text-[var(--fg-1)]">{r.questionText}</span>
               {!r.isCorrect && (
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ color: 'var(--danger)', fontSize: 11, fontWeight: 600 }}>
-                    {r.givenAnswer || '—'}
+                <div className="max-w-[45%] text-right text-[11px] font-semibold break-words">
+                  <div className="text-[var(--danger)]">
+                    {prettifyAnswer(r.questionType, r.givenAnswer) || '—'}
                   </div>
-                  <div style={{ color: 'var(--success)', fontSize: 11, fontWeight: 600 }}>
-                    {r.correctAnswer}
+                  <div className="text-[var(--success)]">
+                    → {prettifyAnswer(r.questionType, r.correctAnswer)}
                   </div>
                 </div>
               )}
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-        <button
+      <div className="flex justify-center gap-3">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
           className="lx-btn-secondary"
           onClick={() => navigate(ROUTES.TEST_RUNNER(data.testId))}
         >
           {t('testResults.tryAgain')}
-        </button>
-        <button className="lx-btn-primary" onClick={() => navigate(ROUTES.TESTS)}>
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          className="lx-btn-primary"
+          onClick={() => navigate(ROUTES.TESTS)}
+        >
           {t('testResults.backToTestsBtn')}
-        </button>
+        </motion.button>
       </div>
     </div>
   )

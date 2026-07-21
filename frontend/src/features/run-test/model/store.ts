@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Question } from '@/entities/test'
 
-interface FeedbackEntry {
+export interface FeedbackEntry {
   isCorrect: boolean
   correctAnswer: string
   givenAnswer: string

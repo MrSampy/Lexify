@@ -70,8 +70,16 @@ public sealed class Question
         public const string FillInSentence = "fill_in_sentence";
         public const string MultiSelectTheme = "multi_select_theme";
         public const string OpenAnswer = "open_answer";
+        public const string MatchingPairs = "matching_pairs";
+        public const string ListenAndType = "listen_and_type";
+        public const string WordScramble = "word_scramble";
+        public const string SentenceBuilder = "sentence_builder";
+        public const string DefinitionMatch = "definition_match";
 
-        public static readonly IReadOnlySet<string> All =
-            new HashSet<string> { TranslateToNative, TranslateToForeign, FillInSentence, MultiSelectTheme, OpenAnswer };
+        public static readonly IReadOnlySet<string> All = new HashSet<string>
+        {
+            TranslateToNative, TranslateToForeign, FillInSentence, MultiSelectTheme, OpenAnswer,
+            MatchingPairs, ListenAndType, WordScramble, SentenceBuilder, DefinitionMatch,
+        };
     }
 }

@@ -14,14 +14,11 @@ public sealed class GenerateTestCommandValidator : AbstractValidator<GenerateTes
 
         RuleFor(x => x.QuestionTypes)
             .NotEmpty().WithMessage("At least one question type must be selected.")
-            .Must(types => types.All(t => Question.QuestionTypes.All.Contains(t) || IsAiType(t)))
+            .Must(types => types.All(Question.QuestionTypes.All.Contains))
             .WithMessage($"Unsupported question type. Supported: {string.Join(", ", Question.QuestionTypes.All)}.");
 
         RuleFor(x => x.QuestionCount)
             .InclusiveBetween(5, 50)
             .WithMessage("Question count must be between 5 and 50.");
     }
-
-    private static bool IsAiType(string type) =>
-        type is "single_choice" or "multi_select" or "fill_blank" or "open_answer";
 }

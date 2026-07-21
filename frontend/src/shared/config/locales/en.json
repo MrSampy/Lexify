@@ -323,7 +323,49 @@
     "selected_other": "{{count}} blocks selected.",
     "genFailed": "Test generation failed — the AI service may be unavailable. Try again.",
     "createFailed": "Failed to create test. Make sure selected blocks have at least 5 words.",
-    "generate": "⚡ Generate"
+    "generate": "Generate",
+    "loadingBlocks": "Loading blocks…",
+    "noBlocks": "No blocks found. Create a block first.",
+    "wordCount_one": "{{count}} word",
+    "wordCount_other": "{{count}} words",
+    "fewerQuestions": "Fewer questions",
+    "moreQuestions": "More questions",
+    "summary": "Your test",
+    "summaryBlocks_one": "{{count}} block",
+    "summaryBlocks_other": "{{count}} blocks",
+    "summaryWords_one": "{{count}} word",
+    "summaryWords_other": "{{count}} words",
+    "summaryQuestions_one": "{{count}} question",
+    "summaryQuestions_other": "{{count}} questions",
+    "needBlocks": "Select at least one block to generate a test",
+    "needTypes": "Select at least one question type",
+    "genStep1": "Picking the right words…",
+    "genStep2": "Writing questions and answers…",
+    "genStep3": "Shuffling everything together…",
+    "types": {
+      "translate_to_native": {
+        "label": "Translate to native",
+        "desc": "Pick the translation of a word"
+      },
+      "translate_to_foreign": {
+        "label": "Translate to foreign",
+        "desc": "Pick the word for a translation"
+      },
+      "fill_in_sentence": {
+        "label": "Fill in the sentence",
+        "desc": "Complete a sentence with the right word"
+      },
+      "multi_select_theme": { "label": "Multi-select", "desc": "Pick every correct translation" },
+      "open_answer": { "label": "Open answer", "desc": "Type the translation yourself" },
+      "matching_pairs": { "label": "Matching pairs", "desc": "Match words to their translations" },
+      "listen_and_type": { "label": "Listening", "desc": "Listen to a word and type it" },
+      "word_scramble": { "label": "Word scramble", "desc": "Unscramble the letters of a word" },
+      "sentence_builder": { "label": "Sentence builder", "desc": "Arrange words into a sentence" },
+      "definition_match": {
+        "label": "Definition match",
+        "desc": "Guess the word from its definition"
+      }
+    }
   },
   "testRunner": {
     "notFound": "Test not found.",
@@ -334,7 +376,10 @@
     "correct": "✓ {{count}} correct",
     "incorrect": "✕ {{count}} incorrect",
     "finishing": "finishing…",
-    "quit": "quit test"
+    "quit": "quit test",
+    "question": "{{n}} / {{total}}",
+    "streak": "{{count}} in a row!",
+    "shortcutsHint": "Press 1–4 to answer · Enter for next"
   },
   "runTest": {
     "correctLabel": "Correct!",
@@ -346,10 +391,22 @@
     "check": "Check",
     "typeAnswer": "type your answer…",
     "almostSpelling": "Almost — double-check your spelling.",
-    "fillHint": "Fill in the missing word"
+    "fillHint": "Fill in the missing word",
+    "matchTitle": "Match the pairs",
+    "matchHint": "Tap a word, then tap its translation",
+    "listenPlaceholder": "type what you hear…",
+    "replay": "Play again",
+    "ttsUnavailable": "Audio is unavailable in this browser — the word is shown instead",
+    "scrambleHint": "Tap letters to add them, drag to reorder",
+    "builderHint": "Tap words to add them, drag to reorder — rebuild the original sentence",
+    "builderEmpty": "Tap the words in order",
+    "clear": "Clear"
   },
   "testResults": {
     "notAvailable": "Results not available yet.",
+    "statTime": "Time",
+    "statAccuracy": "Accuracy",
+    "statStreak": "Best streak",
     "backToTests": "← Back to tests",
     "excellent": "Excellent session!",
     "good": "Good work!",

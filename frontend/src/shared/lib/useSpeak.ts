@@ -20,7 +20,12 @@ interface UseSpeakArgs {
  */
 export function useSpeak({ wordId, languageId }: UseSpeakArgs) {
   const { supported: browserSupported, speak: browserSpeak } = useSpeech(languageId)
-  const { data: caps } = useTtsCapabilities()
+  const { data: caps, isFetched: capsFetched } = useTtsCapabilities()
+
+  // The server-vs-browser decision is final only once the capabilities query settles (or when
+  // server TTS is disabled outright). Callers that auto-play must wait for this, otherwise they
+  // speak via the browser first and then again via Piper when caps arrive — two overlapping voices.
+  const ready = !env.TTS_ENABLED || capsFetched
   const [isLoading, setIsLoading] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -36,6 +41,7 @@ export function useSpeak({ wordId, languageId }: UseSpeakArgs) {
   const speak = useCallback(
     async (text: string) => {
       if (serverAvailable && wordId) {
+        let gotAudio = false
         try {
           setIsLoading(true)
           let url = audioUrlCache.get(wordId)
@@ -50,12 +56,17 @@ export function useSpeak({ wordId, languageId }: UseSpeakArgs) {
           audio.onplay = () => setIsPlaying(true)
           audio.onended = () => setIsPlaying(false)
           audio.onerror = () => setIsPlaying(false)
-          await audio.play()
+          gotAudio = true
           setIsLoading(false)
+          await audio.play()
           return
         } catch {
           setIsLoading(false)
-          // Any failure (404 = off/not owned/unsupported, or network) → fall through to browser TTS.
+          // If we obtained the server clip but playback was refused (e.g. autoplay policy on a
+          // gesture-less auto-play), DON'T also speak via the browser — stacking Piper + browser
+          // voices is the double-audio bug. Only fall through when we never got server audio at all
+          // (404 = off/not owned/unsupported, or a network error before the clip loaded).
+          if (gotAudio) return
         }
       }
       browserSpeak(text)
@@ -63,5 +74,5 @@ export function useSpeak({ wordId, languageId }: UseSpeakArgs) {
     [serverAvailable, wordId, browserSpeak],
   )
 
-  return { speak, isLoading, isPlaying, supported: serverAvailable || browserSupported }
+  return { speak, isLoading, isPlaying, ready, supported: serverAvailable || browserSupported }
 }

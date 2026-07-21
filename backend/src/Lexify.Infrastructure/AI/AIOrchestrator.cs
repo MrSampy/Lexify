@@ -88,6 +88,33 @@ public sealed partial class AIOrchestrator(
         return [];
     }
 
+    public async Task<IReadOnlyList<DefinitionAtom>> GenerateDefinitionsAsync(
+        IReadOnlyList<DefinitionRequest> requests,
+        string targetLanguage,
+        string? englishLevel = null,
+        CancellationToken ct = default)
+    {
+        foreach (var settings in Providers)
+        {
+            var client = CreateClient(settings);
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                var result = await client.GenerateDefinitionsAsync(requests, targetLanguage, englishLevel, ct);
+                await WriteLogAsync(AiCallLog.CallTypes.GenerateDefinitions, settings, sw, true, null, ct);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                LogProviderError(logger, ex, "GenerateDefinitions", settings.Name);
+                await WriteLogAsync(AiCallLog.CallTypes.GenerateDefinitions, settings, sw, false, ex.Message, ct);
+            }
+        }
+
+        LogAllProvidersFailed(logger, "GenerateDefinitions");
+        return [];
+    }
+
     public async Task<IReadOnlyList<string>> GenerateFakeDistractorsAsync(
         string correctAnswer,
         int count,

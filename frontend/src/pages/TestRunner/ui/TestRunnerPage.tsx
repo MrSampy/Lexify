@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, type ComponentType } from 'react'
+import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { ROUTES } from '@/shared/config'
-import { Spinner } from '@/shared/ui'
+import { Spinner, questionSlide } from '@/shared/ui'
 import {
   useTest,
   useStartAttemptMutation,
@@ -12,64 +13,54 @@ import {
   testKeys,
   testApi,
 } from '@/entities/test'
-import type { Question, Test } from '@/entities/test'
+import type { Question, QuestionType, Test } from '@/entities/test'
 import {
   useTestRunnerStore,
+  useKeyboardShortcuts,
   AnswerFeedback,
+  RunnerHud,
   SingleChoiceQuestion,
   MultiSelectQuestion,
   OpenAnswerQuestion,
   FillInSentenceQuestion,
+  MatchingPairsQuestion,
+  ListenAndTypeQuestion,
+  WordScrambleQuestion,
+  SentenceBuilderQuestion,
+  type QuestionRendererProps,
 } from '@/features/run-test'
 
-function QuestionView({
-  question,
-  onSubmit,
-  disabled,
-}: {
-  question: Question
-  onSubmit: (answer: string) => void
-  disabled: boolean
-}) {
-  const type = question.questionType
-  if (type === 'multi_select_theme') {
-    return (
-      <MultiSelectQuestion
-        key={question.id}
-        question={question}
-        onSubmit={onSubmit}
-        disabled={disabled}
-      />
-    )
+/**
+ * Adding a question type = one renderer with QuestionRendererProps + one entry here. Types without
+ * an entry (translate_to_native/foreign, definition_match) fall back to SingleChoiceQuestion.
+ */
+const RENDERERS: Partial<Record<QuestionType, ComponentType<QuestionRendererProps>>> = {
+  multi_select_theme: MultiSelectQuestion,
+  open_answer: OpenAnswerQuestion,
+  fill_in_sentence: FillInSentenceQuestion,
+  matching_pairs: MatchingPairsQuestion,
+  listen_and_type: ListenAndTypeQuestion,
+  word_scramble: WordScrambleQuestion,
+  sentence_builder: SentenceBuilderQuestion,
+}
+
+function QuestionView(props: QuestionRendererProps & { question: Question }) {
+  const Renderer = RENDERERS[props.question.questionType] ?? SingleChoiceQuestion
+  return <Renderer key={props.question.id} {...props} />
+}
+
+/** Trailing run of consecutive correct answers over the questions answered so far. */
+function computeStreak(
+  questions: Question[],
+  feedbacks: Record<string, { isCorrect: boolean }>,
+): number {
+  let streak = 0
+  for (const question of questions) {
+    const feedback = feedbacks[question.id]
+    if (!feedback) break
+    streak = feedback.isCorrect ? streak + 1 : 0
   }
-  if (type === 'open_answer') {
-    return (
-      <OpenAnswerQuestion
-        key={question.id}
-        question={question}
-        onSubmit={onSubmit}
-        disabled={disabled}
-      />
-    )
-  }
-  if (type === 'fill_in_sentence') {
-    return (
-      <FillInSentenceQuestion
-        key={question.id}
-        question={question}
-        onSubmit={onSubmit}
-        disabled={disabled}
-      />
-    )
-  }
-  return (
-    <SingleChoiceQuestion
-      key={question.id}
-      question={question}
-      onSubmit={onSubmit}
-      disabled={disabled}
-    />
-  )
+  return streak
 }
 
 export function TestRunnerPage() {
@@ -147,12 +138,15 @@ export function TestRunnerPage() {
   )
 
   const currentQuestion = questions[currentQuestionIndex] ?? null
-  const currentFeedback = currentQuestion ? feedbacks[currentQuestion.id] : null
+  const currentFeedback = currentQuestion ? (feedbacks[currentQuestion.id] ?? null) : null
   const correctCount = Object.values(feedbacks).filter((f) => f.isCorrect).length
   // Counted from feedbacks, not (index - correct): the index only advances on "Next", so right
   // after answering it still points at the current question and the difference goes negative.
   const incorrectCount = Object.values(feedbacks).filter((f) => !f.isCorrect).length
+  const streak = computeStreak(questions, feedbacks)
   const isLastQuestion = currentQuestionIndex === questions.length - 1
+
+  useKeyboardShortcuts(!!currentQuestion)
 
   const handleSubmitAnswer = async (givenAnswer: string) => {
     if (!attemptId || !currentQuestion) return
@@ -179,35 +173,19 @@ export function TestRunnerPage() {
   // below would spin forever. Retry resets the mutation to idle, which re-fires the start effect.
   if (startAttempt.isError && questions.length === 0) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 16,
-          padding: '80px 0',
-          textAlign: 'center',
-        }}
-      >
-        <p className="ds-body" style={{ color: 'var(--danger)' }}>
-          {t('testRunner.startFailed')}
-        </p>
+      <CenteredMessage>
+        <p className="ds-body m-0 text-[var(--danger)]">{t('testRunner.startFailed')}</p>
         <button className="lx-btn-primary" onClick={handleRetryStart}>
           {t('testRunner.retry')}
         </button>
-        <Link
-          to={ROUTES.TESTS}
-          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
-        >
-          {t('testRunner.backToTests')}
-        </Link>
-      </div>
+        <BackToTests label={t('testRunner.backToTests')} />
+      </CenteredMessage>
     )
   }
 
   if (isLoading || startAttempt.isPending || (test?.status === 'ready' && questions.length === 0)) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+      <div className="flex justify-center py-20">
         <Spinner size="lg" />
       </div>
     )
@@ -215,190 +193,116 @@ export function TestRunnerPage() {
 
   if (isError || !test) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 16,
-          padding: '80px 0',
-          textAlign: 'center',
-        }}
-      >
-        <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
-          {t('testRunner.notFound')}
-        </p>
-        <Link
-          to={ROUTES.TESTS}
-          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
-        >
-          {t('testRunner.backToTests')}
-        </Link>
-      </div>
+      <CenteredMessage>
+        <p className="ds-body m-0 text-[var(--fg-3)]">{t('testRunner.notFound')}</p>
+        <BackToTests label={t('testRunner.backToTests')} />
+      </CenteredMessage>
     )
   }
 
   if (test.status !== 'ready') {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 16,
-          padding: '80px 0',
-          textAlign: 'center',
-        }}
-      >
-        <p className="ds-body" style={{ color: 'var(--fg-3)' }}>
+      <CenteredMessage>
+        <p className="ds-body m-0 text-[var(--fg-3)]">
           {t('testRunner.notReady')}{' '}
-          <span style={{ color: 'var(--warning)', fontWeight: 700 }}>({test.status})</span>
+          <span className="font-bold text-[var(--warning)]">({test.status})</span>
         </p>
-        <Link
-          to={ROUTES.TESTS}
-          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 700 }}
-        >
-          {t('testRunner.backToTests')}
-        </Link>
-      </div>
+        <BackToTests label={t('testRunner.backToTests')} />
+      </CenteredMessage>
     )
   }
 
-  const progress = questions.length > 0 ? (currentQuestionIndex / questions.length) * 100 : 0
-
   return (
-    <div style={{ maxWidth: 940, margin: '0 auto' }}>
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 16,
-        }}
-      >
-        <h1 className="ds-h3" style={{ margin: 0 }}>
-          {test.title}
-        </h1>
+    <div className="mx-auto max-w-[720px]">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="ds-h3 m-0 min-w-0 truncate">{test.title}</h1>
         {questions.length > 0 && (
-          <span style={{ color: 'var(--accent-color)', fontWeight: 700, fontSize: 14 }}>
-            {currentQuestionIndex + 1} / {questions.length}
+          <span className="shrink-0 text-sm font-bold text-[var(--accent-color)]">
+            {t('testRunner.question', { n: currentQuestionIndex + 1, total: questions.length })}
           </span>
         )}
       </div>
 
-      {/* Progress bar */}
       {questions.length > 0 && (
-        <div className="lx-progress-track" style={{ marginBottom: 24 }}>
-          <div className="lx-progress-fill" style={{ width: `${progress}%` }} />
-        </div>
+        <RunnerHud
+          current={currentQuestionIndex}
+          total={questions.length}
+          correctCount={correctCount}
+          incorrectCount={incorrectCount}
+          streak={streak}
+        />
       )}
 
-      {/* Correct counter */}
-      {questions.length > 0 && (
-        <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-          <span style={{ color: 'var(--success)', fontSize: 11, fontWeight: 700 }}>
-            {t('testRunner.correct', { count: correctCount })}
-          </span>
-          <span style={{ color: 'var(--danger)', fontSize: 11, fontWeight: 700 }}>
-            {t('testRunner.incorrect', { count: incorrectCount })}
-          </span>
-        </div>
-      )}
-
-      {/* Question card */}
       {currentQuestion && (
-        <div
-          style={{
-            background: 'var(--bg-2)',
-            border: '1px solid var(--line-2)',
-            borderRadius: 'var(--r-lg)',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Card header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '10px 20px',
-              background: 'var(--bg-3)',
-              borderBottom: '1px solid var(--line-2)',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontWeight: 700,
-                fontSize: 10,
-                padding: '2px 10px',
-                borderRadius: 'var(--r-pill)',
-                background: 'var(--accent-ghost)',
-                border: '1px solid var(--accent-line)',
-                color: 'var(--accent-dim)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}
-            >
-              {currentQuestion.questionType.replaceAll('_', ' ')}
+        <div className="overflow-hidden rounded-[var(--r-lg)] border border-[var(--line-2)] bg-[var(--bg-2)] shadow-[var(--shadow-2)]">
+          <div className="flex items-center gap-2.5 border-b border-[var(--line-2)] bg-[var(--bg-3)] px-5 py-2.5">
+            <span className="rounded-[var(--r-pill)] border border-[var(--accent-line)] bg-[var(--accent-ghost)] px-2.5 py-0.5 text-[10px] font-bold tracking-[0.06em] text-[var(--accent-dim)] uppercase [font-family:var(--font-body)]">
+              {t(`testCreate.types.${currentQuestion.questionType}.label`)}
             </span>
           </div>
 
-          <div style={{ padding: 'clamp(16px, 5vw, 32px)' }}>
-            {!currentFeedback ? (
+          <div className="p-[clamp(16px,5vw,32px)]">
+            {/* Keyed remount (no AnimatePresence): the new question slides in, the old one is
+                dropped instantly — exit animations proved unreliable with mode="wait" here. */}
+            <motion.div
+              key={currentQuestion.id}
+              variants={questionSlide}
+              initial="enter"
+              animate="center"
+            >
               <QuestionView
                 question={currentQuestion}
                 onSubmit={(answer) => void handleSubmitAnswer(answer)}
                 disabled={submitAnswer.isPending}
+                feedback={currentFeedback}
               />
-            ) : (
-              <div>
-                <p
-                  style={{ fontSize: 20, fontWeight: 500, color: 'var(--fg-1)', marginBottom: 16 }}
-                >
-                  {currentQuestion.questionText}
-                </p>
+
+              {currentFeedback && (
                 <AnswerFeedback
                   isCorrect={currentFeedback.isCorrect}
                   correctAnswer={currentFeedback.correctAnswer}
                   givenAnswer={currentFeedback.givenAnswer}
+                  questionType={currentQuestion.questionType}
                   isLast={isLastQuestion}
                   onNext={() => void handleNext()}
                 />
-              </div>
-            )}
+              )}
+            </motion.div>
 
             {finishAttempt.isPending && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
+              <div className="mt-4 flex items-center gap-2">
                 <Spinner size="sm" />
-                <span style={{ color: 'var(--fg-3)', fontSize: 13 }}>
-                  {t('testRunner.finishing')}
-                </span>
+                <span className="text-[13px] text-[var(--fg-3)]">{t('testRunner.finishing')}</span>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Quit */}
-      <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center' }}>
+      <p className="m-0 mt-3 hidden text-center text-[11px] font-semibold text-[var(--fg-4)] md:block">
+        {t('testRunner.shortcutsHint')}
+      </p>
+
+      <div className="mt-3.5 flex justify-center">
         <button
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-body)',
-            fontSize: 13,
-            fontWeight: 600,
-            color: 'var(--fg-4)',
-            padding: '6px 12px',
-          }}
+          className="cursor-pointer border-none bg-transparent px-3 py-1.5 text-[13px] font-semibold text-[var(--fg-4)] [font-family:var(--font-body)] transition-colors hover:text-[var(--danger)]"
           onClick={() => navigate(ROUTES.TESTS)}
         >
           {t('testRunner.quit')}
         </button>
       </div>
     </div>
+  )
+}
+
+function CenteredMessage({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-col items-center gap-4 py-20 text-center">{children}</div>
+}
+
+function BackToTests({ label }: { label: string }) {
+  return (
+    <Link to={ROUTES.TESTS} className="font-bold text-[var(--accent-color)] no-underline">
+      {label}
+    </Link>
   )
 }

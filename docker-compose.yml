@@ -59,7 +59,7 @@ services:
       - Admin__DisplayName=${ADMIN_DISPLAY_NAME:-Admin}
       - AiProviders__0__Name=Ollama
       - AiProviders__0__BaseUrl=https://ollama.com
-      - AiProviders__0__Model=${OLLAMA_MODEL:-gemma3:27b}
+      - AiProviders__0__Model=${OLLAMA_MODEL:-gemma4:31b}
       - AiProviders__0__ApiKey=${OLLAMA_API_KEY}
       - AiProviders__0__TimeoutSeconds=180
       - AiProviders__0__SupportsJsonSchema=false

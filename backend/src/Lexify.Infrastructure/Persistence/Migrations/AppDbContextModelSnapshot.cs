@@ -110,7 +110,7 @@ namespace Lexify.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("chk_ai_logs_provider", "LENGTH(TRIM(provider)) > 0");
 
-                            t.HasCheckConstraint("chk_ai_logs_type", "call_type IN ('format_words', 'generate_test', 'generate_fill_sentences', 'generate_distractors', 'suggest_title')");
+                            t.HasCheckConstraint("chk_ai_logs_type", "call_type IN ('format_words', 'generate_test', 'generate_fill_sentences', 'generate_distractors', 'generate_definitions', 'suggest_title')");
                         });
                 });
 
@@ -404,7 +404,7 @@ namespace Lexify.Infrastructure.Persistence.Migrations
 
                     b.ToTable("questions", null, t =>
                         {
-                            t.HasCheckConstraint("chk_questions_type", "question_type IN ('translate_to_native', 'translate_to_foreign', 'fill_in_sentence', 'multi_select_theme', 'open_answer')");
+                            t.HasCheckConstraint("chk_questions_type", "question_type IN ('translate_to_native', 'translate_to_foreign', 'fill_in_sentence', 'multi_select_theme', 'open_answer', 'matching_pairs', 'listen_and_type', 'word_scramble', 'sentence_builder', 'definition_match')");
                         });
                 });
 
@@ -829,6 +829,10 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("Definition")
+                        .HasColumnType("text")
+                        .HasColumnName("definition");
 
                     b.Property<double>("EaseFactor")
                         .ValueGeneratedOnAdd()

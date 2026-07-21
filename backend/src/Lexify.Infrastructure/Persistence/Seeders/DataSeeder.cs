@@ -53,7 +53,7 @@ public sealed partial class DataSeeder(
     {
         var settings = new SystemSetting[]
         {
-            new("ai.primary_model",              "gemma3:27b", "string", "Active Ollama model"),
+            new("ai.primary_model",              "gemma4:31b", "string", "Active Ollama model"),
             new("ai.fallback_enabled",           "true",     "bool",   "Enable OpenAI fallback"),
             new("ai.rate_limit_per_minute",      "10",       "int",    "Per-user AI request limit per minute"),
             new(SystemSetting.Keys.MaxAiCallsPerUserPerDay, "50", "int",

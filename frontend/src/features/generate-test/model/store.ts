@@ -17,6 +17,11 @@ const ALL_QUESTION_TYPES: QuestionType[] = [
   'fill_in_sentence',
   'multi_select_theme',
   'open_answer',
+  'matching_pairs',
+  'listen_and_type',
+  'word_scramble',
+  'sentence_builder',
+  'definition_match',
 ]
 
 export const useGenerateTestStore = create<GenerateTestStore>((set) => ({

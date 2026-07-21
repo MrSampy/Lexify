@@ -50,7 +50,7 @@ docker compose up -d postgres redis
 ### AI — Ollama Cloud
 
 The app uses **Ollama Cloud** (`https://ollama.com`) via its OpenAI-compatible `/v1/chat/completions`
-endpoint — no local model download or GPU needed. Default model: **`gemma3:27b`** (multilingual,
+endpoint — no local model download or GPU needed. Default model: **`gemma4:31b`** (multilingual,
 non-thinking instruct → clean streaming JSON). The provider entry lives in the `AiProviders` list in
 `appsettings.Development.json` (`BaseUrl: https://ollama.com`).
 
@@ -66,7 +66,7 @@ In Docker/prod the key comes from the `OLLAMA_API_KEY` env var (see `.env.exampl
 `AiProviders__0__ApiKey`.
 
 **Local Ollama instead of cloud** (optional): install from https://ollama.com/download/windows,
-`ollama serve`, `ollama pull gemma3:27b`, then set the provider's `BaseUrl` to `http://localhost:11434`
+`ollama serve`, `ollama pull gemma4:31b`, then set the provider's `BaseUrl` to `http://localhost:11434`
 and leave `ApiKey` empty.
 
 ---
@@ -105,7 +105,7 @@ Four projects; dependency direction: `API → Application → Domain ← Infrast
 
 **DI entry points**: `builder.Services.AddApplication()` and `builder.Services.AddInfrastructure(config)`.
 
-**AI**: `IAIProvider` is fulfilled by `AIOrchestrator`, which walks the ordered `AiProviders` config list — every entry speaks the OpenAI-compatible `/v1/chat/completions` protocol (Ollama, Lemonade, OpenAI, …) via the shared `OpenAiCompatibleClient`, trying each in turn and falling back on failure. Default dev chain: Ollama Cloud (`gemma3:27b`) → Lemonade. HTTP clients have a 2-retry Polly policy and per-provider timeout.
+**AI**: `IAIProvider` is fulfilled by `AIOrchestrator`, which walks the ordered `AiProviders` config list — every entry speaks the OpenAI-compatible `/v1/chat/completions` protocol (Ollama, Lemonade, OpenAI, …) via the shared `OpenAiCompatibleClient`, trying each in turn and falling back on failure. Default dev chain: Ollama Cloud (`gemma4:31b`) → Lemonade. HTTP clients have a 2-retry Polly policy and per-provider timeout.
 
 **Background jobs**: Hangfire with PostgreSQL storage, 2 workers. `IBackgroundJobService` is the abstraction; `GenerateTestJob` is the only job so far.
 

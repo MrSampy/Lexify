@@ -40,6 +40,7 @@ public sealed class AiCallLog
         public const string FormatWords = "format_words";
         public const string GenerateFillSentences = "generate_fill_sentences";
         public const string GenerateDistractors = "generate_distractors";
+        public const string GenerateDefinitions = "generate_definitions";
         public const string SuggestTitle = "suggest_title";
     }
 }

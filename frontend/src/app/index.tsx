@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/entities/user'
 import { Spinner, Toaster } from '@/shared/ui'
 import { ErrorBoundary } from './providers/ErrorBoundary'
+import { MotionProvider } from './providers/MotionProvider'
 import { QueryProvider } from './providers/QueryProvider'
 import { ThemeProvider } from './providers/ThemeProvider'
 import { AppRouter } from './router/routes'
@@ -35,12 +36,14 @@ export function AppRoot() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <QueryProvider>
-          <BootLoader>
-            <AppRouter />
-            <Toaster />
-          </BootLoader>
-        </QueryProvider>
+        <MotionProvider>
+          <QueryProvider>
+            <BootLoader>
+              <AppRouter />
+              <Toaster />
+            </BootLoader>
+          </QueryProvider>
+        </MotionProvider>
       </ThemeProvider>
     </ErrorBoundary>
   )

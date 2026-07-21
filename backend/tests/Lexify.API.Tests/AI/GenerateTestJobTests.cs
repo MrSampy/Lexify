@@ -254,6 +254,143 @@ public class GenerateTestJobTests
         Assert.Equal(10, saved.Count);
     }
 
+    // ---- New question types ----
+
+    [Fact]
+    public async Task RunAsync_MatchingPairs_ProducesGroupQuestionWithNullWordId()
+    {
+        var userId = Guid.NewGuid();
+        var (block, _) = SeedBlockWithWords(userId, 6);
+        var test = Test.Create(userId, "Test");
+        _testRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(test);
+        var saved = CaptureSavedQuestions();
+
+        await _job.RunAsync(Guid.NewGuid(), userId, [block.Id], ["matching_pairs"], 5, CancellationToken.None);
+
+        Assert.Equal(Test.Statuses.Ready, test.Status);
+        var matching = saved.Where(q => q.QuestionType == Question.QuestionTypes.MatchingPairs).ToList();
+        Assert.Single(matching); // 5 questions requested → at most 5/5 = 1 group
+        Assert.Null(matching[0].WordId);
+        await _aiProvider.DidNotReceive().GenerateFillSentencesAsync(
+            Arg.Any<IReadOnlyList<FillSentenceRequest>>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunAsync_ListenAndScramble_SucceedWithoutAnyAiCall()
+    {
+        var userId = Guid.NewGuid();
+        var (block, _) = SeedBlockWithWords(userId, 6); // "term1".."term6" — scramble-eligible (5 chars, single token)
+        var test = Test.Create(userId, "Test");
+        _testRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(test);
+        var saved = CaptureSavedQuestions();
+
+        await _job.RunAsync(
+            Guid.NewGuid(), userId, [block.Id], ["listen_and_type", "word_scramble"], 6, CancellationToken.None);
+
+        Assert.Equal(Test.Statuses.Ready, test.Status);
+        Assert.Contains(saved, q => q.QuestionType == Question.QuestionTypes.ListenAndType);
+        Assert.Contains(saved, q => q.QuestionType == Question.QuestionTypes.WordScramble);
+        await _aiProvider.DidNotReceive().GenerateFillSentencesAsync(
+            Arg.Any<IReadOnlyList<FillSentenceRequest>>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+        await _aiProvider.DidNotReceive().GenerateDefinitionsAsync(
+            Arg.Any<IReadOnlyList<DefinitionRequest>>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunAsync_WordScramble_SkipsMultiWordTerms()
+    {
+        var userId = Guid.NewGuid();
+        var block = new WordBlock(userId, 1, "Test Block");
+        _blockRepository.GetByIdAsync(block.Id, Arg.Any<CancellationToken>()).Returns(block);
+        var words = Enumerable.Range(1, 6)
+            .Select(i => new Word(block.Id, $"multi word term {i}", $"переклад{i}", Word.WordTypes.Phrase))
+            .ToList();
+        _wordRepository.GetByBlockIdsAsync(Arg.Is<IEnumerable<Guid>>(ids => ids.Contains(block.Id)), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<Word>>(words));
+
+        var test = Test.Create(userId, "Test");
+        _testRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(test);
+        var saved = CaptureSavedQuestions();
+
+        await _job.RunAsync(Guid.NewGuid(), userId, [block.Id], ["word_scramble"], 5, CancellationToken.None);
+
+        Assert.Equal(Test.Statuses.Ready, test.Status);
+        Assert.NotEmpty(saved);
+        Assert.DoesNotContain(saved, q => q.QuestionType == Question.QuestionTypes.WordScramble);
+    }
+
+    [Fact]
+    public async Task RunAsync_DefinitionMatch_GeneratesAndCachesDefinitionOnWord()
+    {
+        var userId = Guid.NewGuid();
+        var (block, words) = SeedBlockWithWords(userId, 5);
+        var test = Test.Create(userId, "Test");
+        _testRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(test);
+        var saved = CaptureSavedQuestions();
+
+        _aiProvider.GenerateDefinitionsAsync(
+                Arg.Any<IReadOnlyList<DefinitionRequest>>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                var requests = callInfo.Arg<IReadOnlyList<DefinitionRequest>>();
+                IReadOnlyList<DefinitionAtom> atoms = requests
+                    .Select(r => new DefinitionAtom(r.WordId, "A concept learners study to expand their vocabulary."))
+                    .ToList();
+                return Task.FromResult(atoms);
+            });
+
+        await _job.RunAsync(Guid.NewGuid(), userId, [block.Id], ["definition_match"], 5, CancellationToken.None);
+
+        Assert.Equal(Test.Statuses.Ready, test.Status);
+        Assert.Contains(saved, q => q.QuestionType == Question.QuestionTypes.DefinitionMatch);
+        Assert.Contains(words, w => !string.IsNullOrEmpty(w.Definition));
+    }
+
+    [Fact]
+    public async Task RunAsync_DefinitionsAllFail_FallsBackAndStillDeliversQuestions()
+    {
+        var userId = Guid.NewGuid();
+        var (block, _) = SeedBlockWithWords(userId, 5);
+        var test = Test.Create(userId, "Test");
+        _testRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(test);
+        var saved = CaptureSavedQuestions();
+
+        _aiProvider.GenerateDefinitionsAsync(
+                Arg.Any<IReadOnlyList<DefinitionRequest>>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<DefinitionAtom>>([]));
+
+        await _job.RunAsync(Guid.NewGuid(), userId, [block.Id], ["definition_match"], 5, CancellationToken.None);
+
+        Assert.Equal(Test.Statuses.Ready, test.Status);
+        Assert.Equal(5, saved.Count);
+        Assert.DoesNotContain(saved, q => q.QuestionType == Question.QuestionTypes.DefinitionMatch);
+    }
+
+    [Fact]
+    public async Task RunAsync_SentenceBuilder_ReusesCachedExampleSentenceWithoutAiCall()
+    {
+        var userId = Guid.NewGuid();
+        var block = new WordBlock(userId, 1, "Test Block");
+        _blockRepository.GetByIdAsync(block.Id, Arg.Any<CancellationToken>()).Returns(block);
+        var words = Enumerable.Range(1, 5)
+            .Select(i => new Word(block.Id, $"term{i}", $"переклад{i}",
+                exampleSentence: $"Everyone should learn the word term{i} during class today."))
+            .ToList();
+        _wordRepository.GetByBlockIdsAsync(Arg.Is<IEnumerable<Guid>>(ids => ids.Contains(block.Id)), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<Word>>(words));
+
+        var test = Test.Create(userId, "Test");
+        _testRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(test);
+        var saved = CaptureSavedQuestions();
+
+        await _job.RunAsync(Guid.NewGuid(), userId, [block.Id], ["sentence_builder"], 5, CancellationToken.None);
+
+        Assert.Equal(Test.Statuses.Ready, test.Status);
+        Assert.Contains(saved, q => q.QuestionType == Question.QuestionTypes.SentenceBuilder);
+        await _aiProvider.DidNotReceive().GenerateFillSentencesAsync(
+            Arg.Any<IReadOnlyList<FillSentenceRequest>>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task RunAsync_SavedQuestions_HaveContiguousSortOrderAfterShuffle()
     {

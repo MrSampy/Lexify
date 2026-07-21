@@ -18,4 +18,22 @@ public static class QuestionTemplates
 
     public static string OpenAnswer(string term) =>
         $"Translate '{term}'.";
+
+    // The templates below embed word-specific text (terms/translations) on purpose: content hashes
+    // are SHA-256(type|text), and both in-test and cross-test dedup need a per-word-unique text.
+
+    public static string MatchingPairs(IEnumerable<string> terms) =>
+        $"Match each word to its translation: {string.Join(", ", terms)}.";
+
+    public static string ListenAndType(string translation) =>
+        $"Listen and type the word you hear (meaning: '{translation}').";
+
+    public static string WordScramble(string translation) =>
+        $"Unscramble the letters to form the word meaning '{translation}'.";
+
+    public static string SentenceBuilder(string translation) =>
+        $"Arrange the words into a correct sentence using the word for '{translation}'.";
+
+    public static string DefinitionMatch(string definition) =>
+        $"Which word matches this definition? \"{definition}\"";
 }
