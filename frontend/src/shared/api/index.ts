@@ -1,2 +1,5 @@
-export { apiClient, setAuthHandlers } from './base'
+export { apiClient, setAuthHandlers, getAuthHandlers } from './base'
+export type { AuthHandlers } from './base'
+export { sseFetch, readSseEvents } from './sse'
+export type { RawSseEvent } from './sse'
 export type { PagedResult, ApiError, Result, ResultStatus } from './types'

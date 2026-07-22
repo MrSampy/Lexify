@@ -1,5 +1,4 @@
-import { useAuthStore } from '@/entities/user'
-import { env } from '@/shared/config/env'
+import { readSseEvents, sseFetch } from '@/shared/api'
 
 export type ChatSseEventType = 'streaming' | 'done' | 'error'
 
@@ -19,7 +18,7 @@ interface StreamChatOptions {
 
 /**
  * Sends a learner message and consumes Lexi's streamed reply over SSE — the same POST-body SSE shape as
- * the word-import formatter (see streamFormatWords). Emits `streaming` chunks, then `done` or `error`.
+ * the word-import formatter. Emits `streaming` chunks, then `done` or `error`.
  */
 export async function streamChatMessage({
   conversationId,
@@ -28,56 +27,16 @@ export async function streamChatMessage({
   onEvent,
   signal,
 }: StreamChatOptions): Promise<void> {
-  const token = useAuthStore.getState().accessToken
-
-  const res = await fetch(`${env.API_URL}/api/conversations/${conversationId}/messages`, {
-    method: 'POST',
+  const res = await sseFetch(
+    `/api/conversations/${conversationId}/messages`,
+    { message, nativeLanguage },
     signal,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'text/event-stream',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({ message, nativeLanguage }),
+  )
+
+  await readSseEvents(res.body!, ({ event, data }) => {
+    const evt: ChatSseEvent = { type: event as ChatSseEventType }
+    if (event === 'streaming') evt.chunk = data.chunk as string
+    else if (event === 'error') evt.message = data.message as string
+    onEvent(evt)
   })
-
-  if (!res.ok || !res.body) {
-    throw new Error(`Chat request failed: ${res.status} ${res.statusText}`)
-  }
-
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let pendingEventType: string | null = null
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
-
-    for (const line of lines) {
-      if (line.startsWith('event:')) {
-        pendingEventType = line.slice(6).trim()
-      } else if (line.startsWith('data:') && pendingEventType) {
-        const raw = line.slice(5).trim()
-        let parsed: Record<string, unknown> | null = null
-        try {
-          parsed = JSON.parse(raw) as Record<string, unknown>
-        } catch {
-          // ignore malformed JSON chunks
-        }
-        if (parsed) {
-          const event: ChatSseEvent = { type: pendingEventType as ChatSseEventType }
-          if (pendingEventType === 'streaming') event.chunk = parsed.chunk as string
-          else if (pendingEventType === 'error') event.message = parsed.message as string
-          onEvent(event)
-        }
-        pendingEventType = null
-      }
-    }
-  }
 }
