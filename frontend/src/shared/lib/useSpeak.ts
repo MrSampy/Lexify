@@ -31,24 +31,31 @@ export function useSpeak({ wordId, languageId }: UseSpeakArgs) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const langCode = languageId != null ? LANGUAGES[languageId]?.code : undefined
+  // Server audio no longer requires a wordId: with a wordId we fetch the stored word's clip, without one
+  // we synthesize arbitrary text (e.g. Lexi's chat replies) via POST /api/tts/speak. Either way it needs
+  // the feature on and a Piper voice for the language.
   const serverAvailable =
-    env.TTS_ENABLED &&
-    !!wordId &&
-    caps?.enabled === true &&
-    !!langCode &&
-    caps.languages.includes(langCode)
+    env.TTS_ENABLED && caps?.enabled === true && !!langCode && caps.languages.includes(langCode)
 
   const speak = useCallback(
     async (text: string) => {
-      if (serverAvailable && wordId) {
+      if (serverAvailable && langCode) {
+        // Cache by wordId when present, otherwise by language+text so repeat replies don't re-synthesize.
+        const cacheKey = wordId ?? `${langCode}|${text}`
         let gotAudio = false
         try {
           setIsLoading(true)
-          let url = audioUrlCache.get(wordId)
+          let url = audioUrlCache.get(cacheKey)
           if (!url) {
-            const res = await apiClient.get(`/api/tts/word/${wordId}`, { responseType: 'blob' })
+            const res = wordId
+              ? await apiClient.get(`/api/tts/word/${wordId}`, { responseType: 'blob' })
+              : await apiClient.post(
+                  '/api/tts/speak',
+                  { text, languageCode: langCode },
+                  { responseType: 'blob' },
+                )
             url = URL.createObjectURL(res.data as Blob)
-            audioUrlCache.set(wordId, url)
+            audioUrlCache.set(cacheKey, url)
           }
           audioRef.current?.pause()
           const audio = new Audio(url)
@@ -71,7 +78,7 @@ export function useSpeak({ wordId, languageId }: UseSpeakArgs) {
       }
       browserSpeak(text)
     },
-    [serverAvailable, wordId, browserSpeak],
+    [serverAvailable, wordId, langCode, browserSpeak],
   )
 
   return { speak, isLoading, isPlaying, ready, supported: serverAvailable || browserSupported }

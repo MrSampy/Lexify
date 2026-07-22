@@ -12,3 +12,8 @@ internal sealed record DefinitionWireItem(string Id, string Definition);
 
 /// <summary>Raw shape of the LLM's fake-distractors response — mirrors AiJsonSchemas.DistractorsResult.</summary>
 internal sealed record DistractorsWireResult(IReadOnlyList<string>? Distractors);
+
+/// <summary>Raw shape of the LLM's conversation-analysis response — mirrors AiJsonSchemas.ConversationAnalysisResult.</summary>
+internal sealed record ConversationAnalysisWireResult(IReadOnlyList<ConversationAnalysisWireItem>? Words);
+
+internal sealed record ConversationAnalysisWireItem(string Id, bool Used, bool UsedCorrectly, string? Note);

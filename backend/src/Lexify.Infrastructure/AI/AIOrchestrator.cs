@@ -166,6 +166,67 @@ public sealed partial class AIOrchestrator(
         return null;
     }
 
+    public async IAsyncEnumerable<string> StreamChatReplyAsync(
+        ChatContext context,
+        IReadOnlyList<ChatTurn> history,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        foreach (var settings in Providers)
+        {
+            var client = CreateClient(settings);
+            var sw = Stopwatch.StartNew();
+            HttpResponseMessage response;
+            try
+            {
+                response = await client.OpenChatStreamAsync(context, history, ct);
+            }
+            catch (Exception ex)
+            {
+                LogProviderError(logger, ex, "StreamChatReply", settings.Name);
+                await WriteLogAsync(AiCallLog.CallTypes.Conversation, settings, sw, false, ex.Message, ct);
+                continue;
+            }
+
+            using (response)
+            {
+                await foreach (var chunk in OpenAiCompatibleClient.EnumerateFormatStreamAsync(response, ct))
+                    yield return chunk;
+            }
+
+            await WriteLogAsync(AiCallLog.CallTypes.Conversation, settings, sw, true, null, ct);
+            yield break;
+        }
+
+        LogAllProvidersFailed(logger, "StreamChatReply");
+    }
+
+    public async Task<IReadOnlyList<WordUsageVerdict>> AnalyzeConversationAsync(
+        IReadOnlyList<ChatTurn> history,
+        IReadOnlyList<TargetWord> targetWords,
+        string targetLanguage,
+        CancellationToken ct = default)
+    {
+        foreach (var settings in Providers)
+        {
+            var client = CreateClient(settings);
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                var result = await client.AnalyzeConversationAsync(history, targetWords, targetLanguage, ct);
+                await WriteLogAsync(AiCallLog.CallTypes.AnalyzeConversation, settings, sw, true, null, ct);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                LogProviderError(logger, ex, "AnalyzeConversation", settings.Name);
+                await WriteLogAsync(AiCallLog.CallTypes.AnalyzeConversation, settings, sw, false, ex.Message, ct);
+            }
+        }
+
+        LogAllProvidersFailed(logger, "AnalyzeConversation");
+        return [];
+    }
+
     public Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
         Task.FromResult(Providers.Count > 0);
 

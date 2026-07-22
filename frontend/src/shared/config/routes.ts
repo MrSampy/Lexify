@@ -12,6 +12,8 @@ export const ROUTES = {
   TEST_RUNNER: (id: string) => `/tests/${id}/run`,
   TEST_RESULTS: (id: string) => `/tests/${id}/results`,
   REVIEW: '/review',
+  PRACTICE_CHAT: '/practice/chat',
+  PRACTICE_CHAT_SESSION: (id: string) => `/practice/chat/${id}`,
   STATS: '/stats',
   PROFILE: '/profile',
   SEARCH: '/search',

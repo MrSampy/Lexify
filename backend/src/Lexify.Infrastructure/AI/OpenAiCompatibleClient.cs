@@ -363,6 +363,141 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
         Schema: {"distractors":["string"]}
         """;
 
+    /// <summary>
+    /// Opens a streaming chat-completion for the next "Talk to Lexi" reply. Free-form text (no JSON
+    /// response_format) — this is a conversation, not structured output. Throws on connection/status
+    /// failure so the orchestrator can fall back to the next provider; the caller streams the body with
+    /// <see cref="EnumerateFormatStreamAsync"/> (the OpenAI SSE delta format is identical).
+    /// </summary>
+    public async Task<HttpResponseMessage> OpenChatStreamAsync(
+        ChatContext context, IReadOnlyList<ChatTurn> history, CancellationToken ct)
+    {
+        var messages = new List<OpenAIMessage>
+        {
+            new() { Role = "system", Content = BuildChatSystemPrompt(context) }
+        };
+        messages.AddRange(history.Select(t => new OpenAIMessage { Role = t.Role, Content = t.Content }));
+
+        // The opening turn has no history; give the model a user turn to react to so it reliably greets.
+        if (history.Count == 0)
+            messages.Add(new OpenAIMessage { Role = "user", Content = "Let's begin." });
+
+        var request = new OpenAIChatRequest
+        {
+            Model = settings.Model,
+            Messages = messages,
+            Temperature = 0.7,
+            Stream = true,
+            MaxTokens = 400
+        };
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions")
+        {
+            Content = JsonContent.Create(request)
+        };
+        httpRequest.Headers.Add("Accept", "text/event-stream");
+
+        var response = await http.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
+        response.EnsureSuccessStatusCode();
+        return response;
+    }
+
+    public async Task<IReadOnlyList<WordUsageVerdict>> AnalyzeConversationAsync(
+        IReadOnlyList<ChatTurn> history,
+        IReadOnlyList<TargetWord> targetWords,
+        string targetLanguage,
+        CancellationToken ct = default)
+    {
+        var transcript = string.Join("\n", history.Select(t =>
+            $"{(t.Role == "assistant" ? "Lexi" : "Learner")}: {t.Content}"));
+
+        var wordList = JsonSerializer.Serialize(targetWords.Select(w => new
+        {
+            id = w.WordId.ToString(),
+            term = w.Term,
+            translation = w.Translation
+        }));
+
+        var userMessage = $"Target words:\n{wordList}\n\nTranscript:\n{transcript}";
+
+        var request = new OpenAIChatRequest
+        {
+            Model = settings.Model,
+            Messages =
+            [
+                new OpenAIMessage { Role = "system", Content = BuildConversationAnalysisSystemPrompt(targetLanguage) },
+                new OpenAIMessage { Role = "user", Content = userMessage }
+            ],
+            Temperature = 0.2,
+            Stream = false,
+            MaxTokens = Math.Clamp(targetWords.Count * 60, 200, 1500),
+            ResponseFormat = settings.SupportsJsonSchema
+                ? OpenAIResponseFormat.ForSchema("conversation_analysis_result", AiJsonSchemas.ConversationAnalysisResult)
+                : OpenAIResponseFormat.JsonObject()
+        };
+
+        using var response = await http.PostAsJsonAsync("/v1/chat/completions", request, ct);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>(JsonOptions, ct);
+        var content = result?.Choices?[0]?.Message?.Content ?? "{}";
+        var json = AIResponseValidator.ExtractFirstJsonObject(content) ?? "{}";
+
+        var parsed = JsonSerializer.Deserialize<ConversationAnalysisWireResult>(json, JsonOptions);
+        if (parsed?.Words is null) return [];
+
+        var verdicts = new List<WordUsageVerdict>(parsed.Words.Count);
+        foreach (var w in parsed.Words)
+            if (Guid.TryParse(w.Id, out var wordId))
+                verdicts.Add(new WordUsageVerdict(wordId, w.Used, w.UsedCorrectly, w.Note));
+
+        return verdicts;
+    }
+
+    /// <summary>
+    /// The Lexi persona: a gentle, encouraging axolotl language buddy. Deliberately anti-Duolingo — it
+    /// never shames, pressures, or nags (see Info/lexify-mascot.md). It talks in the target language at
+    /// the learner's level and steers the chat so the target words come up naturally.
+    /// </summary>
+    private static string BuildChatSystemPrompt(ChatContext context)
+    {
+        var levelRule = context.CefrLevel is null
+            ? " Keep your language simple and clear."
+            : $" Write at CEFR {context.CefrLevel} level — vocabulary and grammar no harder than that.";
+
+        var scenarioRule = string.IsNullOrWhiteSpace(context.Scenario)
+            ? " Have a friendly, natural conversation."
+            : $" Play out this scenario together: {context.Scenario}.";
+
+        var targetTerms = string.Join(", ", context.TargetWords.Select(w => w.Term));
+
+        return $"""
+            You are Lexi, a warm, curious, encouraging axolotl who helps people learn {context.TargetLanguage}.
+            Reply ENTIRELY in {context.TargetLanguage}, in short conversational turns (1-3 sentences), and always end
+            with a question or prompt that keeps the conversation going.{levelRule}{scenarioRule}
+            Your goal is to get the learner to naturally USE these words during the chat: {targetTerms}.
+            Gently steer toward contexts where those words fit, but never list them, define them, or quiz the learner.
+            If the learner makes a mistake, model the correct form kindly in your reply (recast) — never scold,
+            never shame, never pressure. If they switch to {context.NativeLanguage}, answer briefly and warmly guide
+            them back to {context.TargetLanguage}. Be patient and positive at all times.
+            Output ONLY your reply text — no labels, no markdown, no stage directions.
+            """;
+    }
+
+    private static string BuildConversationAnalysisSystemPrompt(string targetLanguage) =>
+        $$"""
+        Return ONLY a valid JSON object — no markdown, no explanation, no extra text before or after the JSON.
+        You review a {{targetLanguage}} practice conversation transcript between a learner and Lexi.
+        For each target word, judge ONLY the LEARNER's turns (ignore Lexi's turns):
+        - used: true if the learner used the word themselves at least once, in ANY inflected form
+          (plural, tense, conjugation, derivation) — count "napped"/"napping" as using "nap", etc.
+        - usedCorrectly: true if, when used, it was used with correct meaning and grammar; false otherwise.
+          If used is false, usedCorrectly must be false.
+        - note: a very short, encouraging note (or null). Never harsh.
+        Output exactly one item per target word, using the SAME "id" values.
+        Schema: {"words":[{"id":"string","used":true,"usedCorrectly":true,"note":"string or null"}]}
+        """;
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to get block title suggestion from {ProviderName}")]
     private static partial void LogTitleSuggestionWarning(ILogger logger, Exception ex, string providerName);
 }

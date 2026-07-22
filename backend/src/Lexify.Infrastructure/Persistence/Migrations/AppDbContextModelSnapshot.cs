@@ -110,7 +110,7 @@ namespace Lexify.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("chk_ai_logs_provider", "LENGTH(TRIM(provider)) > 0");
 
-                            t.HasCheckConstraint("chk_ai_logs_type", "call_type IN ('format_words', 'generate_test', 'generate_fill_sentences', 'generate_distractors', 'generate_definitions', 'suggest_title')");
+                            t.HasCheckConstraint("chk_ai_logs_type", "call_type IN ('format_words', 'generate_test', 'generate_fill_sentences', 'generate_distractors', 'generate_definitions', 'suggest_title', 'conversation', 'analyze_conversation')");
                         });
                 });
 
@@ -247,6 +247,111 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("idx_block_tags_tag");
 
                     b.ToTable("block_tags", (string)null);
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.Conversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("EndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at");
+
+                    b.Property<short>("LanguageId")
+                        .HasColumnType("smallint")
+                        .HasColumnName("language_id");
+
+                    b.Property<string>("Scenario")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("scenario");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("active")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<List<Guid>>("_targetWordIds")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("target_word_ids")
+                        .HasDefaultValueSql("'{}'::uuid[]");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_conversations_user_id");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("idx_conversations_created");
+
+                    b.ToTable("conversations", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_conversations_status", "status IN ('active', 'ended')");
+                        });
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.ConversationMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("role");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId", "SortOrder")
+                        .HasDatabaseName("idx_conversation_messages_order");
+
+                    b.ToTable("conversation_messages", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_conversation_messages_role", "role IN ('user', 'assistant')");
+                        });
                 });
 
             modelBuilder.Entity("Lexify.Domain.Entities.Language", b =>
@@ -1045,8 +1150,8 @@ namespace Lexify.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Source")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("source");
 
                     b.Property<Guid>("UserId")
@@ -1069,7 +1174,7 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("chk_review_logs_quality", "quality BETWEEN 0 AND 5");
 
-                            t.HasCheckConstraint("chk_review_logs_source", "source IN ('review', 'test')");
+                            t.HasCheckConstraint("chk_review_logs_source", "source IN ('review', 'test', 'conversation')");
                         });
                 });
 
@@ -1124,6 +1229,26 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_block_tags_tag");
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.Conversation", b =>
+                {
+                    b.HasOne("Lexify.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_conversations_user");
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.ConversationMessage", b =>
+                {
+                    b.HasOne("Lexify.Domain.Entities.Conversation", null)
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_conversation_messages_conversation");
                 });
 
             modelBuilder.Entity("Lexify.Domain.Entities.PasswordResetToken", b =>
@@ -1276,6 +1401,11 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_review_logs_user");
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.Conversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("Lexify.Domain.Entities.Question", b =>

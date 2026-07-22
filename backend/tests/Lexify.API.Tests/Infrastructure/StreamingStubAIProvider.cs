@@ -48,6 +48,20 @@ public sealed class StreamingStubAIProvider : IAIProvider
         IReadOnlyList<string> terms, string language, CancellationToken ct = default)
         => Task.FromResult<string?>(null);
 
+    public async IAsyncEnumerable<string> StreamChatReplyAsync(
+        ChatContext context, IReadOnlyList<ChatTurn> history,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await Task.Yield();
+        yield return "Hi there! Let's practise together.";
+    }
+
+    public Task<IReadOnlyList<WordUsageVerdict>> AnalyzeConversationAsync(
+        IReadOnlyList<ChatTurn> history, IReadOnlyList<TargetWord> targetWords,
+        string targetLanguage, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<WordUsageVerdict>>(
+            targetWords.Select(w => new WordUsageVerdict(w.WordId, true, true, null)).ToList());
+
     public Task<bool> IsAvailableAsync(CancellationToken ct = default)
         => Task.FromResult(true);
 }

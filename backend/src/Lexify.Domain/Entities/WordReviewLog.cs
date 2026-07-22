@@ -48,6 +48,9 @@ public sealed class WordReviewLog
         public const string Review = "review";
         public const string Test = "test";
 
-        public static readonly IReadOnlySet<string> All = new HashSet<string> { Review, Test };
+        /// <summary>The word was produced (or attempted) in a "Talk to Lexi" conversation.</summary>
+        public const string Conversation = "conversation";
+
+        public static readonly IReadOnlySet<string> All = new HashSet<string> { Review, Test, Conversation };
     }
 }

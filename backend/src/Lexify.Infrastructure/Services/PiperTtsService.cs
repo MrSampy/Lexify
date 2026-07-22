@@ -21,6 +21,8 @@ public sealed partial class PiperTtsService(
     : ITtsService
 {
     private const string WavContentType = "audio/wav";
+    /// <summary>Upper bound on free-form synthesis text (a chat reply), to bound Piper latency and cache size.</summary>
+    private const int MaxTextLength = 600;
     private readonly PiperSettings _settings = options.Value;
 
     public async Task<TtsCapabilities> GetCapabilitiesAsync(CancellationToken ct = default)
@@ -66,6 +68,30 @@ public sealed partial class PiperTtsService(
             return null;
 
         await WriteCacheAsync(voice, term, audio, ct);
+        return new TtsAudio(audio, WavContentType);
+    }
+
+    public async Task<TtsAudio?> SynthesizeTextAsync(string text, string languageCode, CancellationToken ct = default)
+    {
+        if (!await IsEnabledAsync(ct))
+            return null;
+
+        var trimmed = text?.Trim() ?? string.Empty;
+        if (trimmed.Length == 0 || trimmed.Length > MaxTextLength)
+            return null;
+
+        if (!_settings.Voices.TryGetValue(languageCode, out var voice) || string.IsNullOrWhiteSpace(voice))
+            return null; // no server voice for this language → client falls back to browser TTS
+
+        var cached = await TryReadCacheAsync(voice, trimmed, ct);
+        if (cached is not null)
+            return new TtsAudio(cached, WavContentType);
+
+        var audio = await SynthesizeViaPiperAsync(trimmed, voice, ct);
+        if (audio is null)
+            return null;
+
+        await WriteCacheAsync(voice, trimmed, audio, ct);
         return new TtsAudio(audio, WavContentType);
     }
 
