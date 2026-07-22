@@ -1,6 +1,7 @@
 using Lexify.Application.Abstractions;
 using Lexify.Application.Stats.Queries.GetAccuracy;
 using Lexify.Application.Stats.Queries.GetActivity;
+using Lexify.Application.Stats.Queries.GetConversationStats;
 using Lexify.Application.Stats.Queries.GetForecast;
 using Lexify.Application.Stats.Queries.GetMastery;
 using Lexify.Application.Stats.Queries.GetProblemWords;
@@ -45,6 +46,12 @@ public sealed class StatsController(ISender sender, ICurrentUserService currentU
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProblemWords([FromQuery] int limit = 20, CancellationToken ct = default) =>
         ToActionResult(await sender.Send(new GetProblemWordsQuery(currentUser.UserId, limit), ct));
+
+    /// <summary>"Talk to Lexi" practice totals: ended sessions, distinct words practised, average stars.</summary>
+    [HttpGet("conversations")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetConversationStats(CancellationToken ct) =>
+        ToActionResult(await sender.Send(new GetConversationStatsQuery(currentUser.UserId), ct));
 
     /// <summary>Per-day recall accuracy over the last <paramref name="days"/> days.</summary>
     [HttpGet("accuracy")]

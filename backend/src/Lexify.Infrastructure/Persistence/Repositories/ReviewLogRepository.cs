@@ -29,6 +29,14 @@ public sealed class ReviewLogRepository(AppDbContext context) : IReviewLogReposi
             .Take(limit)
             .ToListAsync(ct);
 
+    public Task<int> CountDistinctWordsBySourceAsync(
+        Guid userId, string source, CancellationToken ct = default) =>
+        context.WordReviewLogs
+            .Where(l => l.UserId == userId && l.Source == source)
+            .Select(l => l.WordId)
+            .Distinct()
+            .CountAsync(ct);
+
     public Task<int> CountNewWordsIntroducedSinceAsync(
         Guid userId, DateTimeOffset since, CancellationToken ct = default) =>
         // A word was "introduced" in the window iff it has a log row in the window and none before
