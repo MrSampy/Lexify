@@ -36,6 +36,11 @@ export interface ConversationDetail {
   title: string
   scenario: string | null
   status: string
+  createdAt: string
+  endedAt: string | null
+  /** Recorded at finish; null for sessions ended before scores were persisted. */
+  points: number | null
+  stars: number | null
   targetWords: ConversationTargetWord[]
   messages: ChatMessage[]
 }
@@ -49,6 +54,9 @@ export interface ConversationListItem {
   createdAt: string
   endedAt: string | null
   messageCount: number
+  /** Recorded at finish; null for sessions ended before scores were persisted. */
+  points: number | null
+  stars: number | null
 }
 
 export interface WordUsageResult {

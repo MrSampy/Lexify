@@ -23,6 +23,7 @@ import {
   useAccuracyStats,
   useForecastStats,
   useProblemWords,
+  useConversationStats,
   type DailyReviewCount,
 } from '@/entities/user'
 
@@ -81,6 +82,7 @@ export function StatsPage() {
   const { data: accuracy, isLoading: accuracyLoading } = useAccuracyStats(30)
   const { data: forecast, isLoading: forecastLoading } = useForecastStats(14)
   const { data: problemWords, isLoading: problemLoading } = useProblemWords(20)
+  const { data: convStats, isLoading: convLoading } = useConversationStats()
 
   const masteryData = mastery
     ? (['new', 'learning', 'young', 'mature'] as const).map((level) => ({
@@ -301,6 +303,99 @@ export function StatsPage() {
           )}
         </SectionCard>
       </div>
+
+      {/* Conversation practice ("Talk to Lexi") totals */}
+      <SectionCard title={t('stats.conversationsTitle')}>
+        {convLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+            <Spinner />
+          </div>
+        ) : !convStats || convStats.totalSessions === 0 ? (
+          <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
+            {t('stats.convEmpty')}{' '}
+            <Link
+              to={ROUTES.PRACTICE_CHAT}
+              style={{ color: 'var(--accent-color)', fontWeight: 700 }}
+            >
+              {t('chat.start')}
+            </Link>
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
+              <div>
+                <div
+                  style={{
+                    fontSize: 34,
+                    fontWeight: 800,
+                    color: 'var(--accent-color)',
+                    fontFamily: 'var(--font-display)',
+                    lineHeight: 1,
+                  }}
+                >
+                  💬 {convStats.totalSessions}
+                </div>
+                <div
+                  className="ds-sm"
+                  style={{ color: 'var(--fg-3)', marginTop: 4, fontWeight: 600 }}
+                >
+                  {t('stats.convSessions')}
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 34,
+                    fontWeight: 800,
+                    color: 'var(--fg-2)',
+                    fontFamily: 'var(--font-display)',
+                    lineHeight: 1,
+                  }}
+                >
+                  {convStats.wordsPractised}
+                </div>
+                <div
+                  className="ds-sm"
+                  style={{ color: 'var(--fg-3)', marginTop: 4, fontWeight: 600 }}
+                >
+                  {t('stats.convWords')}
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 34,
+                    fontWeight: 800,
+                    color: 'var(--fg-2)',
+                    fontFamily: 'var(--font-display)',
+                    lineHeight: 1,
+                  }}
+                >
+                  {convStats.avgStars != null ? `${convStats.avgStars} ★` : '—'}
+                </div>
+                <div
+                  className="ds-sm"
+                  style={{ color: 'var(--fg-3)', marginTop: 4, fontWeight: 600 }}
+                >
+                  {t('stats.convAvgStars')}
+                </div>
+              </div>
+            </div>
+            <Link
+              to={ROUTES.PRACTICE_CHAT_HISTORY}
+              style={{
+                color: 'var(--accent-color)',
+                textDecoration: 'none',
+                fontSize: 14,
+                fontWeight: 700,
+                alignSelf: 'flex-start',
+              }}
+            >
+              {t('stats.viewHistory')}
+            </Link>
+          </div>
+        )}
+      </SectionCard>
 
       {/* Problem words: leeches + confidence-flagged */}
       <SectionCard title={t('stats.problemWordsTitle')}>

@@ -226,6 +226,8 @@ export function ChatSession({
       {/* Transcript */}
       <div
         ref={scrollRef}
+        role="log"
+        aria-label={t('chat.title')}
         style={{
           flex: 1,
           overflowY: 'auto',
@@ -243,7 +245,7 @@ export function ChatSession({
         ))}
 
         {isStreaming && (
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+          <div aria-live="polite" style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
             <Mascot pose="diving" size={40} />
             <div
               style={{
@@ -313,6 +315,7 @@ export function ChatSession({
             }
           }}
           placeholder={atBudget ? t('chat.budgetReachedShort') : t('chat.inputPlaceholder')}
+          aria-label={t('chat.composerLabel')}
           rows={1}
           maxLength={MAX_MESSAGE_LENGTH}
           disabled={atBudget}

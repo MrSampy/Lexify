@@ -11,6 +11,7 @@ import {
   type ConversationTargetWord,
   type StartConversationResult,
 } from '@/entities/conversation'
+import { ReadOnlyTranscript } from './ReadOnlyTranscript'
 
 export function ConversationPage() {
   const { t } = useTranslation()
@@ -78,21 +79,34 @@ export function ConversationPage() {
         <h1 className="ds-h3" style={{ margin: 0 }}>
           {t('chat.title')}
         </h1>
-        <Link
-          to={ROUTES.PRACTICE_CHAT}
-          style={{
-            color: 'var(--accent-color)',
-            textDecoration: 'none',
-            fontSize: 14,
-            fontWeight: 700,
-          }}
-        >
-          {t('chat.newChat')}
-        </Link>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <Link
+            to={ROUTES.PRACTICE_CHAT_HISTORY}
+            style={{
+              color: 'var(--accent-color)',
+              textDecoration: 'none',
+              fontSize: 14,
+              fontWeight: 700,
+            }}
+          >
+            {t('chat.history')}
+          </Link>
+          <Link
+            to={ROUTES.PRACTICE_CHAT}
+            style={{
+              color: 'var(--accent-color)',
+              textDecoration: 'none',
+              fontSize: 14,
+              fontWeight: 700,
+            }}
+          >
+            {t('chat.newChat')}
+          </Link>
+        </div>
       </div>
 
-      {ended ? (
-        <ReadOnlyTranscript messages={initialMessages} />
+      {ended && detail ? (
+        <ReadOnlyTranscript detail={detail} />
       ) : (
         <ChatSession
           conversationId={id}
@@ -116,43 +130,6 @@ function Redirect() {
       <Link to={ROUTES.PRACTICE_CHAT} className="no-underline">
         <button className="lx-btn-primary">{t('chat.newChat')}</button>
       </Link>
-    </div>
-  )
-}
-
-function ReadOnlyTranscript({ messages }: { messages: ChatMessage[] }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        padding: '16px clamp(8px, 3vw, 20px)',
-        background: 'var(--bg-2)',
-        border: '1px solid var(--line-2)',
-        borderRadius: 'var(--r-lg)',
-      }}
-    >
-      {messages.map((m) => (
-        <div
-          key={m.id}
-          style={{
-            alignSelf: m.role === 'assistant' ? 'flex-start' : 'flex-end',
-            maxWidth: '78%',
-            padding: '10px 14px',
-            borderRadius: 'var(--r-lg)',
-            background: m.role === 'assistant' ? 'var(--bg-1)' : 'var(--accent-color)',
-            border: m.role === 'assistant' ? '1px solid var(--line-2)' : 'none',
-            color: m.role === 'assistant' ? 'var(--fg-1)' : '#fff',
-            fontSize: 14,
-            lineHeight: 1.5,
-            whiteSpace: 'pre-wrap',
-            overflowWrap: 'anywhere',
-          }}
-        >
-          {m.content}
-        </div>
-      ))}
     </div>
   )
 }

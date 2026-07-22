@@ -13,6 +13,7 @@ import { TestRunnerPage } from '@/pages/TestRunner/ui/TestRunnerPage'
 import { TestResultsPage } from '@/pages/TestResults/ui/TestResultsPage'
 import { ReviewSessionPage } from '@/pages/ReviewSession/ui/ReviewSessionPage'
 import { ConversationSetupPage } from '@/pages/Conversation/ui/ConversationSetupPage'
+import { ConversationHistoryPage } from '@/pages/Conversation/ui/ConversationHistoryPage'
 import { ConversationPage } from '@/pages/Conversation/ui/ConversationPage'
 import { StatsPage } from '@/pages/Stats/ui/StatsPage'
 import { DashboardPage } from '@/pages/Dashboard/ui/DashboardPage'
@@ -51,6 +52,7 @@ const router = createBrowserRouter([
           { path: '/tests/:id/results', element: <TestResultsPage /> },
           { path: ROUTES.REVIEW, element: <ReviewSessionPage /> },
           { path: ROUTES.PRACTICE_CHAT, element: <ConversationSetupPage /> },
+          { path: ROUTES.PRACTICE_CHAT_HISTORY, element: <ConversationHistoryPage /> },
           { path: '/practice/chat/:id', element: <ConversationPage /> },
           { path: ROUTES.STATS, element: <StatsPage /> },
           { path: ROUTES.SEARCH, element: <SearchResultsPage /> },

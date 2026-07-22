@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { Mascot, Spinner } from '@/shared/ui'
 import { useBlocks } from '@/entities/block'
 import { useStartConversationMutation } from '@/entities/conversation'
+import { SCENARIO_PRESETS } from '../model/scenarioPresets'
 
 const ALL_BLOCKS = '__all__'
 
@@ -41,7 +42,7 @@ export function ConversationSetupPage() {
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
         <Mascot pose="greeting" size={64} float />
-        <div>
+        <div style={{ flex: 1 }}>
           <h1 className="ds-h2" style={{ margin: 0 }}>
             {t('chat.title')}
           </h1>
@@ -49,6 +50,18 @@ export function ConversationSetupPage() {
             {t('chat.subtitle')}
           </p>
         </div>
+        <Link
+          to={ROUTES.PRACTICE_CHAT_HISTORY}
+          style={{
+            color: 'var(--accent-color)',
+            textDecoration: 'none',
+            fontSize: 14,
+            fontWeight: 700,
+            flexShrink: 0,
+          }}
+        >
+          {t('chat.history')}
+        </Link>
       </div>
 
       <div
@@ -115,6 +128,32 @@ export function ConversationSetupPage() {
           >
             {t('chat.scenarioLabel')}
           </label>
+          {/* Preset chips fill the input; editing the text simply diverges from the preset. */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+            {SCENARIO_PRESETS.map((p) => {
+              const selected = scenario === p.text
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setScenario(selected ? '' : p.text)}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: '4px 10px',
+                    borderRadius: 'var(--r-pill)',
+                    border: `1.5px solid ${selected ? 'var(--accent-color)' : 'var(--line-2)'}`,
+                    background: selected ? 'var(--accent-ghost)' : 'var(--bg-1)',
+                    color: selected ? 'var(--accent-dim)' : 'var(--fg-3)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {p.emoji} {t(p.labelKey)}
+                </button>
+              )
+            })}
+          </div>
           <input
             value={scenario}
             onChange={(e) => setScenario(e.target.value)}

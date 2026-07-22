@@ -61,7 +61,25 @@
     "errStart": "Couldn't start the conversation. Please try again.",
     "errReply": "Lexi couldn't reply. Please try again.",
     "errConnection": "Connection lost. Please try again.",
-    "errEnd": "Couldn't finish the conversation. Please try again."
+    "errEnd": "Couldn't finish the conversation. Please try again.",
+    "history": "History",
+    "historyTitle": "Conversation history",
+    "historyEmpty": "No conversations yet — start your first chat with Lexi!",
+    "statusEnded": "Finished",
+    "resume": "Resume",
+    "composerLabel": "Your reply to Lexi",
+    "messagesCount_one": "{{count}} message",
+    "messagesCount_other": "{{count}} messages",
+    "presets": {
+      "cafe": "At the café",
+      "interview": "Job interview",
+      "travel": "Travelling",
+      "shopping": "Shopping",
+      "doctor": "At the doctor",
+      "friends": "With a friend",
+      "movies": "Movie talk",
+      "kitchen": "Cooking together"
+    }
   },
   "notFound": {
     "title": "Page not found",
@@ -498,6 +516,12 @@
     "problemWordsTitle": "Problem words",
     "problemWordsHint": "Words you keep forgetting — flagged automatically after repeated lapses.",
     "noProblemWords": "No problem words — great job!",
+    "conversationsTitle": "Conversation practice",
+    "convSessions": "Chats with Lexi",
+    "convWords": "Words practised",
+    "convAvgStars": "Average stars",
+    "convEmpty": "No conversations yet.",
+    "viewHistory": "View history →",
     "lapses_one": "{{count}} lapse",
     "lapses_other": "{{count}} lapses",
     "noData": "No data yet — start reviewing to see your progress."
