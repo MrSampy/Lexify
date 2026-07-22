@@ -29,4 +29,8 @@ public interface IReviewLogRepository
     /// </summary>
     Task<IReadOnlyList<WordReviewLog>> GetByWordAsync(
         Guid userId, Guid wordId, int limit = 50, CancellationToken ct = default);
+
+    /// <summary>Distinct words the user has ever reviewed through the given source (e.g. conversation practice).</summary>
+    Task<int> CountDistinctWordsBySourceAsync(
+        Guid userId, string source, CancellationToken ct = default);
 }

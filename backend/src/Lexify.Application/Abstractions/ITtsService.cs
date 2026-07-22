@@ -19,5 +19,12 @@ public interface ITtsService
 {
     Task<TtsAudio?> SynthesizeWordAsync(Guid wordId, Guid userId, CancellationToken ct = default);
 
+    /// <summary>
+    /// Synthesizes arbitrary text in the given language (e.g. Lexi's chat replies), not tied to a stored
+    /// word. Returns <c>null</c> when the feature is off, the language has no configured voice, the text
+    /// is empty/too long, or Piper errors — client then falls back to browser speech.
+    /// </summary>
+    Task<TtsAudio?> SynthesizeTextAsync(string text, string languageCode, CancellationToken ct = default);
+
     Task<TtsCapabilities> GetCapabilitiesAsync(CancellationToken ct = default);
 }

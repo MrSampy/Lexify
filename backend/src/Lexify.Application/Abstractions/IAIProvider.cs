@@ -49,5 +49,26 @@ public interface IAIProvider
         string language,
         CancellationToken ct = default);
 
+    /// <summary>
+    /// Streams Lexi's next conversational reply in the target language, given the context (languages,
+    /// CEFR level, scenario, target words) and the prior turns. Yields no chunks when every configured
+    /// provider fails — the caller surfaces an error event rather than a broken reply.
+    /// </summary>
+    IAsyncEnumerable<string> StreamChatReplyAsync(
+        ChatContext context,
+        IReadOnlyList<ChatTurn> history,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// After a conversation ends, judges for each target word whether it was used and used correctly,
+    /// so the result can feed SM-2. Returns an empty list (never throws) when the LLM is unavailable —
+    /// callers then leave the words' schedules untouched.
+    /// </summary>
+    Task<IReadOnlyList<WordUsageVerdict>> AnalyzeConversationAsync(
+        IReadOnlyList<ChatTurn> history,
+        IReadOnlyList<TargetWord> targetWords,
+        string targetLanguage,
+        CancellationToken ct = default);
+
     Task<bool> IsAvailableAsync(CancellationToken ct = default);
 }

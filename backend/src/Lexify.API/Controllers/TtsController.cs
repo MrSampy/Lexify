@@ -1,5 +1,6 @@
 using Lexify.Application.Abstractions;
 using Lexify.API.RateLimit;
+using Lexify.API.Requests.Tts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,6 +32,25 @@ public sealed class TtsController(ITtsService ttsService, ICurrentUserService cu
     public async Task<IActionResult> GetWordAudio(Guid wordId, CancellationToken ct)
     {
         var audio = await ttsService.SynthesizeWordAsync(wordId, currentUser.UserId, ct);
+        if (audio is null)
+            return NotFound();
+
+        Response.Headers.CacheControl = "private, max-age=86400";
+        return File(audio.Bytes, audio.ContentType);
+    }
+
+    /// <summary>
+    /// Neural audio (WAV) for arbitrary text in a language (used for Lexi's chat replies). Returns 404
+    /// when TTS is off, the language has no voice, or the text is empty/too long — client falls back to
+    /// browser speech.
+    /// </summary>
+    [HttpPost("speak")]
+    [EnableRateLimiting(TtsRateLimiterPolicy.PolicyName)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Speak([FromBody] SpeakRequest request, CancellationToken ct)
+    {
+        var audio = await ttsService.SynthesizeTextAsync(request.Text ?? string.Empty, request.LanguageCode ?? string.Empty, ct);
         if (audio is null)
             return NotFound();
 

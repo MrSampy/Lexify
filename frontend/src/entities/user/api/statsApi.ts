@@ -100,6 +100,22 @@ export function useProblemWords(limit = 20) {
   })
 }
 
+export interface ConversationPracticeStats {
+  totalSessions: number
+  wordsPractised: number
+  /** Average stars over ended sessions; null until at least one scored session exists. */
+  avgStars: number | null
+}
+
+export function useConversationStats() {
+  return useQuery({
+    queryKey: ['user', 'stats', 'conversations'],
+    queryFn: () =>
+      apiClient.get<ConversationPracticeStats>('/api/stats/conversations').then((r) => r.data),
+    staleTime: 60_000,
+  })
+}
+
 export interface DailyAccuracy {
   date: string
   total: number

@@ -23,6 +23,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<AiCallLog> AiCallLogs => Set<AiCallLog>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<WordReviewLog> WordReviewLogs => Set<WordReviewLog>();
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

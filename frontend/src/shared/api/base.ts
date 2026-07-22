@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { env } from '@/shared/config/env'
 
-type AuthHandlers = {
+export type AuthHandlers = {
   getToken: () => string | null
   refresh: () => Promise<boolean>
   logout: () => void
@@ -11,6 +11,11 @@ let authHandlers: AuthHandlers | null = null
 
 export function setAuthHandlers(handlers: AuthHandlers): void {
   authHandlers = handlers
+}
+
+/** For non-axios transports (e.g. SSE fetch) that need the same injected auth. */
+export function getAuthHandlers(): AuthHandlers | null {
+  return authHandlers
 }
 
 export const apiClient = axios.create({

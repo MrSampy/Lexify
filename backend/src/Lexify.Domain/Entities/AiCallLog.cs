@@ -42,5 +42,7 @@ public sealed class AiCallLog
         public const string GenerateDistractors = "generate_distractors";
         public const string GenerateDefinitions = "generate_definitions";
         public const string SuggestTitle = "suggest_title";
+        public const string Conversation = "conversation";
+        public const string AnalyzeConversation = "analyze_conversation";
     }
 }

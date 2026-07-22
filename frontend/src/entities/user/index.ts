@@ -8,6 +8,7 @@ export {
   useAccuracyStats,
   useForecastStats,
   useProblemWords,
+  useConversationStats,
 } from './api/statsApi'
 export type {
   UserStats,
@@ -19,6 +20,7 @@ export type {
   ForecastStats,
   DailyDueCount,
   ProblemWord,
+  ConversationPracticeStats,
 } from './api/statsApi'
 export {
   useProfile,

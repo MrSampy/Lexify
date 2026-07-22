@@ -97,5 +97,29 @@ internal static class AiJsonSchemas
         }
         """);
 
+    public static readonly JsonElement ConversationAnalysisResult = Parse("""
+        {
+          "type": "object",
+          "required": ["words"],
+          "additionalProperties": false,
+          "properties": {
+            "words": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "used", "usedCorrectly"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": { "type": "string" },
+                  "used": { "type": "boolean" },
+                  "usedCorrectly": { "type": "boolean" },
+                  "note": { "type": ["string", "null"] }
+                }
+              }
+            }
+          }
+        }
+        """);
+
     private static JsonElement Parse(string json) => JsonDocument.Parse(json).RootElement.Clone();
 }

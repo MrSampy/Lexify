@@ -21,7 +21,7 @@ public sealed class WordReviewLogConfiguration : IEntityTypeConfiguration<WordRe
 
         builder.Property(l => l.Source)
             .HasColumnName("source")
-            .HasMaxLength(10)
+            .HasMaxLength(20)
             .IsRequired();
 
         builder.Property(l => l.EaseFactorAfter).HasColumnName("ease_factor_after").IsRequired();
@@ -39,7 +39,7 @@ public sealed class WordReviewLogConfiguration : IEntityTypeConfiguration<WordRe
         builder.ToTable(t =>
         {
             t.HasCheckConstraint("chk_review_logs_quality", "quality BETWEEN 0 AND 5");
-            t.HasCheckConstraint("chk_review_logs_source", "source IN ('review', 'test')");
+            t.HasCheckConstraint("chk_review_logs_source", "source IN ('review', 'test', 'conversation')");
         });
 
         // Serves every stats query: "this user's reviews since T", newest-relevant first.
