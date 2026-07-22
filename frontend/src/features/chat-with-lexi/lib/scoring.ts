@@ -11,9 +11,45 @@ const COMBO_BONUS_PER_EXTRA = 5
 const BUDGET_SLACK = 2
 const MIN_BUDGET = 3
 
+// Word-boundary matching (mirrors backend ConversationScoring): a plain substring check let "cat"
+// pass inside "category". A term token still matches an inflected token that extends it by up to
+// MAX_INFLECTION_SUFFIX chars ("embark" → "embarked"), except for very short terms.
+const MIN_PREFIX_MATCH_LENGTH = 4
+const MAX_INFLECTION_SUFFIX = 3
+
 /** Lowercase and replace punctuation with spaces so it never blocks a match (matches the server). */
 export function normalize(text: string): string {
   return text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ')
+}
+
+function tokenize(normalizedText: string): string[] {
+  return normalizedText.split(/\s+/).filter(Boolean)
+}
+
+function tokenMatches(textToken: string, termToken: string): boolean {
+  if (textToken === termToken) return true
+  const extra = textToken.length - termToken.length
+  return (
+    termToken.length >= MIN_PREFIX_MATCH_LENGTH &&
+    extra > 0 &&
+    extra <= MAX_INFLECTION_SUFFIX &&
+    textToken.startsWith(termToken)
+  )
+}
+
+function containsTerm(textTokens: string[], termTokens: string[]): boolean {
+  if (termTokens.length === 0 || textTokens.length < termTokens.length) return false
+  for (let start = 0; start <= textTokens.length - termTokens.length; start++) {
+    let all = true
+    for (let i = 0; i < termTokens.length; i++) {
+      if (!tokenMatches(textTokens[start + i], termTokens[i])) {
+        all = false
+        break
+      }
+    }
+    if (all) return true
+  }
+  return false
 }
 
 export function budgetFor(targetWordCount: number): number {
@@ -21,24 +57,23 @@ export function budgetFor(targetWordCount: number): number {
 }
 
 export function usedWordIds(targets: ScoreTarget[], learnerMessages: string[]): Set<string> {
-  const text = normalize(learnerMessages.join(' '))
+  const textTokens = tokenize(normalize(learnerMessages.join(' ')))
   const used = new Set<string>()
   for (const t of targets) {
-    const nt = normalize(t.term).trim()
-    if (nt && text.includes(nt)) used.add(t.wordId)
+    if (containsTerm(textTokens, tokenize(normalize(t.term)))) used.add(t.wordId)
   }
   return used
 }
 
 function comboBonus(targets: ScoreTarget[], learnerMessages: string[]): number {
-  const norm = targets.map((t) => normalize(t.term).trim())
+  const normTerms = targets.map((t) => tokenize(normalize(t.term)))
   const seen = new Set<number>()
   let bonus = 0
   for (const msg of learnerMessages) {
-    const text = normalize(msg)
+    const textTokens = tokenize(normalize(msg))
     let newInMessage = 0
-    norm.forEach((nt, i) => {
-      if (!seen.has(i) && nt && text.includes(nt)) {
+    normTerms.forEach((nt, i) => {
+      if (!seen.has(i) && containsTerm(textTokens, nt)) {
         seen.add(i)
         newInMessage++
       }

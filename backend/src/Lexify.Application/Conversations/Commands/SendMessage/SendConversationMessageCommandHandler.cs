@@ -18,6 +18,9 @@ public sealed class SendConversationMessageCommandHandler(
     : IStreamRequestHandler<SendConversationMessageCommand, ChatSseEvent>
 {
     private const int MaxMessageLength = 2000;
+    // Same cap as StartConversationCommandValidator — this field is interpolated into the LLM system
+    // prompt, so it must not be an unbounded free-text channel.
+    private const int MaxNativeLanguageLength = 50;
 
     public async IAsyncEnumerable<ChatSseEvent> Handle(
         SendConversationMessageCommand request,
@@ -34,6 +37,13 @@ public sealed class SendConversationMessageCommandHandler(
         if (message.Length > MaxMessageLength)
         {
             yield return new ChatSseEvent("error", ErrorMessage: $"Message is too long (max {MaxMessageLength} characters).");
+            yield break;
+        }
+
+        var nativeLanguage = request.NativeLanguage?.Trim() ?? string.Empty;
+        if (nativeLanguage.Length is 0 or > MaxNativeLanguageLength)
+        {
+            yield return new ChatSseEvent("error", ErrorMessage: "Native language is missing or too long.");
             yield break;
         }
 
@@ -57,7 +67,7 @@ public sealed class SendConversationMessageCommandHandler(
             yield break;
         }
 
-        var context = await BuildContextAsync(conversation, request.NativeLanguage, cancellationToken);
+        var context = await BuildContextAsync(conversation, nativeLanguage, cancellationToken);
 
         // Persist the user's turn before streaming the reply, so a dropped connection mid-reply doesn't
         // lose what the learner said.

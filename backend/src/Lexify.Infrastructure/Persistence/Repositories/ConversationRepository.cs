@@ -35,4 +35,17 @@ public sealed class ConversationRepository(AppDbContext context) : IConversation
         context.Conversations.Update(conversation);
         return Task.CompletedTask;
     }
+
+    public async Task<bool> TryEndAsync(Guid id, CancellationToken ct = default)
+    {
+        // UpdatedAt is deliberately not set here (EF rejects value-generated properties in
+        // ExecuteUpdate); the caller syncs the tracked aggregate via End(), which refreshes it.
+        var now = DateTimeOffset.UtcNow;
+        var updated = await context.Conversations
+            .Where(c => c.Id == id && c.Status == Conversation.Statuses.Active)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.Status, Conversation.Statuses.Ended)
+                .SetProperty(c => c.EndedAt, now), ct);
+        return updated == 1;
+    }
 }

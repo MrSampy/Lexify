@@ -12,6 +12,9 @@ import { streamChatMessage } from '../api/streamChat'
 import { usedWordIds, livePoints } from '../lib/scoring'
 
 const AUTO_SPEAK_KEY = 'lexify_chat_autospeak'
+// Server-side cap in SendConversationMessageCommandHandler — enforced here too so the learner
+// hits a hard stop while typing instead of a non-localized server error on send.
+const MAX_MESSAGE_LENGTH = 2000
 
 interface ChatSessionProps {
   conversationId: string
@@ -88,15 +91,17 @@ export function ChatSession({
 
     setError(null)
     setInput('')
+    const userMessageId = crypto.randomUUID()
     setMessages((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), role: 'user', content: text, createdAt: new Date().toISOString() },
+      { id: userMessageId, role: 'user', content: text, createdAt: new Date().toISOString() },
     ])
     setIsStreaming(true)
     setStreamingText('')
     abortRef.current = new AbortController()
 
     let accumulated = ''
+    let failed = false
     try {
       await streamChatMessage({
         conversationId,
@@ -108,12 +113,16 @@ export function ChatSession({
             accumulated += evt.chunk
             setStreamingText(accumulated)
           } else if (evt.type === 'error') {
+            failed = true
             setError(evt.message ?? t('chat.errReply'))
           }
         },
       })
     } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') setError(t('chat.errConnection'))
+      if (err instanceof Error && err.name !== 'AbortError') {
+        failed = true
+        setError(t('chat.errConnection'))
+      }
     } finally {
       setIsStreaming(false)
       setStreamingText('')
@@ -128,6 +137,11 @@ export function ChatSession({
           },
         ])
         if (autoSpeak && speakReady) void speak(accumulated.trim())
+      } else if (failed) {
+        // Nothing streamed back: roll back the optimistic bubble (frees the budget slot in the HUD)
+        // and restore the draft so the learner can resend without retyping.
+        setMessages((prev) => prev.filter((m) => m.id !== userMessageId))
+        setInput((current) => current || text)
       }
     }
   }, [
@@ -300,6 +314,7 @@ export function ChatSession({
           }}
           placeholder={atBudget ? t('chat.budgetReachedShort') : t('chat.inputPlaceholder')}
           rows={1}
+          maxLength={MAX_MESSAGE_LENGTH}
           disabled={atBudget}
           style={{
             flex: 1,

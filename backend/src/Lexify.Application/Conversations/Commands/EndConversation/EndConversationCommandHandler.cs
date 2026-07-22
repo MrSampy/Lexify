@@ -14,6 +14,7 @@ public sealed class EndConversationCommandHandler(
     IWordRepository wordRepository,
     ILanguageRepository languageRepository,
     IReviewLogRepository reviewLogRepository,
+    IAiQuotaService aiQuota,
     IAIProvider aiProvider)
     : IRequestHandler<EndConversationCommand, Result<ConversationSummaryDto>>
 {
@@ -32,6 +33,12 @@ public sealed class EndConversationCommandHandler(
 
         if (!conversation.IsActive)
             return Result.Failure<ConversationSummaryDto>("This conversation has already ended.");
+
+        // Atomically claim the end. Two concurrent End requests (double-click, client retry) both pass
+        // the IsActive check above; only the one that wins this UPDATE proceeds, so SM-2 is applied once.
+        if (!await conversationRepository.TryEndAsync(conversation.Id, cancellationToken))
+            return Result.Failure<ConversationSummaryDto>("This conversation has already ended.");
+        conversation.End(); // keep the tracked aggregate in sync with the claimed row
 
         // Load the target words (some may have been deleted since the session started — skip those).
         var words = new List<Word>();
@@ -59,16 +66,25 @@ public sealed class EndConversationCommandHandler(
 
         // The LLM verdict is only a secondary signal for CORRECTNESS. Whether a word was USED is decided
         // deterministically from the learner's own turns (matches the client chips) — the model routinely
-        // under-reports usage, which was the "I used it but it said I didn't" bug.
-        var verdicts = await aiProvider.AnalyzeConversationAsync(
-            history, targetWords, targetLanguage, cancellationToken);
-        var verdictByWord = verdicts.ToDictionary(v => v.WordId);
+        // under-reports usage, which was the "I used it but it said I didn't" bug. When the daily AI
+        // quota is spent, the analysis is skipped entirely: the session still ends and scores, the
+        // correctness signal just falls back to the generous default.
+        var quota = await aiQuota.CheckAsync(request.UserId, cancellationToken);
+        var verdicts = quota.IsExceeded
+            ? []
+            : await aiProvider.AnalyzeConversationAsync(history, targetWords, targetLanguage, cancellationToken);
+        // Local models occasionally emit the same word id twice — last one wins (mirrors AIResponseValidator).
+        var verdictByWord = verdicts
+            .GroupBy(v => v.WordId)
+            .ToDictionary(g => g.Key, g => g.Last());
 
         var results = new List<WordUsageResultDto>(words.Count);
         foreach (var word in words)
         {
             verdictByWord.TryGetValue(word.Id, out var verdict);
-            var used = ConversationScoring.IsTermUsed(learnerText, word.Term) || (verdict?.Used ?? false);
+            // Usage is decided ONLY deterministically — an LLM verdict must never promote a word the
+            // learner didn't actually type into the SM-2 schedule (prompt-injected/hallucinated "used").
+            var used = ConversationScoring.IsTermUsed(learnerText, word.Term);
             // Generous default: only an explicit negative verdict downgrades a used word to "incorrect".
             var usedCorrectly = used && (verdict?.UsedCorrectly ?? true);
 
@@ -96,8 +112,6 @@ public sealed class EndConversationCommandHandler(
                 used, usedCorrectly, verdict?.Note,
                 intervalDays, nextReviewAt));
         }
-
-        conversation.End();
 
         var score = ConversationScoring.Compute(
             words.Select(w => w.Term).ToList(),

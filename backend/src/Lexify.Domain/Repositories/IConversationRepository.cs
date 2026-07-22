@@ -17,4 +17,11 @@ public interface IConversationRepository
 
     Task AddAsync(Conversation conversation, CancellationToken ct = default);
     Task UpdateAsync(Conversation conversation, CancellationToken ct = default);
+
+    /// <summary>
+    /// Atomically flips the conversation from active to ended. Returns false when it was not active —
+    /// the guard that makes ending idempotent under concurrent/duplicate requests, so SM-2 is applied
+    /// exactly once per conversation.
+    /// </summary>
+    Task<bool> TryEndAsync(Guid id, CancellationToken ct = default);
 }

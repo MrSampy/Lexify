@@ -19,6 +19,20 @@ public class ConversationScoringTests
         Assert.False(ConversationScoring.IsTermUsed(text, "surge"));
     }
 
+    [Theory]
+    [InlineData("I like my cat a lot", "cat", true)]        // exact token
+    [InlineData("this category is hard", "cat", false)]     // no substring false positive
+    [InlineData("we embarked yesterday", "embark", true)]   // short inflection suffix still matches
+    [InlineData("the embarkation point", "embark", false)]  // suffix too long to be an inflection
+    [InlineData("I sat in the carpet store", "car", false)] // short term requires exact token
+    [InlineData("take a break now", "take a break", true)]  // multi-word term at word boundaries
+    [InlineData("I took a break", "take a break", false)]   // irregular inflection not matched
+    public void IsTermUsed_MatchesAtWordBoundaries(string message, string term, bool expected)
+    {
+        var text = ConversationScoring.Normalize(message);
+        Assert.Equal(expected, ConversationScoring.IsTermUsed(text, term));
+    }
+
     [Fact]
     public void Compute_AllWordsWithinBudget_ThreeStars()
     {

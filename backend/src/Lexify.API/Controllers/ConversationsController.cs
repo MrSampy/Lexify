@@ -72,9 +72,11 @@ public sealed class ConversationsController(ISender sender, ICurrentUserService 
 
     /// <summary>Ends a conversation, analyses word usage, and returns per-word SM-2 outcomes.</summary>
     [HttpPost("{id:guid}/end")]
+    [EnableRateLimiting(AiRateLimiterPolicy.PolicyName)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> End(Guid id, CancellationToken cancellationToken)
     {
         var command = new EndConversationCommand(id, currentUser.UserId);

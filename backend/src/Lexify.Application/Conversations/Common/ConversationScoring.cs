@@ -29,12 +29,44 @@ public static class ConversationScoring
     public static string Normalize(string text) =>
         new(text.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c) ? c : ' ').ToArray());
 
-    /// <summary>Whether <paramref name="term"/> occurs in the already-normalized learner text (substring, catches simple inflections).</summary>
-    public static bool IsTermUsed(string normalizedLearnerText, string term)
+    /// <summary>
+    /// Whether <paramref name="term"/> occurs in the already-normalized learner text. Matching is at
+    /// word boundaries — a plain substring check let "cat" pass inside "category", and this feeds SM-2.
+    /// A term token still matches an inflected token that extends it by up to <see cref="MaxInflectionSuffix"/>
+    /// chars ("embark" → "embarked"), except for very short terms where that would match everything.
+    /// </summary>
+    public static bool IsTermUsed(string normalizedLearnerText, string term) =>
+        ContainsTerm(Tokenize(normalizedLearnerText), Tokenize(Normalize(term)));
+
+    /// <summary>Shortest term token allowed to match as a prefix of a longer (inflected) token.</summary>
+    private const int MinPrefixMatchLength = 4;
+    /// <summary>How many extra chars an inflected token may add ("-s", "-ed", "-ing").</summary>
+    private const int MaxInflectionSuffix = 3;
+
+    private static string[] Tokenize(string normalizedText) =>
+        normalizedText.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    private static bool ContainsTerm(string[] textTokens, string[] termTokens)
     {
-        var t = Normalize(term).Trim();
-        return t.Length > 0 && normalizedLearnerText.Contains(t, StringComparison.Ordinal);
+        if (termTokens.Length == 0 || textTokens.Length < termTokens.Length) return false;
+
+        for (var start = 0; start <= textTokens.Length - termTokens.Length; start++)
+        {
+            var all = true;
+            for (var i = 0; i < termTokens.Length; i++)
+            {
+                if (!TokenMatches(textTokens[start + i], termTokens[i])) { all = false; break; }
+            }
+            if (all) return true;
+        }
+        return false;
     }
+
+    private static bool TokenMatches(string textToken, string termToken) =>
+        textToken.Equals(termToken, StringComparison.Ordinal) ||
+        (termToken.Length >= MinPrefixMatchLength &&
+         textToken.Length - termToken.Length is > 0 and <= MaxInflectionSuffix &&
+         textToken.StartsWith(termToken, StringComparison.Ordinal));
 
     public static ConversationScore Compute(
         IReadOnlyList<string> terms,
@@ -50,18 +82,18 @@ public static class ConversationScoring
     /// <summary>Bonus for cramming several target words into one message: (k-1)*5 the first time a message introduces k≥2 new terms.</summary>
     private static int ComboBonus(IReadOnlyList<string> terms, IReadOnlyList<string> learnerMessages)
     {
-        var normTerms = terms.Select(t => Normalize(t).Trim()).ToList();
+        var normTerms = terms.Select(t => Tokenize(Normalize(t))).ToList();
         var seen = new bool[normTerms.Count];
         var bonus = 0;
 
         foreach (var message in learnerMessages)
         {
-            var text = Normalize(message);
+            var textTokens = Tokenize(Normalize(message));
             var newInMessage = 0;
             for (var i = 0; i < normTerms.Count; i++)
             {
-                if (seen[i] || normTerms[i].Length == 0) continue;
-                if (text.Contains(normTerms[i], StringComparison.Ordinal))
+                if (seen[i]) continue;
+                if (ContainsTerm(textTokens, normTerms[i]))
                 {
                     seen[i] = true;
                     newInMessage++;

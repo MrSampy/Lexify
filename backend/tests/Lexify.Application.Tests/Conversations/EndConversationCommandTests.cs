@@ -13,13 +13,18 @@ public class EndConversationCommandTests
     private readonly IWordRepository _wordRepo = Substitute.For<IWordRepository>();
     private readonly ILanguageRepository _languageRepo = Substitute.For<ILanguageRepository>();
     private readonly IReviewLogRepository _reviewLogRepo = Substitute.For<IReviewLogRepository>();
+    private readonly IAiQuotaService _quota = Substitute.For<IAiQuotaService>();
     private readonly IAIProvider _ai = Substitute.For<IAIProvider>();
     private readonly EndConversationCommandHandler _handler;
 
     public EndConversationCommandTests()
     {
+        _quota.CheckAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(AiQuotaCheck.Unlimited);
+        _conversationRepo.TryEndAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(true);
         _handler = new EndConversationCommandHandler(
-            _conversationRepo, _wordRepo, _languageRepo, _reviewLogRepo, _ai);
+            _conversationRepo, _wordRepo, _languageRepo, _reviewLogRepo, _quota, _ai);
     }
 
     [Fact]
@@ -36,7 +41,7 @@ public class EndConversationCommandTests
             userId, 3, "Chat", null,
             [usedCorrect.Id, usedWrong.Id, notUsed.Id]);
         conversation.AddMessage(Conversation.Roles.Assistant, "Hello!");
-        conversation.AddMessage(Conversation.Roles.User, "I embark on a trip.");
+        conversation.AddMessage(Conversation.Roles.User, "I embark on a trip to unwind.");
 
         _conversationRepo.GetByIdWithMessagesAsync(conversation.Id, Arg.Any<CancellationToken>())
             .Returns(conversation);
@@ -122,6 +127,123 @@ public class EndConversationCommandTests
         await _reviewLogRepo.Received(1).AddAsync(Arg.Any<WordReviewLog>(), Arg.Any<CancellationToken>());
         Assert.True(result.Value.Score.WordsUsed >= 1);
         Assert.True(result.Value.Score.Points >= 10);
+    }
+
+    [Fact]
+    public async Task Handle_DuplicateVerdictIds_DoesNotThrow_LastOneWins()
+    {
+        // Regression: local models occasionally emit the same word id twice; a plain ToDictionary
+        // turned that into an unhandled ArgumentException (HTTP 500).
+        var userId = Guid.NewGuid();
+        var word = new Word(Guid.NewGuid(), "embark", "вирушати");
+
+        var conversation = Conversation.Create(userId, 3, "Chat", null, [word.Id]);
+        conversation.AddMessage(Conversation.Roles.User, "I embark on a trip.");
+
+        _conversationRepo.GetByIdWithMessagesAsync(conversation.Id, Arg.Any<CancellationToken>())
+            .Returns(conversation);
+        _wordRepo.GetByIdAsync(word.Id, Arg.Any<CancellationToken>()).Returns(word);
+
+        _ai.AnalyzeConversationAsync(
+                Arg.Any<IReadOnlyList<ChatTurn>>(), Arg.Any<IReadOnlyList<TargetWord>>(),
+                Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new List<WordUsageVerdict>
+            {
+                new(word.Id, Used: true, UsedCorrectly: true, Note: "first"),
+                new(word.Id, Used: true, UsedCorrectly: false, Note: "second"),
+            });
+
+        var result = await _handler.Handle(
+            new EndConversationCommand(conversation.Id, userId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var w = Assert.Single(result.Value!.Words);
+        Assert.True(w.Used);
+        Assert.False(w.UsedCorrectly); // last verdict wins
+    }
+
+    [Fact]
+    public async Task Handle_LlmVerdictAlone_CannotPromoteWordToUsed()
+    {
+        // Usage must be decided deterministically from the learner's turns; a hallucinated or
+        // prompt-injected "used: true" verdict must not feed SM-2.
+        var userId = Guid.NewGuid();
+        var word = new Word(Guid.NewGuid(), "surge", "сплеск");
+
+        var conversation = Conversation.Create(userId, 3, "Chat", null, [word.Id]);
+        conversation.AddMessage(Conversation.Roles.User, "Hello Lexi, how are you?");
+
+        _conversationRepo.GetByIdWithMessagesAsync(conversation.Id, Arg.Any<CancellationToken>())
+            .Returns(conversation);
+        _wordRepo.GetByIdAsync(word.Id, Arg.Any<CancellationToken>()).Returns(word);
+
+        _ai.AnalyzeConversationAsync(
+                Arg.Any<IReadOnlyList<ChatTurn>>(), Arg.Any<IReadOnlyList<TargetWord>>(),
+                Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new List<WordUsageVerdict> { new(word.Id, Used: true, UsedCorrectly: true, Note: null) });
+
+        var result = await _handler.Handle(
+            new EndConversationCommand(conversation.Id, userId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var w = Assert.Single(result.Value!.Words);
+        Assert.False(w.Used);
+        Assert.Null(word.LastReviewedAt);
+        await _reviewLogRepo.DidNotReceive().AddAsync(Arg.Any<WordReviewLog>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_ConcurrentEnd_LoserOfAtomicClaim_DoesNotApplySm2Twice()
+    {
+        // Regression: two near-simultaneous End requests both saw an active conversation and both ran
+        // the SM-2 loop. The atomic claim (TryEndAsync) lets exactly one proceed.
+        var userId = Guid.NewGuid();
+        var word = new Word(Guid.NewGuid(), "embark", "вирушати");
+
+        var conversation = Conversation.Create(userId, 3, "Chat", null, [word.Id]);
+        conversation.AddMessage(Conversation.Roles.User, "I embark on a trip.");
+
+        _conversationRepo.GetByIdWithMessagesAsync(conversation.Id, Arg.Any<CancellationToken>())
+            .Returns(conversation);
+        _conversationRepo.TryEndAsync(conversation.Id, Arg.Any<CancellationToken>())
+            .Returns(false); // another request already claimed the end
+
+        var result = await _handler.Handle(
+            new EndConversationCommand(conversation.Id, userId), CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        await _wordRepo.DidNotReceive().UpdateAsync(Arg.Any<Word>(), Arg.Any<CancellationToken>());
+        await _reviewLogRepo.DidNotReceive().AddAsync(Arg.Any<WordReviewLog>(), Arg.Any<CancellationToken>());
+        await _ai.DidNotReceive().AnalyzeConversationAsync(
+            Arg.Any<IReadOnlyList<ChatTurn>>(), Arg.Any<IReadOnlyList<TargetWord>>(),
+            Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_QuotaExceeded_SkipsAnalysis_ButStillEndsAndScores()
+    {
+        var userId = Guid.NewGuid();
+        var word = new Word(Guid.NewGuid(), "embark", "вирушати");
+
+        var conversation = Conversation.Create(userId, 3, "Chat", null, [word.Id]);
+        conversation.AddMessage(Conversation.Roles.User, "I embark on a trip.");
+
+        _conversationRepo.GetByIdWithMessagesAsync(conversation.Id, Arg.Any<CancellationToken>())
+            .Returns(conversation);
+        _wordRepo.GetByIdAsync(word.Id, Arg.Any<CancellationToken>()).Returns(word);
+        _quota.CheckAsync(userId, Arg.Any<CancellationToken>())
+            .Returns(new AiQuotaCheck(IsExceeded: true, Limit: 50, Used: 50));
+
+        var result = await _handler.Handle(
+            new EndConversationCommand(conversation.Id, userId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var w = Assert.Single(result.Value!.Words);
+        Assert.True(w.Used);          // deterministic detection still works
+        Assert.True(w.UsedCorrectly); // generous default without an LLM verdict
+        await _ai.DidNotReceive().AnalyzeConversationAsync(
+            Arg.Any<IReadOnlyList<ChatTurn>>(), Arg.Any<IReadOnlyList<TargetWord>>(),
+            Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
