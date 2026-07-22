@@ -5,7 +5,7 @@ public sealed record TargetWordDto(Guid WordId, string Term, string Translation)
 
 public sealed record ConversationMessageDto(Guid Id, string Role, string Content, DateTimeOffset CreatedAt);
 
-/// <summary>List-view row: no messages, just enough to render a history entry.</summary>
+/// <summary>List-view row: no messages, just enough to render a history entry. Score is null for sessions ended before it was persisted.</summary>
 public sealed record ConversationListItemDto(
     Guid Id,
     short LanguageId,
@@ -14,7 +14,9 @@ public sealed record ConversationListItemDto(
     string Status,
     DateTimeOffset CreatedAt,
     DateTimeOffset? EndedAt,
-    int MessageCount);
+    int MessageCount,
+    int? Points,
+    int? Stars);
 
 /// <summary>Full transcript for resuming/reviewing a conversation.</summary>
 public sealed record ConversationDetailDto(
@@ -23,6 +25,10 @@ public sealed record ConversationDetailDto(
     string Title,
     string? Scenario,
     string Status,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? EndedAt,
+    int? Points,
+    int? Stars,
     IReadOnlyList<TargetWordDto> TargetWords,
     IReadOnlyList<ConversationMessageDto> Messages);
 

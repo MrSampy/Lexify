@@ -43,6 +43,11 @@ public sealed class ConversationConfiguration : IEntityTypeConfiguration<Convers
 
         builder.Property(c => c.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(c => c.EndedAt).HasColumnName("ended_at");
+
+        // Final score, recorded at End; null for conversations ended before scoring was persisted.
+        builder.Property(c => c.Points).HasColumnName("points");
+        builder.Property(c => c.Stars).HasColumnName("stars");
+        builder.Property(c => c.WordsUsed).HasColumnName("words_used");
         builder.Ignore(c => c.UpdatedAt);
 
         builder.HasOne<User>()

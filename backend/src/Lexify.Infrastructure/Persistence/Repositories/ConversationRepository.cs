@@ -14,18 +14,29 @@ public sealed class ConversationRepository(AppDbContext context) : IConversation
             .Include(c => c.Messages.OrderBy(m => m.SortOrder))
             .FirstOrDefaultAsync(c => c.Id == id, ct);
 
-    public async Task<IReadOnlyList<Conversation>> GetByUserIdAsync(
+    public async Task<IReadOnlyList<ConversationListRow>> GetListByUserIdAsync(
         Guid userId, int skip = 0, int take = 20, CancellationToken ct = default) =>
         await context.Conversations
-            .Include(c => c.Messages)
             .Where(c => c.UserId == userId)
             .OrderByDescending(c => c.CreatedAt)
             .Skip(skip)
             .Take(take)
+            .Select(c => new ConversationListRow(
+                c.Id, c.LanguageId, c.Title, c.Scenario, c.Status,
+                c.CreatedAt, c.EndedAt, c.Messages.Count, c.Points, c.Stars))
             .ToListAsync(ct);
 
     public Task<int> CountByUserIdAsync(Guid userId, CancellationToken ct = default) =>
         context.Conversations.CountAsync(c => c.UserId == userId, ct);
+
+    public Task<int> CountEndedByUserIdAsync(Guid userId, CancellationToken ct = default) =>
+        context.Conversations.CountAsync(
+            c => c.UserId == userId && c.Status == Conversation.Statuses.Ended, ct);
+
+    public Task<double?> GetAverageStarsAsync(Guid userId, CancellationToken ct = default) =>
+        context.Conversations
+            .Where(c => c.UserId == userId && c.Status == Conversation.Statuses.Ended && c.Stars != null)
+            .AverageAsync(c => (double?)c.Stars, ct);
 
     public async Task AddAsync(Conversation conversation, CancellationToken ct = default) =>
         await context.Conversations.AddAsync(conversation, ct);

@@ -86,11 +86,14 @@ public class EndConversationCommandTests
             Arg.Is<WordReviewLog>(l => l.Source == WordReviewLog.Sources.Conversation),
             Arg.Any<CancellationToken>());
 
-        // Summary reflects usage; the conversation is ended.
+        // Summary reflects usage; the conversation is ended with its score recorded for the history list.
         Assert.Equal(3, result.Value!.Words.Count);
         Assert.Contains(result.Value.Words, w => w.WordId == usedCorrect.Id && w.Used && w.UsedCorrectly && w.IntervalDays != null);
         Assert.Contains(result.Value.Words, w => w.WordId == notUsed.Id && !w.Used && w.IntervalDays == null);
         Assert.Equal(Conversation.Statuses.Ended, conversation.Status);
+        Assert.Equal(result.Value.Score.Points, conversation.Points);
+        Assert.Equal(result.Value.Score.Stars, conversation.Stars);
+        Assert.Equal(result.Value.Score.WordsUsed, conversation.WordsUsed);
     }
 
     [Fact]

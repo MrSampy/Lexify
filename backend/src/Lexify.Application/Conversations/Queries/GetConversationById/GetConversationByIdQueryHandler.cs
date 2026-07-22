@@ -38,6 +38,10 @@ public sealed class GetConversationByIdQueryHandler(
             conversation.Title,
             conversation.Scenario,
             conversation.Status,
+            conversation.CreatedAt,
+            conversation.EndedAt,
+            conversation.Points,
+            conversation.Stars,
             targetWords,
             messages));
     }

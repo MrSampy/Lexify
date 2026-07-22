@@ -72,7 +72,7 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
             try { chunk = JsonSerializer.Deserialize<OpenAIStreamChunk>(data, JsonOptions); }
             catch { continue; }
 
-            if (chunk?.Choices?[0]?.Delta?.Content is { Length: > 0 } content)
+            if (chunk?.Choices is { Count: > 0 } choices && choices[0]?.Delta?.Content is { Length: > 0 } content)
                 yield return content;
         }
     }
@@ -107,7 +107,7 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>(JsonOptions, ct);
-        var content = result?.Choices?[0]?.Message?.Content ?? "{}";
+        var content = FirstMessageContent(result) ?? "{}";
         var json = AIResponseValidator.ExtractFirstJsonObject(content) ?? "{}";
 
         var parsed = JsonSerializer.Deserialize<FillSentencesWireResult>(json, JsonOptions);
@@ -151,7 +151,7 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>(JsonOptions, ct);
-        var content = result?.Choices?[0]?.Message?.Content ?? "{}";
+        var content = FirstMessageContent(result) ?? "{}";
         var json = AIResponseValidator.ExtractFirstJsonObject(content) ?? "{}";
 
         var parsed = JsonSerializer.Deserialize<DefinitionsWireResult>(json, JsonOptions);
@@ -190,7 +190,7 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>(JsonOptions, ct);
-        var content = result?.Choices?[0]?.Message?.Content ?? "{}";
+        var content = FirstMessageContent(result) ?? "{}";
         var json = AIResponseValidator.ExtractFirstJsonObject(content) ?? "{}";
 
         var parsed = JsonSerializer.Deserialize<DistractorsWireResult>(json, JsonOptions);
@@ -225,7 +225,7 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
             if (!response.IsSuccessStatusCode) return null;
 
             var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>(JsonOptions, ct);
-            return SanitizeTitle(result?.Choices?[0]?.Message?.Content);
+            return SanitizeTitle(FirstMessageContent(result));
         }
         catch (Exception ex)
         {
@@ -233,6 +233,10 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
             return null;
         }
     }
+
+    /// <summary>Indexer-safe accessor: providers may return an empty (non-null) choices array.</summary>
+    private static string? FirstMessageContent(OpenAIResponse? result) =>
+        result?.Choices is { Count: > 0 } choices ? choices[0]?.Message?.Content : null;
 
     /// <summary>
     /// Local models sometimes ignore the "2-4 words" instruction and return an enumeration of the
@@ -440,7 +444,7 @@ public sealed partial class OpenAiCompatibleClient(HttpClient http, AiProviderSe
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>(JsonOptions, ct);
-        var content = result?.Choices?[0]?.Message?.Content ?? "{}";
+        var content = FirstMessageContent(result) ?? "{}";
         var json = AIResponseValidator.ExtractFirstJsonObject(content) ?? "{}";
 
         var parsed = JsonSerializer.Deserialize<ConversationAnalysisWireResult>(json, JsonOptions);

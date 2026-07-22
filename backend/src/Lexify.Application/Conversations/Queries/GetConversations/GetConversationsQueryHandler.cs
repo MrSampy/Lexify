@@ -15,13 +15,13 @@ public sealed class GetConversationsQueryHandler(IConversationRepository convers
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 
         var total = await conversationRepository.CountByUserIdAsync(request.UserId, cancellationToken);
-        var conversations = await conversationRepository.GetByUserIdAsync(
+        var rows = await conversationRepository.GetListByUserIdAsync(
             request.UserId, (page - 1) * pageSize, pageSize, cancellationToken);
 
-        var items = conversations
-            .Select(c => new ConversationListItemDto(
-                c.Id, c.LanguageId, c.Title, c.Scenario, c.Status,
-                c.CreatedAt, c.EndedAt, c.Messages.Count))
+        var items = rows
+            .Select(r => new ConversationListItemDto(
+                r.Id, r.LanguageId, r.Title, r.Scenario, r.Status,
+                r.CreatedAt, r.EndedAt, r.MessageCount, r.Points, r.Stars))
             .ToList();
 
         return Result.Ok(new PagedResult<ConversationListItemDto>(items, total, page, pageSize));

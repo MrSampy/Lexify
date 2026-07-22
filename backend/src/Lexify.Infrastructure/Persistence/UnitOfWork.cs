@@ -8,6 +8,20 @@ public sealed class UnitOfWork(AppDbContext context) : IUnitOfWork
     public Task<int> SaveChangesAsync(CancellationToken ct = default) =>
         context.SaveChangesAsync(ct);
 
+    public async Task<bool> TrySaveChangesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await context.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            context.ChangeTracker.Clear(); // drop the rejected entries so the context stays usable
+            return false;
+        }
+    }
+
     public async Task ExecuteInTransactionAsync(Func<CancellationToken, Task> action, CancellationToken ct = default)
     {
         // Execution strategy wrapper keeps this compatible with EnableRetryOnFailure if it is

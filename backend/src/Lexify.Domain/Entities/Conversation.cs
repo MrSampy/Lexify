@@ -28,6 +28,11 @@ public sealed class Conversation : BaseEntity
 
     public DateTimeOffset? EndedAt { get; private set; }
 
+    /// <summary>Final challenge score, recorded when the conversation ends. Null for sessions ended before scoring existed.</summary>
+    public int? Points { get; private set; }
+    public int? Stars { get; private set; }
+    public int? WordsUsed { get; private set; }
+
     public IReadOnlyCollection<ConversationMessage> Messages => _messages.AsReadOnly();
 
     public bool IsActive => Status == Statuses.Active;
@@ -70,6 +75,15 @@ public sealed class Conversation : BaseEntity
         Status = Statuses.Ended;
         EndedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void RecordScore(int points, int stars, int wordsUsed)
+    {
+        if (Status != Statuses.Ended)
+            throw new DomainException("Score can only be recorded on an ended conversation.");
+        Points = points;
+        Stars = stars;
+        WordsUsed = wordsUsed;
     }
 
     public static class Statuses

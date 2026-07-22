@@ -33,7 +33,10 @@ public sealed class ConversationMessageConfiguration : IEntityTypeConfiguration<
         builder.ToTable(t => t.HasCheckConstraint(
             "chk_conversation_messages_role", "role IN ('user', 'assistant')"));
 
+        // Unique: two concurrent sends that race to the same SortOrder must not both persist —
+        // the loser gets a DbUpdateException and surfaces a retry-able SSE error instead.
         builder.HasIndex(m => new { m.ConversationId, m.SortOrder })
+            .IsUnique()
             .HasDatabaseName("idx_conversation_messages_order");
     }
 }

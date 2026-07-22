@@ -118,6 +118,10 @@ public sealed class EndConversationCommandHandler(
             learnerMessages,
             finalUsedCount: results.Count(r => r.Used));
 
+        // Persist the score so the history list can show it without replaying transcripts.
+        conversation.RecordScore(score.Points, score.Stars, score.WordsUsed);
+        await conversationRepository.UpdateAsync(conversation, cancellationToken);
+
         return Result.Ok(new ConversationSummaryDto(
             results,
             new ConversationScoreDto(
