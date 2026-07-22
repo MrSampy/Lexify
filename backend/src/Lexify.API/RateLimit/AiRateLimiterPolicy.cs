@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using System.Threading.RateLimiting;
 using Lexify.Infrastructure.RateLimit;
 using Microsoft.AspNetCore.RateLimiting;
@@ -15,7 +15,10 @@ public sealed class AiRateLimiterPolicy : IRateLimiterPolicy<string>
 
     public RateLimitPartition<string> GetPartition(HttpContext httpContext)
     {
-        var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+        // Partition per user (JWT "sub", same as TtsRateLimiterPolicy). NameIdentifier never exists
+        // here — MapInboundClaims is off — so keying on it silently degraded this to a per-IP limit
+        // shared by everyone behind one NAT/proxy.
+        var userId = httpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                      ?? httpContext.Connection.RemoteIpAddress?.ToString()
                      ?? "anonymous";
 
