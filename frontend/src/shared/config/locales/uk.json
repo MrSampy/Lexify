@@ -160,6 +160,8 @@
     "twoFactorVerify": "Підтвердити та увійти",
     "twoFactorVerifying": "Перевіряємо…",
     "twoFactorInvalid": "Код недійсний або протермінований.",
+    "twoFactorRateLimited": "Забагато спроб. Зачекайте трохи й спробуйте ще раз.",
+    "twoFactorChallengeExpired": "Сесія входу протермінована. Увійдіть ще раз.",
     "twoFactorResend": "Надіслати код ще раз",
     "twoFactorResendIn": "Повторно через {{seconds}} с",
     "twoFactorResent": "Новий код уже в дорозі.",

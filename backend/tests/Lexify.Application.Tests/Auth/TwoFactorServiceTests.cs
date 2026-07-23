@@ -107,12 +107,30 @@ public class TwoFactorServiceTests
         var code = new LoginTwoFactorCode(
             user.Id, ITwoFactorService.HashCode("123456"), DateTimeOffset.UtcNow.AddMinutes(10));
         _codeRepo.GetActiveForUserAsync(user.Id, Arg.Any<CancellationToken>()).Returns(code);
+        // This caller wins the atomic claim (1 row affected).
+        _codeRepo.MarkUsedAsync(code.Id, Arg.Any<CancellationToken>()).Returns(1);
 
         var ok = await CreateService().VerifyCodeAsync(user, "123456");
 
         Assert.True(ok);
         await _codeRepo.Received(1).MarkUsedAsync(code.Id, Arg.Any<CancellationToken>());
         await _codeRepo.DidNotReceive().IncrementAttemptsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task VerifyCode_CorrectButClaimLost_ReturnsFalse()
+    {
+        // A concurrent verify consumed the code first: the atomic MarkUsed affects 0 rows, so even
+        // though the hash matches, this caller must NOT be handed a session (single-use is airtight).
+        var user = new User("user@example.com", "hash");
+        var code = new LoginTwoFactorCode(
+            user.Id, ITwoFactorService.HashCode("123456"), DateTimeOffset.UtcNow.AddMinutes(10));
+        _codeRepo.GetActiveForUserAsync(user.Id, Arg.Any<CancellationToken>()).Returns(code);
+        _codeRepo.MarkUsedAsync(code.Id, Arg.Any<CancellationToken>()).Returns(0);
+
+        var ok = await CreateService().VerifyCodeAsync(user, "123456");
+
+        Assert.False(ok);
     }
 
     [Fact]

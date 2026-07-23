@@ -95,6 +95,26 @@ public static class EmailTemplates
         </html>
         """;
 
+    /// <summary>
+    /// Sent to the *previous* address after an email change completes, so the original owner learns of
+    /// it even if the account was moved out from under them — the last chance to react before the new
+    /// address controls password recovery.
+    /// </summary>
+    public static string EmailChangedNotice(string newEmail) =>
+        $"""
+        <!DOCTYPE html>
+        <html lang="uk">
+        <head><meta charset="UTF-8"><title>Пошту акаунта Lexify змінено</title></head>
+        <body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1a">
+          <h2 style="color:#6d28d9">Lexify</h2>
+          <p>Пошту твого акаунта Lexify було змінено на <strong>{newEmail}</strong>. Відтепер вхід — саме за цією адресою.</p>
+          <p style="margin-top:16px;font-size:13px;color:#6b7280">Якщо це зробив не ти — хтось міг отримати доступ до акаунта. Негайно скинь пароль і звернися до підтримки: адреса, яка бачить цей лист, більше не може входити в акаунт.</p>
+          <hr style="margin-top:32px;border:none;border-top:1px solid #e5e7eb">
+          <p style="font-size:12px;color:#6b7280">Lexify</p>
+        </body>
+        </html>
+        """;
+
     public static string TwoFactorCode(string code) =>
         $"""
         <!DOCTYPE html>

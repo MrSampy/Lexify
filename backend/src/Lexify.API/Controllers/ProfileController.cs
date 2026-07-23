@@ -8,10 +8,12 @@ using Lexify.Application.UserProfile.Commands.UpdateDisplayName;
 using Lexify.Application.UserProfile.Commands.UpdateEnglishLevel;
 using Lexify.Application.UserProfile.Commands.UpdateReviewSettings;
 using Lexify.Application.UserProfile.Queries.GetProfile;
+using Lexify.API.RateLimit;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Lexify.API.Controllers;
 
@@ -67,9 +69,11 @@ public sealed class ProfileController(ISender sender, ICurrentUserService curren
     /// current address until that link is opened.
     /// </summary>
     [HttpPut("email")]
+    [EnableRateLimiting(AccountEmailRateLimiterPolicy.PolicyName)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> RequestEmailChange(
         RequestEmailChangeRequest request, CancellationToken ct) =>
         ToActionResult(await sender.Send(
@@ -77,8 +81,10 @@ public sealed class ProfileController(ISender sender, ICurrentUserService curren
 
     /// <summary>Starts opting into 2FA: emails a confirmation code (the flag flips only on confirm).</summary>
     [HttpPost("2fa/enable")]
+    [EnableRateLimiting(AccountEmailRateLimiterPolicy.PolicyName)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> EnableTwoFactor(CancellationToken ct) =>
         ToActionResult(await sender.Send(new EnableTwoFactorCommand(currentUser.UserId), ct));
 
@@ -94,8 +100,10 @@ public sealed class ProfileController(ISender sender, ICurrentUserService curren
 
     /// <summary>Re-sends the enrollment code while opting in.</summary>
     [HttpPost("2fa/resend")]
+    [EnableRateLimiting(AccountEmailRateLimiterPolicy.PolicyName)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> ResendEnableTwoFactor(CancellationToken ct) =>
         ToActionResult(await sender.Send(new EnableTwoFactorCommand(currentUser.UserId), ct));
 

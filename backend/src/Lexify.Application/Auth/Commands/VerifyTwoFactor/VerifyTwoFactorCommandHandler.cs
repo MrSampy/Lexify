@@ -20,7 +20,8 @@ public sealed class VerifyTwoFactorCommandHandler(
     {
         var userId = await jwtService.ValidateTwoFactorChallengeToken(request.ChallengeToken);
         if (userId is null)
-            return Result.Failure<AuthResponse>("Your sign-in session expired. Please sign in again.");
+            // Machine-readable so the client restarts sign-in rather than showing "wrong code".
+            return Result.Failure<AuthResponse>(AuthErrorCodes.TwoFactorChallengeExpired);
 
         var user = await userRepository.GetByIdAsync(userId.Value, cancellationToken);
         if (user is null || user.Status != User.Statuses.Active)

@@ -111,6 +111,61 @@ public class TwoFactorTests(LexifyWebApplicationFactory factory)
     }
 
     [Fact]
+    public async Task VerifyTwoFactor_DeadChallenge_CarriesMachineReadableCode()
+    {
+        await SetTwoFactorEnabledAsync(true);
+        var client = factory.CreateClient();
+        var challenge = await StartAdminChallengeAsync(client);
+        await ForgeCodeAsync(AdminEmail, KnownCode);
+
+        // A tampered/dead challenge must be told apart from a wrong code so the client restarts sign-in.
+        var tampered = challenge![..^2] + (challenge[^1] == 'a' ? "bb" : "aa");
+        var response = await client.PostAsJsonAsync("/api/auth/login/verify-2fa",
+            new { challengeToken = tampered, code = KnownCode });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("two_factor_challenge_expired", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task VerifyTwoFactor_WrongCode_StaysOnCodeStep_WithoutChallengeExpiredCode()
+    {
+        await SetTwoFactorEnabledAsync(true);
+        var client = factory.CreateClient();
+        var challenge = await StartAdminChallengeAsync(client);
+        await ForgeCodeAsync(AdminEmail, KnownCode);
+
+        // A valid challenge but the wrong code: a generic 400 with NO machine-readable code, so the
+        // client keeps the user on the code step instead of bouncing them back to the password form.
+        var response = await client.PostAsJsonAsync("/api/auth/login/verify-2fa",
+            new { challengeToken = challenge, code = "000000" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(body.TryGetProperty("code", out _));
+    }
+
+    [Fact]
+    public async Task VerifyTwoFactor_UsedCode_CannotBeReplayed()
+    {
+        await SetTwoFactorEnabledAsync(true);
+        var client = factory.CreateClient();
+        var challenge = await StartAdminChallengeAsync(client);
+        await ForgeCodeAsync(AdminEmail, KnownCode);
+
+        // First verify consumes the code atomically.
+        var first = await client.PostAsJsonAsync("/api/auth/login/verify-2fa",
+            new { challengeToken = challenge, code = KnownCode });
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+
+        // The challenge token is still valid, but the code is spent — a replay must not yield a session.
+        var replay = await client.PostAsJsonAsync("/api/auth/login/verify-2fa",
+            new { challengeToken = challenge, code = KnownCode });
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
+    }
+
+    [Fact]
     public async Task ChallengeToken_CannotBeUsedAsAnAccessToken()
     {
         await SetTwoFactorEnabledAsync(true);

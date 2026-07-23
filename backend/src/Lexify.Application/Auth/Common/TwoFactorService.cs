@@ -47,8 +47,10 @@ public sealed class TwoFactorService(
             SystemSetting.Keys.TwoFactorEnabled, ct);
 
         // Fail OPEN, unlike email verification: a missing/unparseable row must not lock admins out of an
-        // app whose mail path may itself be the thing that broke. Flipping this row to "false" is the
-        // operator kill switch. The row is seeded to "true", so normal operation still enforces 2FA.
+        // app whose mail path may itself be the thing that broke — so an absent row reads as OFF. The row
+        // ships DORMANT (seeded "false", see DataSeeder): turning it on forces every admin through an
+        // emailed code on their next sign-in, so activation is a deliberate operator step, not sprung by a
+        // deploy. Once on, flipping it back to "false" is the kill switch.
         return setting is not null && bool.TryParse(setting.Value, out var enabled) && enabled;
     }
 
@@ -83,8 +85,10 @@ public sealed class TwoFactorService(
 
         if (ITwoFactorService.HashCode(code) == active.CodeHash)
         {
-            await codeRepository.MarkUsedAsync(active.Id, ct);
-            return true;
+            // Success only if THIS call atomically claimed the code (1 row). If a concurrent verify
+            // already consumed it (0 rows), treat as failure so one code can never yield two sessions.
+            var claimed = await codeRepository.MarkUsedAsync(active.Id, ct);
+            return claimed == 1;
         }
 
         // Persisted immediately (not a tracked mutation): a failed verify returns a failing Result and the

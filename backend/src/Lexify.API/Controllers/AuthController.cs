@@ -102,7 +102,21 @@ public sealed class AuthController(ISender sender) : BaseApiController
             HttpContext.Connection.RemoteIpAddress?.ToString(),
             Request.Headers.UserAgent.ToString());
 
-        return ToActionResult(await sender.Send(command, cancellationToken), ToAuthResult);
+        var result = await sender.Send(command, cancellationToken);
+
+        // A dead challenge means "start over", a wrong code means "try again here" — the client can only
+        // tell them apart from a machine-readable code, so this one failure carries it (wrong/used/locked
+        // codes stay a bare generic failure to avoid leaking code state).
+        if (result.ErrorMessage == AuthErrorCodes.TwoFactorChallengeExpired)
+        {
+            return BadRequest(new
+            {
+                code = AuthErrorCodes.TwoFactorChallengeExpired,
+                message = "Your sign-in session expired. Please sign in again."
+            });
+        }
+
+        return ToActionResult(result, ToAuthResult);
     }
 
     /// <summary>Re-sends the sign-in code for an in-flight 2FA challenge.</summary>

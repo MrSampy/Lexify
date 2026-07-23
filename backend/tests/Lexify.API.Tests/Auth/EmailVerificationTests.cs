@@ -189,6 +189,72 @@ public class EmailVerificationTests(LexifyWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task ChangeEmail_PendingLink_IsKilledByPasswordChange()
+    {
+        var (client, oldEmail) = await RegisterVerifiedAndSignInAsync();
+        var newEmail = $"moved-{Guid.NewGuid():N}@example.com";
+
+        (await client.PutAsJsonAsync("/api/profile/email",
+            new { newEmail, currentPassword = Password })).EnsureSuccessStatusCode();
+
+        // Grab the live confirmation token before it is invalidated.
+        var token = await GetRawTokenAsync(oldEmail);
+
+        // A password change must revoke any pending email-change link — otherwise an attacker's
+        // outstanding link would survive the victim's response to a suspected compromise.
+        (await client.PutAsJsonAsync("/api/profile/password",
+            new { currentPassword = Password, newPassword = "Password2!" })).EnsureSuccessStatusCode();
+
+        var confirm = await client.PostAsJsonAsync("/api/auth/verify-email", new { token });
+        Assert.Equal(HttpStatusCode.BadRequest, confirm.StatusCode);
+
+        // The address never moved and the pending change is cleared.
+        var profile = await client.GetFromJsonAsync<JsonElement>("/api/profile");
+        Assert.Equal(oldEmail, profile.GetProperty("email").GetString());
+        Assert.Null(profile.GetProperty("pendingEmail").GetString());
+    }
+
+    [Fact]
+    public async Task ChangeEmail_PendingLink_IsKilledByPasswordReset()
+    {
+        var (client, oldEmail) = await RegisterVerifiedAndSignInAsync();
+        var newEmail = $"moved-{Guid.NewGuid():N}@example.com";
+
+        (await client.PutAsJsonAsync("/api/profile/email",
+            new { newEmail, currentPassword = Password })).EnsureSuccessStatusCode();
+
+        var changeToken = await GetRawTokenAsync(oldEmail);
+
+        // Drive the reset flow: forgot-password mints a reset token, reset-password consumes it.
+        (await client.PostAsJsonAsync("/api/auth/forgot-password", new { email = oldEmail }))
+            .EnsureSuccessStatusCode();
+        var resetToken = await GetRawResetTokenAsync(oldEmail);
+        (await client.PostAsJsonAsync("/api/auth/reset-password",
+            new { token = resetToken, newPassword = "Password3!" })).EnsureSuccessStatusCode();
+
+        // The recovery path (reset) must also kill the pending email change.
+        var confirm = await client.PostAsJsonAsync("/api/auth/verify-email", new { token = changeToken });
+        Assert.Equal(HttpStatusCode.BadRequest, confirm.StatusCode);
+    }
+
+    [Fact]
+    public async Task SuspendedUser_CannotCompleteEmailChange()
+    {
+        var (client, oldEmail) = await RegisterVerifiedAndSignInAsync();
+        var newEmail = $"moved-{Guid.NewGuid():N}@example.com";
+
+        (await client.PutAsJsonAsync("/api/profile/email",
+            new { newEmail, currentPassword = Password })).EnsureSuccessStatusCode();
+        var token = await GetRawTokenAsync(oldEmail);
+
+        await SetUserStatusAsync(oldEmail, User.Statuses.Suspended);
+
+        // A frozen account must not be able to rebind its login identity.
+        var confirm = await client.PostAsJsonAsync("/api/auth/verify-email", new { token });
+        Assert.Equal(HttpStatusCode.BadRequest, confirm.StatusCode);
+    }
+
     // ── admin ────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -301,6 +367,41 @@ public class EmailVerificationTests(LexifyWebApplicationFactory factory)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.TokenHash, hash));
 
         return rawToken;
+    }
+
+    /// <summary>Same trick as <see cref="GetRawTokenAsync"/>, for the password-reset token table.</summary>
+    private async Task<string> GetRawResetTokenAsync(string email)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var userId = await db.Users.Where(u => u.Email == email).Select(u => u.Id).FirstAsync();
+
+        var token = await db.PasswordResetTokens
+            .Where(t => t.UserId == userId && t.UsedAt == null)
+            .OrderByDescending(t => t.CreatedAt)
+            .FirstAsync();
+
+        var rawToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
+
+        await db.PasswordResetTokens
+            .Where(t => t.Id == token.Id)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.TokenHash, hash));
+
+        return rawToken;
+    }
+
+    private Task SetUserStatusAsync(string email, string status) =>
+        RunDbAsync(db => db.Users
+            .Where(u => u.Email == email)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.Status, status)));
+
+    private async Task RunDbAsync(Func<AppDbContext, Task> action)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await action(db);
     }
 
     private async Task ExpireTokensAsync(string email)

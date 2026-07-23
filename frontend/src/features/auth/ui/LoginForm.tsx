@@ -36,6 +36,10 @@ export function LoginForm() {
   // Set when sign-in step 1 returned a 2FA challenge; the code-entry form replaces the credentials form.
   const [challengeToken, setChallengeToken] = useState<string | null>(null)
 
+  // Set when the 2FA challenge expired and the user was bounced back here, so the reappearing
+  // credentials form carries an explanation instead of looking like the sign-in silently failed.
+  const [challengeExpired, setChallengeExpired] = useState(false)
+
   const {
     register,
     handleSubmit,
@@ -56,6 +60,7 @@ export function LoginForm() {
       const data = await authApi.login(values.email, values.password)
       if (isTwoFactorChallenge(data)) {
         setUnverifiedEmail(null)
+        setChallengeExpired(false)
         setChallengeToken(data.challengeToken)
         return
       }
@@ -80,7 +85,10 @@ export function LoginForm() {
       <TwoFactorCodeForm
         challengeToken={challengeToken}
         onVerified={completeSignIn}
-        onExpired={() => setChallengeToken(null)}
+        onExpired={() => {
+          setChallengeExpired(true)
+          setChallengeToken(null)
+        }}
       />
     )
   }
@@ -103,6 +111,22 @@ export function LoginForm() {
           }}
         >
           {t('auth.registerSuccess')}
+        </div>
+      )}
+
+      {challengeExpired && (
+        <div
+          role="status"
+          style={{
+            padding: '10px 14px',
+            background: 'var(--bg-3)',
+            border: '1px solid var(--line-2)',
+            borderRadius: 'var(--r-md)',
+            color: 'var(--fg-2)',
+            fontSize: 13,
+          }}
+        >
+          {t('auth.twoFactorChallengeExpired')}
         </div>
       )}
 

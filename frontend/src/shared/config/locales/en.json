@@ -159,6 +159,8 @@
     "twoFactorVerify": "Verify and sign in",
     "twoFactorVerifying": "Verifying…",
     "twoFactorInvalid": "That code is invalid or has expired.",
+    "twoFactorRateLimited": "Too many attempts. Please wait a moment and try again.",
+    "twoFactorChallengeExpired": "Your sign-in session expired. Please sign in again.",
     "twoFactorResend": "Resend the code",
     "twoFactorResendIn": "Resend in {{seconds}}s",
     "twoFactorResent": "A new code is on its way.",

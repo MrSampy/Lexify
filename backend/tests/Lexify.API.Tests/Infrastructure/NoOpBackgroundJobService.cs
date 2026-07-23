@@ -30,4 +30,9 @@ public sealed class NoOpBackgroundJobService : IBackgroundJobService
     {
         // intentionally a no-op — tests overwrite the code hash in the database with a known value
     }
+
+    public void EnqueueEmailChangedNotice(string oldEmail, string newEmail)
+    {
+        // intentionally a no-op
+    }
 }

@@ -76,3 +76,9 @@ export const EMAIL_NOT_VERIFIED = 'email_not_verified'
 
 /** Marker paralleling EMAIL_NOT_VERIFIED; the 2FA case rides on a success body, not an error. */
 export const TWO_FACTOR_REQUIRED = 'two_factor_required'
+
+/**
+ * verify-2fa was refused because the challenge token is dead (expired/invalid), not because the code
+ * was wrong — the client restarts sign-in in this case instead of showing an inline "wrong code".
+ */
+export const TWO_FACTOR_CHALLENGE_EXPIRED = 'two_factor_challenge_expired'

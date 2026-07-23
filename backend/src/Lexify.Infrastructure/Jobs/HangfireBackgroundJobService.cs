@@ -39,4 +39,10 @@ public sealed class HangfireBackgroundJobService(IBackgroundJobClient client) : 
         client.Enqueue<Send2faCodeJob>(job =>
             job.RunAsync(email, code, CancellationToken.None));
     }
+
+    public void EnqueueEmailChangedNotice(string oldEmail, string newEmail)
+    {
+        client.Enqueue<SendEmailChangedNoticeJob>(job =>
+            job.RunAsync(oldEmail, newEmail, CancellationToken.None));
+    }
 }

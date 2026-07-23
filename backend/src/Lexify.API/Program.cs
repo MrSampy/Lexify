@@ -110,6 +110,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy<string, AiRateLimiterPolicy>(AiRateLimiterPolicy.PolicyName);
     options.AddPolicy<string, AuthRateLimiterPolicy>(AuthRateLimiterPolicy.PolicyName);
     options.AddPolicy<string, TwoFactorRateLimiterPolicy>(TwoFactorRateLimiterPolicy.PolicyName);
+    options.AddPolicy<string, AccountEmailRateLimiterPolicy>(AccountEmailRateLimiterPolicy.PolicyName);
     options.AddPolicy<string, TtsRateLimiterPolicy>(TtsRateLimiterPolicy.PolicyName);
     options.AddPolicy<string, FeedbackRateLimiterPolicy>(FeedbackRateLimiterPolicy.PolicyName);
 });

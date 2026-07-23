@@ -366,6 +366,9 @@ public class AuthCommandTests
     private readonly IPasswordResetTokenRepository _resetTokenRepo =
         Substitute.For<IPasswordResetTokenRepository>();
 
+    private readonly IEmailVerificationTokenRepository _emailVerificationTokenRepo =
+        Substitute.For<IEmailVerificationTokenRepository>();
+
     [Fact]
     public async Task ForgotPassword_UnknownEmail_ReturnsOkWithoutEnqueueingEmail()
     {
@@ -431,7 +434,7 @@ public class AuthCommandTests
             .Returns((PasswordResetToken?)null);
 
         var handler = new ResetPasswordCommandHandler(
-            _userRepo, _resetTokenRepo, _refreshTokenRepo, _passwordHasher);
+            _userRepo, _resetTokenRepo, _refreshTokenRepo, _emailVerificationTokenRepo, _passwordHasher);
         var result = await handler.Handle(
             new ResetPasswordCommand("unknowntoken", "newpassword1"),
             CancellationToken.None);
@@ -447,7 +450,7 @@ public class AuthCommandTests
         _resetTokenRepo.GetByHashAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(token);
 
         var handler = new ResetPasswordCommandHandler(
-            _userRepo, _resetTokenRepo, _refreshTokenRepo, _passwordHasher);
+            _userRepo, _resetTokenRepo, _refreshTokenRepo, _emailVerificationTokenRepo, _passwordHasher);
         var result = await handler.Handle(
             new ResetPasswordCommand("expiredtoken", "newpassword1"),
             CancellationToken.None);
@@ -464,7 +467,7 @@ public class AuthCommandTests
         _resetTokenRepo.GetByHashAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(token);
 
         var handler = new ResetPasswordCommandHandler(
-            _userRepo, _resetTokenRepo, _refreshTokenRepo, _passwordHasher);
+            _userRepo, _resetTokenRepo, _refreshTokenRepo, _emailVerificationTokenRepo, _passwordHasher);
         var result = await handler.Handle(
             new ResetPasswordCommand("usedtoken", "newpassword1"),
             CancellationToken.None);
@@ -484,7 +487,7 @@ public class AuthCommandTests
         _passwordHasher.Hash("newpassword1").Returns("newhash");
 
         var handler = new ResetPasswordCommandHandler(
-            _userRepo, _resetTokenRepo, _refreshTokenRepo, _passwordHasher);
+            _userRepo, _resetTokenRepo, _refreshTokenRepo, _emailVerificationTokenRepo, _passwordHasher);
         var result = await handler.Handle(
             new ResetPasswordCommand("validtoken", "newpassword1"),
             CancellationToken.None);

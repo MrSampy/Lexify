@@ -110,8 +110,12 @@ services:
 
       # Read-only view of the postgres-backup volume, so the admin dashboard can show backup age
       - Backups__Path=/backups
+
+      # User-uploaded feedback attachments live on a named volume so they survive redeploys.
+      - FeedbackStorage__Directory=/app/feedback-uploads
     volumes:
       - tts_cache:/app/tts-cache
+      - feedback_uploads:/app/feedback-uploads
       - pgbackups:/backups:ro
     depends_on:
       postgres:
@@ -222,3 +226,4 @@ volumes:
   caddy_data:
   caddy_config:
   tts_cache:
+  feedback_uploads:

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AuthResponse } from '@/entities/user'
-import { authApi } from '../api/authApi'
+import { authApi, TWO_FACTOR_CHALLENGE_EXPIRED } from '../api/authApi'
 import { ResendTwoFactorButton } from './ResendTwoFactorButton'
 
 interface TwoFactorCodeFormProps {
@@ -30,13 +30,15 @@ export function TwoFactorCodeForm({
       const auth = await authApi.verifyTwoFactor(challengeToken, code)
       onVerified(auth)
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status
-      // 400 = the challenge token itself is invalid/expired → send them back to sign in.
-      if (status === 400) {
+      const response = (err as { response?: { status?: number; data?: { code?: string } } })
+        ?.response
+      // Only a dead challenge sends them back to sign in; a wrong/used code stays here (see below).
+      if (response?.data?.code === TWO_FACTOR_CHALLENGE_EXPIRED) {
         onExpired()
         return
       }
-      setError('auth.twoFactorInvalid')
+      // The tight brute-force limiter answers 429 — say so rather than "wrong code".
+      setError(response?.status === 429 ? 'auth.twoFactorRateLimited' : 'auth.twoFactorInvalid')
     } finally {
       setSubmitting(false)
     }
