@@ -44,7 +44,14 @@ export function RegisterForm() {
   const onSubmit = async (values: FormValues) => {
     try {
       await authApi.register(values.email, values.password, values.displayName, values.inviteCode)
-      navigate(ROUTES.LOGIN)
+      // When verification is off the account is already confirmed, so the check-email screen would be a
+      // dead end (its resend button silently no-ops). Send them to login instead. When it's on (or the
+      // status hasn't resolved), the check-email screen carries the address so it can offer a resend.
+      if (status?.emailVerificationRequired === false) {
+        navigate(ROUTES.LOGIN, { state: { registered: true } })
+      } else {
+        navigate(ROUTES.CHECK_EMAIL, { state: { email: values.email } })
+      }
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??

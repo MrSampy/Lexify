@@ -4,6 +4,8 @@ import { LoginPage } from '@/pages/Login/ui/LoginPage'
 import { RegisterPage } from '@/pages/Register/ui/RegisterPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPassword/ui/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/pages/ResetPassword/ui/ResetPasswordPage'
+import { CheckEmailPage } from '@/pages/CheckEmail/ui/CheckEmailPage'
+import { VerifyEmailPage } from '@/pages/VerifyEmail/ui/VerifyEmailPage'
 import { BlockListPage } from '@/pages/BlockList/ui/BlockListPage'
 import { BlockDetailPage } from '@/pages/BlockDetail/ui/BlockDetailPage'
 import { WordImportPage } from '@/pages/WordImport/ui/WordImportPage'
@@ -19,12 +21,14 @@ import { StatsPage } from '@/pages/Stats/ui/StatsPage'
 import { DashboardPage } from '@/pages/Dashboard/ui/DashboardPage'
 import { SearchResultsPage } from '@/pages/Search/ui/SearchResultsPage'
 import { ProfilePage } from '@/pages/Profile/ui/ProfilePage'
+import { FeedbackPage } from '@/pages/Feedback/ui/FeedbackPage'
 import { AdminDashboardPage } from '@/pages/AdminDashboard/ui/AdminDashboardPage'
 import { AdminUsersPage } from '@/pages/AdminUsers/ui/AdminUsersPage'
 import { AdminAiMonitorPage } from '@/pages/AdminAiMonitor/ui/AdminAiMonitorPage'
 import { AdminSettingsPage } from '@/pages/AdminSettings/ui/AdminSettingsPage'
 import { AdminLanguagesPage } from '@/pages/AdminLanguages/ui/AdminLanguagesPage'
 import { AdminAuditPage } from '@/pages/AdminAudit/ui/AdminAuditPage'
+import { AdminFeedbackPage } from '@/pages/AdminFeedback/ui/AdminFeedbackPage'
 import { NotFoundPage } from '@/pages/NotFound/ui/NotFoundPage'
 import { AdminLayout } from '@/app/layouts/AdminLayout'
 import { UserLayout } from '@/app/layouts/UserLayout'
@@ -36,6 +40,9 @@ const router = createBrowserRouter([
   { path: ROUTES.REGISTER, element: <RegisterPage /> },
   { path: ROUTES.FORGOT_PASSWORD, element: <ForgotPasswordPage /> },
   { path: ROUTES.RESET_PASSWORD, element: <ResetPasswordPage /> },
+  // Outside AuthGuard: confirming an address is what gets you *to* a usable session.
+  { path: ROUTES.CHECK_EMAIL, element: <CheckEmailPage /> },
+  { path: ROUTES.VERIFY_EMAIL, element: <VerifyEmailPage /> },
   {
     element: <AuthGuard />,
     children: [
@@ -57,6 +64,7 @@ const router = createBrowserRouter([
           { path: ROUTES.STATS, element: <StatsPage /> },
           { path: ROUTES.SEARCH, element: <SearchResultsPage /> },
           { path: ROUTES.PROFILE, element: <ProfilePage /> },
+          { path: ROUTES.FEEDBACK, element: <FeedbackPage /> },
           // Inside the layout so the sidebar stays available on a dead link.
           { path: '*', element: <NotFoundPage /> },
         ],
@@ -73,6 +81,7 @@ const router = createBrowserRouter([
               { path: ROUTES.ADMIN.SETTINGS, element: <AdminSettingsPage /> },
               { path: ROUTES.ADMIN.LANGUAGES, element: <AdminLanguagesPage /> },
               { path: ROUTES.ADMIN.AUDIT, element: <AdminAuditPage /> },
+              { path: ROUTES.ADMIN.FEEDBACK, element: <AdminFeedbackPage /> },
             ],
           },
         ],

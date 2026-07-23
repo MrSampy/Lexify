@@ -37,6 +37,7 @@ export {
   useRestoreUserMutation,
   useDeleteUserMutation,
   useChangeRoleMutation,
+  useVerifyUserEmailMutation,
   useUpdateSettingMutation,
   useAddLanguageMutation,
   useToggleLanguageMutation,

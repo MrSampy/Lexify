@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Lexify.Application.Abstractions;
+using Lexify.Application.Auth.Common;
 using Lexify.Application.Common;
 using Lexify.Domain.Entities;
 using Lexify.Domain.Repositories;
@@ -12,6 +13,8 @@ public sealed class RegisterCommandHandler(
     IUserRepository userRepository,
     ISystemSettingRepository settingRepository,
     IPasswordHasher passwordHasher,
+    IEmailVerificationService emailVerification,
+    IUnitOfWork unitOfWork,
     IBackgroundJobService backgroundJobService)
     : IRequestHandler<RegisterCommand, Result<Guid>>
 {
@@ -28,15 +31,37 @@ public sealed class RegisterCommandHandler(
         var passwordHash = passwordHasher.Hash(request.Password);
         var user = User.Create(request.Email, passwordHash, request.DisplayName);
 
+        var verificationRequired = await emailVerification.IsRequiredAsync(cancellationToken);
+
+        // Nothing to prove when confirmation is switched off — the account is usable immediately, as
+        // it was before this feature existed.
+        if (!verificationRequired)
+            user.MarkEmailVerified();
+
         await userRepository.AddAsync(user, cancellationToken);
 
-        var username = string.IsNullOrWhiteSpace(request.DisplayName)
-            ? request.Email.Split('@')[0]
-            : request.DisplayName;
-        backgroundJobService.EnqueueWelcomeEmail(user.Email, username);
+        if (verificationRequired)
+        {
+            // The token's FK points at the user, so the row has to exist first.
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // Welcome mail waits until the address is confirmed — two emails at once would bury the
+            // one the user actually has to act on.
+            await emailVerification.IssueAsync(
+                user, EmailVerificationToken.Purposes.Signup, ct: cancellationToken);
+        }
+        else
+        {
+            backgroundJobService.EnqueueWelcomeEmail(user.Email, DisplayNameFor(request));
+        }
 
         return Result.Ok(user.Id);
     }
+
+    private static string DisplayNameFor(RegisterCommand request) =>
+        string.IsNullOrWhiteSpace(request.DisplayName)
+            ? request.Email.Split('@')[0]
+            : request.DisplayName;
 
     /// <summary>
     /// Open registration lets anyone in. Once it is closed, the only way in is the shared invite code

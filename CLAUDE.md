@@ -63,7 +63,10 @@ dotnet user-secrets set "AiProviders:0:ApiKey" "<your-ollama-cloud-key>" --proje
 ```
 
 In Docker/prod the key comes from the `OLLAMA_API_KEY` env var (see `.env.example`), bound to
-`AiProviders__0__ApiKey`.
+`AiProviders__0__ApiKey`. Up to **three more keys** can be set there (`OLLAMA_API_KEY_2..4`, bound to
+`AiProviders__1..3`) to spread load: `AIOrchestrator` round-robins the starting key per request across
+keys sharing an endpoint and falls back to the rest on error/429. Extra keys are optional — unset ones
+are dropped at startup, and distinct-endpoint providers (e.g. a Lemonade fallback) keep their order.
 
 **Local Ollama instead of cloud** (optional): install from https://ollama.com/download/windows,
 `ollama serve`, `ollama pull gemma4:31b`, then set the provider's `BaseUrl` to `http://localhost:11434`

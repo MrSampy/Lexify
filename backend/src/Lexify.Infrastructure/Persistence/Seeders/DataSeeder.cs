@@ -61,6 +61,13 @@ public sealed partial class DataSeeder(
             new(SystemSetting.Keys.RegistrationEnabled, "true", "bool", "Allow new user registrations"),
             new(SystemSetting.Keys.InviteCode,   "",         "string",
                 "Shared invite code. Only used when registration is disabled; empty then closes sign-up entirely."),
+            new(SystemSetting.Keys.EmailVerificationRequired, "true", "bool",
+                "Require new users to confirm their email address before they can sign in."),
+            // Ships dormant ("false"): turning it on immediately forces every admin through an emailed
+            // code on their next sign-in, so activation is left to an operator (settings UI) rather than
+            // sprung by a deploy. Once on, it is mandatory for admins and opt-in for everyone else.
+            new(SystemSetting.Keys.TwoFactorEnabled, "false", "bool",
+                "Require two-factor (email code) at sign-in: mandatory for admins, opt-in for other users. Off = kill switch."),
             new(SystemSetting.Keys.MaxWordsPerBlock, "200",  "int",    "Max words per block (0 = unlimited)"),
             new(SystemSetting.Keys.MaxBlocksPerUser, "0",    "int",    "Max blocks per user (0 = unlimited)"),
             new(SystemSetting.Keys.TestMaxQuestions, "50",   "int",    "Max questions per test"),
@@ -119,6 +126,11 @@ public sealed partial class DataSeeder(
 
         var admin = new User(normalizedEmail, passwordHash, displayName: "Admin",
             role: User.Roles.Admin, status: User.Statuses.Active);
+
+        // The address comes from deployment configuration, not from a stranger signing up, so there is
+        // nothing to prove — and leaving it unconfirmed would lock the operator out of a fresh install
+        // (the seeder runs after the migration that grandfathered existing accounts).
+        admin.MarkEmailVerified();
 
         db.Users.Add(admin);
         await db.SaveChangesAsync(ct);

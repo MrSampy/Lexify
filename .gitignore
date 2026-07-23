@@ -90,6 +90,9 @@ lcov.info
 # TTS runtime cache (generated WAVs)
 backend/src/Lexify.API/tts-cache/
 
+# User-uploaded feedback attachments
+backend/src/Lexify.API/feedback-uploads/
+
 # PR body scratch files
 scripts/_pr_*.md
 

@@ -3,6 +3,8 @@ export const ROUTES = {
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
+  CHECK_EMAIL: '/check-email',
+  VERIFY_EMAIL: '/verify-email',
   DASHBOARD: '/',
   BLOCKS: '/blocks',
   BLOCK_DETAIL: (id: string) => `/blocks/${id}`,
@@ -18,6 +20,7 @@ export const ROUTES = {
   STATS: '/stats',
   PROFILE: '/profile',
   SEARCH: '/search',
+  FEEDBACK: '/feedback',
   ADMIN: {
     DASHBOARD: '/admin',
     USERS: '/admin/users',
@@ -25,5 +28,6 @@ export const ROUTES = {
     SETTINGS: '/admin/settings',
     LANGUAGES: '/admin/languages',
     AUDIT: '/admin/audit',
+    FEEDBACK: '/admin/feedback',
   },
 } as const

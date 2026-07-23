@@ -2,6 +2,7 @@ using System.Reflection;
 using FluentValidation;
 using Lexify.Application.Abstractions;
 using Lexify.Application.AI.Services;
+using Lexify.Application.Auth.Common;
 using Lexify.Application.Behaviors;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,9 @@ public static class DependencyInjection
         services.AddAutoMapper(assembly);
 
         services.AddScoped<IAiQuotaService, AiQuotaService>();
+        services.AddScoped<IEmailVerificationService, EmailVerificationService>();
+        services.AddScoped<ITwoFactorService, TwoFactorService>();
+        services.AddScoped<IAuthSessionService, AuthSessionService>();
 
         return services;
     }

@@ -47,6 +47,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasDefaultValue(User.DefaultNewWordsPerDay)
             .IsRequired();
 
+        builder.Property(u => u.EmailVerifiedAt).HasColumnName("email_verified_at");
+        builder.Property(u => u.TwoFactorEnabled)
+            .HasColumnName("two_factor_enabled")
+            .HasDefaultValue(false)
+            .IsRequired();
         builder.Property(u => u.LastActiveAt).HasColumnName("last_active_at");
         builder.Property(u => u.DeletedAt).HasColumnName("deleted_at");
         builder.Property(u => u.CreatedAt).HasColumnName("created_at").IsRequired();

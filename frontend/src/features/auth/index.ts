@@ -1,4 +1,6 @@
-export { authApi } from './api/authApi'
+export { authApi, EMAIL_NOT_VERIFIED } from './api/authApi'
+export type { VerifyEmailResult } from './api/authApi'
+export { ResendVerificationButton } from './ui/ResendVerificationButton'
 export { LoginForm } from './ui/LoginForm'
 export { RegisterForm } from './ui/RegisterForm'
 export { ForgotPasswordForm } from './ui/ForgotPasswordForm'

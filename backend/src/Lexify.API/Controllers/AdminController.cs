@@ -7,6 +7,7 @@ using Lexify.Application.Admin.Commands.RestoreUser;
 using Lexify.Application.Admin.Commands.SuspendUser;
 using Lexify.Application.Admin.Commands.ToggleLanguage;
 using Lexify.Application.Admin.Commands.UpdateSystemSetting;
+using Lexify.Application.Admin.Commands.VerifyUserEmail;
 using Lexify.Application.Admin.Queries.GetAdminUsers;
 using Lexify.Application.Admin.Queries.GetAiCallsChart;
 using Lexify.Application.Admin.Queries.GetAiLogs;
@@ -17,6 +18,10 @@ using Lexify.Application.Admin.Queries.GetDashboardStats;
 using Lexify.Application.Admin.Queries.GetLanguages;
 using Lexify.Application.Admin.Queries.GetRegistrationsChart;
 using Lexify.Application.Admin.Queries.GetSystemSettings;
+using Lexify.Application.Feedbacks.Commands.UpdateFeedbackStatus;
+using Lexify.Application.Feedbacks.Queries.GetFeedbackAttachment;
+using Lexify.Application.Feedbacks.Queries.GetFeedbackById;
+using Lexify.Application.Feedbacks.Queries.GetFeedbackList;
 using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -99,10 +104,17 @@ public sealed class AdminController(ISender sender) : BaseApiController
         [FromQuery] string? role,
         [FromQuery] string? status,
         [FromQuery] string? email,
+        [FromQuery] bool? emailVerified,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default) =>
-        ToActionResult(await sender.Send(new GetAdminUsersQuery(role, status, email, page, pageSize), ct));
+        ToActionResult(await sender.Send(
+            new GetAdminUsersQuery(role, status, email, emailVerified, page, pageSize), ct));
+
+    /// <summary>Confirms a user's email by hand — the escape hatch when they cannot receive the link.</summary>
+    [HttpPut("users/{id:guid}/verify-email")]
+    public async Task<IActionResult> VerifyUserEmail(Guid id, CancellationToken ct) =>
+        ToActionResult(await sender.Send(new VerifyUserEmailCommand(id), ct));
 
     [HttpPut("users/{id:guid}/suspend")]
     public async Task<IActionResult> SuspendUser(Guid id, CancellationToken ct) =>
@@ -154,6 +166,42 @@ public sealed class AdminController(ISender sender) : BaseApiController
         ToActionResult(await sender.Send(
             new GetAuditLogsQuery(action, adminId, dateFrom, dateTo, page, pageSize), ct));
 
+    // --- Feedback triage ---
+
+    [HttpGet("feedback")]
+    public async Task<IActionResult> GetFeedback(
+        [FromQuery] string? type,
+        [FromQuery] string? status,
+        [FromQuery] string? category,
+        [FromQuery] string? search,
+        [FromQuery] DateTimeOffset? dateFrom,
+        [FromQuery] DateTimeOffset? dateTo,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default) =>
+        ToActionResult(await sender.Send(
+            new GetFeedbackListQuery(type, status, category, search, dateFrom, dateTo, page, pageSize), ct));
+
+    [HttpGet("feedback/{id:guid}")]
+    public async Task<IActionResult> GetFeedbackById(Guid id, CancellationToken ct) =>
+        ToActionResult(await sender.Send(new GetFeedbackByIdQuery(id), ct));
+
+    [HttpPut("feedback/{id:guid}/status")]
+    public async Task<IActionResult> UpdateFeedbackStatus(
+        Guid id, [FromBody] UpdateFeedbackStatusRequest body, CancellationToken ct) =>
+        ToActionResult(await sender.Send(
+            new UpdateFeedbackStatusCommand(id, body.Status, body.AdminNote), ct));
+
+    [HttpGet("feedback/{id:guid}/attachments/{attachmentId:guid}")]
+    public async Task<IActionResult> DownloadFeedbackAttachment(
+        Guid id, Guid attachmentId, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetFeedbackAttachmentQuery(id, attachmentId), ct);
+
+        // Always as a download: rendering user-uploaded bytes inline would run them on our origin.
+        return ToActionResult(result, file => File(file.Content, file.ContentType, file.FileName));
+    }
+
     // --- AI Monitoring ---
 
     [HttpGet("ai/logs")]
@@ -203,3 +251,4 @@ public sealed class AdminController(ISender sender) : BaseApiController
 public sealed record ChangeUserRoleRequest(string Role);
 public sealed record UpdateSystemSettingRequest(string Value);
 public sealed record AddLanguageRequest(string Code, string Name, string NativeName, short SortOrder = 0);
+public sealed record UpdateFeedbackStatusRequest(string Status, string? AdminNote);

@@ -1,4 +1,3 @@
-using Lexify.Application.Auth.Commands.Common;
 using Lexify.Application.Common;
 using MediatR;
 
@@ -8,4 +7,4 @@ public sealed record LoginCommand(
     string Email,
     string Password,
     string? IpAddress = null,
-    string? UserAgent = null) : IRequest<Result<AuthResponse>>;
+    string? UserAgent = null) : IRequest<Result<LoginResponse>>;

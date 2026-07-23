@@ -1,9 +1,11 @@
 using Lexify.Application.Abstractions;
+using Lexify.Application.Auth.Commands.Common;
 using Lexify.Application.Auth.Commands.ForgotPassword;
 using Lexify.Application.Auth.Commands.Login;
 using Lexify.Application.Auth.Commands.RefreshToken;
 using Lexify.Application.Auth.Commands.Register;
 using Lexify.Application.Auth.Commands.ResetPassword;
+using Lexify.Application.Auth.Common;
 using Lexify.Application.Common;
 using Lexify.Domain.Entities;
 using Lexify.Domain.Repositories;
@@ -19,14 +21,26 @@ public class AuthCommandTests
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
     private readonly IBackgroundJobService _backgroundJobs = Substitute.For<IBackgroundJobService>();
     private readonly ISystemSettingRepository _settingRepo = Substitute.For<ISystemSettingRepository>();
+    private readonly IEmailVerificationService _emailVerification =
+        Substitute.For<IEmailVerificationService>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    public AuthCommandTests() =>
+    public AuthCommandTests()
+    {
         // Hashing is not what the Register tests are about; individual tests override this when they
         // assert on the stored hash.
         _passwordHasher.Hash(Arg.Any<string>()).Returns("hashed");
 
+        // These tests predate email confirmation and cover the registration gate itself; keep them on
+        // the "confirmation off" path. The confirmation flow has its own integration tests.
+        _emailVerification.IsRequiredAsync(Arg.Any<CancellationToken>()).Returns(false);
+
+        // Likewise the classic login tests predate 2FA — default them to the no-second-factor path.
+        _twoFactor.IsRequiredForAsync(Arg.Any<User>(), Arg.Any<CancellationToken>()).Returns(false);
+    }
+
     private RegisterCommandHandler CreateRegisterHandler() =>
-        new(_userRepo, _settingRepo, _passwordHasher, _backgroundJobs);
+        new(_userRepo, _settingRepo, _passwordHasher, _emailVerification, _unitOfWork, _backgroundJobs);
 
     /// <summary>Points the settings repo at a given registration_enabled / invite_code pair.</summary>
     private void GivenRegistrationSettings(string registrationEnabled, string inviteCode)
@@ -172,6 +186,11 @@ public class AuthCommandTests
     private readonly IRefreshTokenRepository _refreshTokenRepo =
         Substitute.For<IRefreshTokenRepository>();
     private readonly IJwtService _jwtService = Substitute.For<IJwtService>();
+    private readonly ITwoFactorService _twoFactor = Substitute.For<ITwoFactorService>();
+    private readonly IAuthSessionService _authSession = Substitute.For<IAuthSessionService>();
+
+    private LoginCommandHandler CreateLoginHandler() =>
+        new(_userRepo, _passwordHasher, _emailVerification, _twoFactor, _jwtService, _authSession);
 
     [Fact]
     public async Task Login_UserNotFound_ReturnsFailure()
@@ -179,7 +198,7 @@ public class AuthCommandTests
         _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((User?)null);
 
-        var handler = new LoginCommandHandler(_userRepo, _refreshTokenRepo, _passwordHasher, _jwtService);
+        var handler = CreateLoginHandler();
         var result = await handler.Handle(
             new LoginCommand("missing@example.com", "password"),
             CancellationToken.None);
@@ -195,7 +214,7 @@ public class AuthCommandTests
         _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
         _passwordHasher.Verify("wrongpass", "correcthash").Returns(false);
 
-        var handler = new LoginCommandHandler(_userRepo, _refreshTokenRepo, _passwordHasher, _jwtService);
+        var handler = CreateLoginHandler();
         var result = await handler.Handle(
             new LoginCommand("user@example.com", "wrongpass"),
             CancellationToken.None);
@@ -211,7 +230,7 @@ public class AuthCommandTests
         _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
         _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
 
-        var handler = new LoginCommandHandler(_userRepo, _refreshTokenRepo, _passwordHasher, _jwtService);
+        var handler = CreateLoginHandler();
         var result = await handler.Handle(
             new LoginCommand("user@example.com", "pass"),
             CancellationToken.None);
@@ -221,23 +240,47 @@ public class AuthCommandTests
     }
 
     [Fact]
-    public async Task Login_ValidCredentials_ReturnsOkWithTokens()
+    public async Task Login_ValidCredentials_NoTwoFactor_ReturnsAuthenticatedSession()
     {
         var user = new User("user@example.com", "hash");
         _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
         _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
-        _jwtService.GenerateAccessToken(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>())
-            .Returns("access_token");
-        _jwtService.GetExpiry().Returns(DateTimeOffset.UtcNow.AddHours(1));
+        _authSession.IssueAsync(user, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(new AuthResponse("access_token", "refresh_token", DateTimeOffset.UtcNow.AddHours(1)));
 
-        var handler = new LoginCommandHandler(_userRepo, _refreshTokenRepo, _passwordHasher, _jwtService);
+        var handler = CreateLoginHandler();
         var result = await handler.Handle(
             new LoginCommand("user@example.com", "pass"),
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("access_token", result.Value!.AccessToken);
-        Assert.NotNull(result.Value.RefreshToken);
+        Assert.False(result.Value!.TwoFactorRequired);
+        Assert.Equal("access_token", result.Value.Session!.AccessToken);
+        Assert.Equal("refresh_token", result.Value.Session.RefreshToken);
+    }
+
+    [Fact]
+    public async Task Login_TwoFactorRequired_ReturnsChallengeAndIssuesCode_NoSession()
+    {
+        var user = new User("admin@example.com", "hash", role: User.Roles.Admin);
+        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
+        _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+        _twoFactor.IsRequiredForAsync(user, Arg.Any<CancellationToken>()).Returns(true);
+        _jwtService.GenerateTwoFactorChallengeToken(user.Id).Returns("challenge_token");
+
+        var handler = CreateLoginHandler();
+        var result = await handler.Handle(
+            new LoginCommand("admin@example.com", "pass"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value!.TwoFactorRequired);
+        Assert.Equal("challenge_token", result.Value.TwoFactorChallenge);
+        Assert.Null(result.Value.Session);
+        await _twoFactor.Received(1).IssueCodeAsync(user, Arg.Any<CancellationToken>());
+        // No session must be minted on the challenge path.
+        await _authSession.DidNotReceive().IssueAsync(
+            Arg.Any<User>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     // ---- RefreshToken ----

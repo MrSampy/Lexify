@@ -22,13 +22,22 @@ public sealed class GetRegistrationStatusQueryHandler(ISystemSettingRepository s
         var isOpen = enabled is null
             || (bool.TryParse(enabled.Value, out var parsed) && parsed);
 
+        // Same fail-closed read as EmailVerificationService.IsRequiredAsync, surfaced here so the sign-up
+        // form knows whether to send the user to the confirmation screen or straight to login.
+        var verificationSetting = await settingRepository.GetByKeyAsync(
+            SystemSetting.Keys.EmailVerificationRequired, cancellationToken);
+        var emailVerificationRequired = verificationSetting is null
+            || !bool.TryParse(verificationSetting.Value, out var required) || required;
+
         if (isOpen)
-            return Result.Ok(new RegistrationStatusDto(Open: true, InviteRequired: false));
+            return Result.Ok(new RegistrationStatusDto(
+                Open: true, InviteRequired: false, EmailVerificationRequired: emailVerificationRequired));
 
         var inviteCode = await settingRepository.GetByKeyAsync(
             SystemSetting.Keys.InviteCode, cancellationToken);
         var hasCode = !string.IsNullOrWhiteSpace(inviteCode?.Value);
 
-        return Result.Ok(new RegistrationStatusDto(Open: false, InviteRequired: hasCode));
+        return Result.Ok(new RegistrationStatusDto(
+            Open: false, InviteRequired: hasCode, EmailVerificationRequired: emailVerificationRequired));
     }
 }

@@ -27,6 +27,8 @@ const ACTIONS = [
   'update_system_setting',
   'add_language',
   'toggle_language',
+  'update_feedback_status',
+  'verify_user_email',
 ] as const
 
 const ACTION_COLORS: Record<string, string> = {

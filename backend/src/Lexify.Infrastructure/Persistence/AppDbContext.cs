@@ -8,6 +8,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
+    public DbSet<LoginTwoFactorCode> LoginTwoFactorCodes => Set<LoginTwoFactorCode>();
     public DbSet<Language> Languages => Set<Language>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
@@ -25,6 +27,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<WordReviewLog> WordReviewLogs => Set<WordReviewLog>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
+    public DbSet<Feedback> Feedback => Set<Feedback>();
+    public DbSet<FeedbackAttachment> FeedbackAttachments => Set<FeedbackAttachment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -7,6 +7,7 @@ public sealed record AdminUserDto(
     string Role,
     string Status,
     DateTimeOffset? LastActiveAt,
+    DateTimeOffset? EmailVerifiedAt,
     DateTimeOffset CreatedAt,
     int BlockCount,
     int WordCount,

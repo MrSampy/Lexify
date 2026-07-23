@@ -12,6 +12,7 @@ import {
   useDeleteUserMutation,
   useChangeRoleMutation,
   useImpersonateUserMutation,
+  useVerifyUserEmailMutation,
 } from '@/entities/admin'
 import type { AdminUser, AdminUsersParams } from '@/entities/admin'
 import { UsersTable, UserDetailModal } from '@/features/admin-users'
@@ -28,6 +29,8 @@ export function AdminUsersPage() {
   const [status, setStatus] = useState<string>('')
   const [email, setEmail] = useState('')
   const [emailInput, setEmailInput] = useState('')
+  // 'all' | 'true' | 'false' — kept as the select's own string, mapped to a bool for the query.
+  const [emailVerified, setEmailVerified] = useState('all')
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
 
   const debouncedSetEmail = debounce((v: string) => {
@@ -41,6 +44,7 @@ export function AdminUsersPage() {
     role: role || undefined,
     status: status || undefined,
     email: email || undefined,
+    emailVerified: emailVerified === 'all' ? undefined : emailVerified === 'true',
   }
 
   const { data, isLoading } = useAdminUsers(params)
@@ -49,7 +53,17 @@ export function AdminUsersPage() {
   const deleteUser = useDeleteUserMutation()
   const changeRole = useChangeRoleMutation()
   const impersonate = useImpersonateUserMutation()
+  const verifyEmail = useVerifyUserEmailMutation()
   const { confirm, confirmDialog } = useConfirm()
+
+  const handleVerifyEmail = async (id: string) => {
+    try {
+      await verifyEmail.mutateAsync(id)
+      toast.success('Email confirmed')
+    } catch {
+      toast.error('Failed to confirm email')
+    }
+  }
 
   const handleImpersonate = async (id: string) => {
     try {
@@ -123,6 +137,19 @@ export function AdminUsersPage() {
             { value: 'deleted', label: 'Deleted' },
           ]}
         />
+        <LxSelect
+          value={emailVerified}
+          onValueChange={(v) => {
+            setEmailVerified(v)
+            setPage(1)
+          }}
+          triggerStyle={{ width: '100%', maxWidth: 170 }}
+          options={[
+            { value: 'all', label: 'Any confirmation' },
+            { value: 'true', label: 'Email confirmed' },
+            { value: 'false', label: 'Not confirmed' },
+          ]}
+        />
       </div>
 
       <UsersTable
@@ -177,6 +204,7 @@ export function AdminUsersPage() {
         onSuspend={(id) => void suspend.mutateAsync(id)}
         onRestore={(id) => void restore.mutateAsync(id)}
         onDelete={(id, email) => void handleDelete(id, email)}
+        onVerifyEmail={(id) => void handleVerifyEmail(id)}
         onImpersonate={canManageUsers ? (id) => void handleImpersonate(id) : undefined}
       />
       {confirmDialog}

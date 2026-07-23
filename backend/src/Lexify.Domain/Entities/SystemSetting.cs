@@ -40,6 +40,16 @@ public sealed class SystemSetting
         /// <summary>Shared invite code required to register while registration is closed. Empty = nobody can register.</summary>
         public const string InviteCode = "features.invite_code";
 
+        /// <summary>When "true", a new account cannot sign in until its email address is confirmed.</summary>
+        public const string EmailVerificationRequired = "features.email_verification_required";
+
+        /// <summary>
+        /// Master switch for two-factor (email code) at sign-in: mandatory for admins, opt-in for other
+        /// users. When "false" the feature is dormant for everyone — also the operator kill switch if the
+        /// mail path breaks and admins would otherwise be locked out.
+        /// </summary>
+        public const string TwoFactorEnabled = "features.two_factor_enabled";
+
         /// <summary>Per-user cap on AI calls per UTC day. Zero or negative disables the cap.</summary>
         public const string MaxAiCallsPerUserPerDay = "ai.max_calls_per_user_per_day";
 

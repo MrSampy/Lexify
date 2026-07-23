@@ -5,6 +5,8 @@ export interface AdminUser {
   role: string
   status: string
   lastActiveAt: string | null
+  /** Null when the address has never been confirmed. */
+  emailVerifiedAt: string | null
   createdAt: string
   blockCount: number
   wordCount: number
@@ -111,6 +113,8 @@ export interface AdminUsersParams {
   role?: string
   status?: string
   email?: string
+  /** Undefined = no filter; true/false narrows to confirmed / unconfirmed addresses. */
+  emailVerified?: boolean
 }
 
 export interface SystemHealthCheck {

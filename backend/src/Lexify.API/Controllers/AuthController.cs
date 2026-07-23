@@ -1,10 +1,15 @@
 using Lexify.Application.Auth.Commands.Common;
+using Lexify.Application.Auth.Commands.ResendVerification;
+using Lexify.Application.Auth.Commands.VerifyEmail;
+using Lexify.Application.Auth.Common;
 using Lexify.Application.Auth.Commands.ForgotPassword;
 using Lexify.Application.Auth.Commands.Login;
 using Lexify.Application.Auth.Commands.Logout;
 using Lexify.Application.Auth.Commands.RefreshToken;
 using Lexify.Application.Auth.Commands.Register;
+using Lexify.Application.Auth.Commands.ResendTwoFactorCode;
 using Lexify.Application.Auth.Commands.ResetPassword;
+using Lexify.Application.Auth.Commands.VerifyTwoFactor;
 using Lexify.Application.Auth.Queries.GetRegistrationStatus;
 using Lexify.API.RateLimit;
 using Lexify.API.Requests.Auth;
@@ -58,7 +63,78 @@ public sealed class AuthController(ISender sender) : BaseApiController
             HttpContext.Connection.RemoteIpAddress?.ToString(),
             Request.Headers.UserAgent.ToString());
 
+        var result = await sender.Send(command, cancellationToken);
+
+        // The client has to tell "confirm your email" apart from "wrong password" to offer the resend
+        // button, so this one failure carries a machine-readable code instead of a bare message.
+        if (result.ErrorMessage == AuthErrorCodes.EmailNotVerified)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                code = AuthErrorCodes.EmailNotVerified,
+                message = "Please confirm your email address before signing in."
+            });
+        }
+
+        // A second factor is owed: hand back the challenge (no session, no refresh cookie) so the client
+        // can collect the emailed code and complete login/verify-2fa. Distinguished from a real login by
+        // the flag rather than an error, since the password step itself succeeded.
+        return ToActionResult(result, login => login.TwoFactorRequired
+            ? Ok(new { twoFactorRequired = true, challengeToken = login.TwoFactorChallenge })
+            : ToAuthResult(login.Session!));
+    }
+
+    /// <summary>
+    /// Step 2 of sign-in: exchange the challenge token + the emailed code for a session. Rate-limited
+    /// tighter than the rest of auth to blunt brute-forcing of the 6-digit code.
+    /// </summary>
+    [HttpPost("login/verify-2fa")]
+    [EnableRateLimiting(TwoFactorRateLimiterPolicy.PolicyName)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> VerifyTwoFactor(
+        VerifyTwoFactorRequest request, CancellationToken cancellationToken)
+    {
+        var command = new VerifyTwoFactorCommand(
+            request.ChallengeToken,
+            request.Code,
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            Request.Headers.UserAgent.ToString());
+
         return ToActionResult(await sender.Send(command, cancellationToken), ToAuthResult);
+    }
+
+    /// <summary>Re-sends the sign-in code for an in-flight 2FA challenge.</summary>
+    [HttpPost("login/resend-2fa")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResendTwoFactor(
+        ResendTwoFactorRequest request, CancellationToken cancellationToken) =>
+        ToActionResult(await sender.Send(
+            new ResendTwoFactorCodeCommand(request.ChallengeToken), cancellationToken));
+
+    /// <summary>Confirm an email address using the token from the link. Single-use.</summary>
+    [HttpPost("verify-email")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> VerifyEmail(
+        VerifyEmailRequest request, CancellationToken cancellationToken) =>
+        ToActionResult(await sender.Send(new VerifyEmailCommand(request.Token), cancellationToken));
+
+    /// <summary>
+    /// Send the confirmation email again. Always returns 200 so the response reveals nothing about
+    /// account existence or confirmation state.
+    /// </summary>
+    [HttpPost("resend-verification")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ResendVerification(
+        ResendVerificationRequest request, CancellationToken cancellationToken)
+    {
+        await sender.Send(new ResendVerificationCommand(request.Email), cancellationToken);
+        return Ok();
     }
 
     /// <summary>Exchange the refresh-token cookie for a new token pair (cookie is rotated).</summary>

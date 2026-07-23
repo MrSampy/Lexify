@@ -57,6 +57,9 @@ const adminApi = {
 
   deleteUser: (id: string) => apiClient.delete(`/api/admin/users/${id}`).then((r) => r.data),
 
+  verifyUserEmail: (id: string) =>
+    apiClient.put(`/api/admin/users/${id}/verify-email`).then((r) => r.data),
+
   changeUserRole: ({ id, role }: { id: string; role: string }) =>
     apiClient.put(`/api/admin/users/${id}/role`, { role }).then((r) => r.data),
 
@@ -205,6 +208,14 @@ export function useDeleteUserMutation() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: adminApi.deleteUser,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
+  })
+}
+
+export function useVerifyUserEmailMutation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: adminApi.verifyUserEmail,
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
   })
 }

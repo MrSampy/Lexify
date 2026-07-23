@@ -6,7 +6,7 @@ namespace Lexify.Infrastructure.Persistence.Repositories;
 public sealed class AdminUserRepository(AppDbContext context) : IAdminUserRepository
 {
     public async Task<(int Total, IReadOnlyList<AdminUserEntry> Items)> GetPagedWithStatsAsync(
-        string? role, string? status, string? emailSearch,
+        string? role, string? status, string? emailSearch, bool? emailVerified,
         int page, int pageSize, CancellationToken ct = default)
     {
         var query = context.Users.AsNoTracking();
@@ -16,6 +16,11 @@ public sealed class AdminUserRepository(AppDbContext context) : IAdminUserReposi
 
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(u => u.Status == status);
+
+        if (emailVerified is { } verified)
+            query = verified
+                ? query.Where(u => u.EmailVerifiedAt != null)
+                : query.Where(u => u.EmailVerifiedAt == null);
 
         if (!string.IsNullOrWhiteSpace(emailSearch))
             query = query.Where(u => u.Email.Contains(emailSearch.ToLowerInvariant().Trim()));
@@ -34,6 +39,7 @@ public sealed class AdminUserRepository(AppDbContext context) : IAdminUserReposi
                 u.Role,
                 u.Status,
                 u.LastActiveAt,
+                u.EmailVerifiedAt,
                 u.CreatedAt,
                 BlockCount = context.WordBlocks.Count(wb => wb.UserId == u.Id),
                 WordCount = context.Words.Count(w => context.WordBlocks.Any(wb => wb.Id == w.BlockId && wb.UserId == u.Id)),
@@ -44,7 +50,8 @@ public sealed class AdminUserRepository(AppDbContext context) : IAdminUserReposi
         var entries = users
             .Select(u => new AdminUserEntry(
                 u.Id, u.Email, u.DisplayName, u.Role, u.Status,
-                u.LastActiveAt, u.CreatedAt, u.BlockCount, u.WordCount, u.TestCount))
+                u.LastActiveAt, u.EmailVerifiedAt, u.CreatedAt,
+                u.BlockCount, u.WordCount, u.TestCount))
             .ToList();
 
         return (total, entries);

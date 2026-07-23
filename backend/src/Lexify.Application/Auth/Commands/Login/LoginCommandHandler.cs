@@ -1,50 +1,49 @@
-using System.Security.Cryptography;
-using System.Text;
 using Lexify.Application.Abstractions;
-using Lexify.Application.Auth.Commands.Common;
+using Lexify.Application.Auth.Common;
 using Lexify.Application.Common;
 using Lexify.Domain.Entities;
 using Lexify.Domain.Repositories;
 using MediatR;
-using DomainRefreshToken = Lexify.Domain.Entities.RefreshToken;
 
 namespace Lexify.Application.Auth.Commands.Login;
 
 public sealed class LoginCommandHandler(
     IUserRepository userRepository,
-    IRefreshTokenRepository refreshTokenRepository,
     IPasswordHasher passwordHasher,
-    IJwtService jwtService)
-    : IRequestHandler<LoginCommand, Result<AuthResponse>>
+    IEmailVerificationService emailVerification,
+    ITwoFactorService twoFactor,
+    IJwtService jwtService,
+    IAuthSessionService authSession)
+    : IRequestHandler<LoginCommand, Result<LoginResponse>>
 {
-    private static readonly TimeSpan RefreshTokenLifetime = TimeSpan.FromDays(30);
-
-    public async Task<Result<AuthResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
+    public async Task<Result<LoginResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         var user = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
 
         // Same message for both "not found" and "wrong password" to prevent user enumeration.
         if (user is null || !passwordHasher.Verify(request.Password, user.PasswordHash))
-            return Result.Failure<AuthResponse>("Invalid credentials.");
+            return Result.Failure<LoginResponse>("Invalid credentials.");
 
         if (user.Status != User.Statuses.Active)
-            return Result.Failure<AuthResponse>("Account is not active.");
+            return Result.Failure<LoginResponse>("Account is not active.");
 
-        var accessToken = jwtService.GenerateAccessToken(user.Id, user.Email, user.Role);
-        var expiresAt = jwtService.GetExpiry();
+        // Checked after the password so an attacker can't use this branch to discover which addresses
+        // are registered — you only reach it by already knowing the credentials.
+        if (!user.IsEmailVerified && await emailVerification.IsRequiredAsync(cancellationToken))
+            return Result.Failure<LoginResponse>(AuthErrorCodes.EmailNotVerified);
 
-        var rawToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
-        var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
+        // Second factor: also gated behind the password check, so it never leaks whether 2FA is on for an
+        // address. Instead of a session we hand back a short-lived challenge and email the code; the client
+        // completes login/verify-2fa to exchange the challenge + code for a real session.
+        if (await twoFactor.IsRequiredForAsync(user, cancellationToken))
+        {
+            await twoFactor.IssueCodeAsync(user, cancellationToken);
+            var challenge = jwtService.GenerateTwoFactorChallengeToken(user.Id);
+            return Result.Ok(LoginResponse.Challenge(challenge));
+        }
 
-        var refreshToken = new DomainRefreshToken(
-            user.Id,
-            tokenHash,
-            DateTimeOffset.UtcNow.Add(RefreshTokenLifetime),
-            request.IpAddress,
-            request.UserAgent);
-
-        await refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
-
-        return Result.Ok(new AuthResponse(accessToken, rawToken, expiresAt));
+        var session = await authSession.IssueAsync(
+            user, request.IpAddress, request.UserAgent, cancellationToken);
+        return Result.Ok(LoginResponse.Authenticated(session));
     }
 }

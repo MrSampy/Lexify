@@ -12,13 +12,14 @@ public sealed class GetAdminUsersQueryHandler(IAdminUserRepository adminUserRepo
         GetAdminUsersQuery request, CancellationToken cancellationToken)
     {
         var (total, entries) = await adminUserRepository.GetPagedWithStatsAsync(
-            request.Role, request.Status, request.Email,
+            request.Role, request.Status, request.Email, request.EmailVerified,
             request.Page, request.PageSize, cancellationToken);
 
         var dtos = entries
             .Select(e => new AdminUserDto(
                 e.Id, e.Email, e.DisplayName, e.Role, e.Status,
-                e.LastActiveAt, e.CreatedAt, e.BlockCount, e.WordCount, e.TestCount))
+                e.LastActiveAt, e.EmailVerifiedAt, e.CreatedAt,
+                e.BlockCount, e.WordCount, e.TestCount))
             .ToList();
 
         return Result.Ok(new PagedResult<AdminUserDto>(dtos, total, request.Page, request.PageSize));

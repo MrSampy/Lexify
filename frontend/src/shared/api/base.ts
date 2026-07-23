@@ -31,6 +31,13 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+
+  // File uploads send FormData: drop the JSON default so axios can set multipart/form-data
+  // *with* its generated boundary — without it the server rejects the body as 415.
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
+
   return config
 })
 
