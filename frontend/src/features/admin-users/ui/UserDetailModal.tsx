@@ -12,6 +12,8 @@ interface UserDetailModalProps {
   onDelete: (id: string, email: string) => void
   /** Provided only for superadmins — renders the "Sign in as user" button. */
   onImpersonate?: (id: string) => void
+  /** Manual override for a user who cannot receive the confirmation link. */
+  onVerifyEmail?: (id: string) => void
 }
 
 export function UserDetailModal({
@@ -23,6 +25,7 @@ export function UserDetailModal({
   onRestore,
   onDelete,
   onImpersonate,
+  onVerifyEmail,
 }: UserDetailModalProps) {
   if (!user) return null
 
@@ -51,6 +54,18 @@ export function UserDetailModal({
               >
                 {user.status}
               </Badge>
+            }
+          />
+          <Row
+            label="Email confirmed"
+            value={
+              user.emailVerifiedAt ? (
+                formatDate(user.emailVerifiedAt)
+              ) : (
+                <Badge variant="outline" style={{ color: 'var(--warning)' }}>
+                  not confirmed
+                </Badge>
+              )
             }
           />
           <Row label="Blocks" value={String(user.blockCount)} />
@@ -99,6 +114,18 @@ export function UserDetailModal({
               }}
             >
               Delete
+            </Button>
+          )}
+          {canManageUsers && !user.emailVerifiedAt && onVerifyEmail && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onVerifyEmail(user.id)
+                onClose()
+              }}
+            >
+              Confirm email
             </Button>
           )}
           {onImpersonate && user.status === 'active' && (

@@ -11,6 +11,7 @@ import {
   FileText,
   RefreshCw,
   MessageCircle,
+  MessageSquarePlus,
   BarChart3,
   Search,
   User,
@@ -36,6 +37,7 @@ const APP_NAV: { labelKey: string; to: string; icon: LucideIcon }[] = [
   { labelKey: 'nav.stats', to: ROUTES.STATS, icon: BarChart3 },
   { labelKey: 'nav.search', to: ROUTES.SEARCH, icon: Search },
   { labelKey: 'nav.profile', to: ROUTES.PROFILE, icon: User },
+  { labelKey: 'nav.feedback', to: ROUTES.FEEDBACK, icon: MessageSquarePlus },
 ]
 
 const LANG_OPTIONS = [

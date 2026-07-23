@@ -77,12 +77,20 @@ export function UsersTable({
           {users.map((user) => (
             <TableRow key={user.id}>
               <TableCell>
-                <button
-                  className="text-sm font-medium hover:underline"
-                  onClick={() => onView(user)}
-                >
-                  {user.email}
-                </button>
+                <span className="flex items-center gap-1.5">
+                  <button
+                    className="text-sm font-medium hover:underline"
+                    onClick={() => onView(user)}
+                  >
+                    {user.email}
+                  </button>
+                  {/* Unconfirmed is the noteworthy state, so only that one gets a marker. */}
+                  {!user.emailVerifiedAt && (
+                    <Badge variant="outline" style={{ color: 'var(--warning)' }}>
+                      unconfirmed
+                    </Badge>
+                  )}
+                </span>
                 {user.displayName && (
                   <p className="text-xs text-muted-foreground">{user.displayName}</p>
                 )}

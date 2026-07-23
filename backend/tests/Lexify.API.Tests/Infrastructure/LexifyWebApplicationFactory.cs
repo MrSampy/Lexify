@@ -64,6 +64,9 @@ public sealed class LexifyWebApplicationFactory : WebApplicationFactory<Program>
                 ["Admin:Email"]                  = "admin@lexify.test",
                 ["Admin:Password"]               = "Admin1234!",
                 ["Admin:DisplayName"]            = "Test Admin",
+                // One in-process host serves every test in a class; the per-IP auth limiter would
+                // otherwise reject the fifth account a class registers.
+                ["RateLimiting:Disabled"]        = "true",
             });
         });
 
@@ -118,6 +121,11 @@ public sealed class LexifyWebApplicationFactory : WebApplicationFactory<Program>
             new { email, password, displayName = "Test User" });
         registerResp.EnsureSuccessStatusCode();
 
+        // Sign-up leaves the address unconfirmed, which blocks the login below. Callers of this helper
+        // want a usable session, not the confirmation flow — that has its own tests — so confirm it
+        // directly instead of routing every test through an emailed link.
+        await MarkEmailVerifiedAsync(email);
+
         var loginResp = await client.PostAsJsonAsync("/api/auth/login",
             new { email, password });
         loginResp.EnsureSuccessStatusCode();
@@ -130,6 +138,16 @@ public sealed class LexifyWebApplicationFactory : WebApplicationFactory<Program>
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
         return (client, accessToken, refreshToken);
+    }
+
+    private async Task MarkEmailVerifiedAsync(string email)
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        await db.Users
+            .Where(u => u.Email == email)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.EmailVerifiedAt, DateTimeOffset.UtcNow));
     }
 
     private static string ExtractRefreshCookie(HttpResponseMessage response)

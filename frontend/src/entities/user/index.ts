@@ -28,6 +28,11 @@ export {
   useUpdateDisplayNameMutation,
   useChangePasswordMutation,
   useUpdateReviewSettingsMutation,
+  useRequestEmailChangeMutation,
+  useEnableTwoFactorMutation,
+  useResendEnableTwoFactorMutation,
+  useConfirmTwoFactorMutation,
+  useDisableTwoFactorMutation,
   ENGLISH_LEVELS,
 } from './api/profileApi'
 export type { Profile, EnglishLevel } from './api/profileApi'

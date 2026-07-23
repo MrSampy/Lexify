@@ -27,4 +27,22 @@ public sealed class HangfireBackgroundJobService(IBackgroundJobClient client) : 
         client.Enqueue<SendPasswordResetEmailJob>(job =>
             job.RunAsync(email, rawToken, CancellationToken.None));
     }
+
+    public void EnqueueEmailVerification(string email, string rawToken, string purpose)
+    {
+        client.Enqueue<SendEmailVerificationJob>(job =>
+            job.RunAsync(email, rawToken, purpose, CancellationToken.None));
+    }
+
+    public void EnqueueTwoFactorCode(string email, string code)
+    {
+        client.Enqueue<Send2faCodeJob>(job =>
+            job.RunAsync(email, code, CancellationToken.None));
+    }
+
+    public void EnqueueEmailChangedNotice(string oldEmail, string newEmail)
+    {
+        client.Enqueue<SendEmailChangedNoticeJob>(job =>
+            job.RunAsync(oldEmail, newEmail, CancellationToken.None));
+    }
 }

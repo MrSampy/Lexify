@@ -71,7 +71,7 @@ builder.Services.AddSwaggerGen(options =>
         return docName switch
         {
             "auth"     => controller == "auth",
-            "content"  => controller is "blocks" or "words" or "search" or "tags" or "stats",
+            "content"  => controller is "blocks" or "words" or "search" or "tags" or "stats" or "feedback",
             "learning" => controller is "review" or "tests" or "attempts",
             "admin"    => controller == "admin",
             _          => false
@@ -109,7 +109,10 @@ builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy<string, AiRateLimiterPolicy>(AiRateLimiterPolicy.PolicyName);
     options.AddPolicy<string, AuthRateLimiterPolicy>(AuthRateLimiterPolicy.PolicyName);
+    options.AddPolicy<string, TwoFactorRateLimiterPolicy>(TwoFactorRateLimiterPolicy.PolicyName);
+    options.AddPolicy<string, AccountEmailRateLimiterPolicy>(AccountEmailRateLimiterPolicy.PolicyName);
     options.AddPolicy<string, TtsRateLimiterPolicy>(TtsRateLimiterPolicy.PolicyName);
+    options.AddPolicy<string, FeedbackRateLimiterPolicy>(FeedbackRateLimiterPolicy.PolicyName);
 });
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
@@ -145,6 +148,10 @@ if (!app.Environment.IsEnvironment("Testing"))
         "cleanup-refresh-tokens", job => job.RunAsync(CancellationToken.None), Cron.Daily);
     recurringJobs.AddOrUpdate<CleanupPasswordResetTokensJob>(
         "cleanup-password-reset-tokens", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+    recurringJobs.AddOrUpdate<CleanupEmailVerificationTokensJob>(
+        "cleanup-email-verification-tokens", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+    recurringJobs.AddOrUpdate<CleanupTwoFactorCodesJob>(
+        "cleanup-two-factor-codes", job => job.RunAsync(CancellationToken.None), Cron.Daily);
     recurringJobs.AddOrUpdate<AnonymizeDeletedUsersJob>(
         "anonymize-deleted-users", job => job.RunAsync(CancellationToken.None), Cron.Daily);
     recurringJobs.AddOrUpdate<SendReviewRemindersJob>(
@@ -197,7 +204,11 @@ app.UseMiddleware<CurrentUserMiddleware>();
 // After authentication so admins (identified by their role claim) bypass maintenance mode.
 app.UseMiddleware<MaintenanceModeMiddleware>();
 app.UseAuthorization();
-app.UseRateLimiter();
+
+// Integration tests drive many accounts and submissions through one in-process host, which the
+// per-IP auth limiter would reject long before the behaviour under test is reached.
+if (!builder.Configuration.GetValue("RateLimiting:Disabled", false))
+    app.UseRateLimiter();
 app.UseHttpMetrics();
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {

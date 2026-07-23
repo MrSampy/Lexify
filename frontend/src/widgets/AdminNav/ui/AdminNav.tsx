@@ -7,6 +7,7 @@ import {
   Settings,
   Globe,
   ScrollText,
+  Inbox,
   Home,
   type LucideIcon,
 } from 'lucide-react'
@@ -22,6 +23,7 @@ const NAV_ITEMS: { labelKey: string; to: string; end?: boolean; icon: LucideIcon
   { labelKey: 'adminNav.settings', to: ROUTES.ADMIN.SETTINGS, icon: Settings },
   { labelKey: 'adminNav.languages', to: ROUTES.ADMIN.LANGUAGES, icon: Globe },
   { labelKey: 'adminNav.audit', to: ROUTES.ADMIN.AUDIT, icon: ScrollText },
+  { labelKey: 'adminNav.feedback', to: ROUTES.ADMIN.FEEDBACK, icon: Inbox },
 ]
 
 interface AdminNavProps {

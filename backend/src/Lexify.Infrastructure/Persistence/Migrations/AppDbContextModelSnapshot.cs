@@ -365,6 +365,207 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Lexify.Domain.Entities.EmailVerificationToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("NewEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("new_email");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("purpose");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("uq_email_verification_token_hash");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_email_verification_tokens_user");
+
+                    b.ToTable("email_verification_tokens", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_email_verification_tokens_new_email", "(purpose = 'email_change' AND new_email IS NOT NULL) OR (purpose = 'signup' AND new_email IS NULL)");
+
+                            t.HasCheckConstraint("chk_email_verification_tokens_purpose", "purpose IN ('signup', 'email_change')");
+                        });
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.Feedback", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AdminNote")
+                        .HasColumnType("text")
+                        .HasColumnName("admin_note");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("category");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("contact_email");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("message");
+
+                    b.Property<short?>("Rating")
+                        .HasColumnType("smallint")
+                        .HasColumnName("rating");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<Guid?>("ResolvedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("new")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("subject");
+
+                    b.Property<int>("TicketNumber")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("ticket_number");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("TicketNumber"));
+                    NpgsqlPropertyBuilderExtensions.HasIdentityOptions(b.Property<int>("TicketNumber"), 1000L, null, null, null, null, null);
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketNumber")
+                        .IsUnique()
+                        .HasDatabaseName("idx_feedback_ticket_number");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_feedback_user_id");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("idx_feedback_status_created");
+
+                    b.ToTable("feedback", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_feedback_rating", "(type = 'review' AND rating BETWEEN 1 AND 5) OR (type <> 'review' AND rating IS NULL)");
+
+                            t.HasCheckConstraint("chk_feedback_status", "status IN ('new', 'in_progress', 'resolved')");
+
+                            t.HasCheckConstraint("chk_feedback_type", "type IN ('suggestion', 'bug', 'review', 'question')");
+                        });
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.FeedbackAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("FeedbackId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("feedback_id");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<string>("StorageName")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("storage_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FeedbackId")
+                        .HasDatabaseName("idx_feedback_attachments_feedback_id");
+
+                    b.ToTable("feedback_attachments", (string)null);
+                });
+
             modelBuilder.Entity("Lexify.Domain.Entities.Language", b =>
                 {
                     b.Property<short>("Id")
@@ -416,6 +617,50 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                     b.ToTable("languages", null, t =>
                         {
                             t.HasCheckConstraint("chk_languages_code", "code ~ '^[a-z]{2,5}$'");
+                        });
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.LoginTwoFactorCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_login_two_factor_codes_user");
+
+                    b.ToTable("login_two_factor_codes", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_login_two_factor_codes_attempts", "attempts >= 0");
                         });
                 });
 
@@ -849,6 +1094,10 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("email");
 
+                    b.Property<DateTimeOffset?>("EmailVerifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_verified_at");
+
                     b.Property<string>("EnglishLevel")
                         .HasMaxLength(2)
                         .HasColumnType("character varying(2)")
@@ -884,6 +1133,12 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasDefaultValue("active")
                         .HasColumnName("status");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("two_factor_enabled");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1262,6 +1517,45 @@ namespace Lexify.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_conversation_messages_conversation");
                 });
 
+            modelBuilder.Entity("Lexify.Domain.Entities.EmailVerificationToken", b =>
+                {
+                    b.HasOne("Lexify.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_email_verification_tokens_user");
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.Feedback", b =>
+                {
+                    b.HasOne("Lexify.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_feedback_user");
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.FeedbackAttachment", b =>
+                {
+                    b.HasOne("Lexify.Domain.Entities.Feedback", null)
+                        .WithMany("Attachments")
+                        .HasForeignKey("FeedbackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_feedback_attachments_feedback");
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.LoginTwoFactorCode", b =>
+                {
+                    b.HasOne("Lexify.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_login_two_factor_codes_user");
+                });
+
             modelBuilder.Entity("Lexify.Domain.Entities.PasswordResetToken", b =>
                 {
                     b.HasOne("Lexify.Domain.Entities.User", null)
@@ -1417,6 +1711,11 @@ namespace Lexify.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Lexify.Domain.Entities.Conversation", b =>
                 {
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("Lexify.Domain.Entities.Feedback", b =>
+                {
+                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("Lexify.Domain.Entities.Question", b =>

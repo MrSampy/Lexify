@@ -72,6 +72,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+        services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
+        services.AddScoped<ILoginTwoFactorCodeRepository, LoginTwoFactorCodeRepository>();
         services.AddScoped<IWordBlockRepository, WordBlockRepository>();
         services.AddScoped<IWordRepository, WordRepository>();
         services.AddScoped<IAiCallLogRepository, AiCallLogRepository>();
@@ -82,6 +84,7 @@ public static class DependencyInjection
         services.AddScoped<IAttemptAnswerRepository, AttemptAnswerRepository>();
         services.AddScoped<ITagRepository, TagRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IFeedbackRepository, FeedbackRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Hangfire — background jobs (PostgreSQL storage)
@@ -95,6 +98,10 @@ public static class DependencyInjection
         services.AddScoped<GenerateTestJob>();
         services.AddScoped<CleanupRefreshTokensJob>();
         services.AddScoped<CleanupPasswordResetTokensJob>();
+        services.AddScoped<CleanupEmailVerificationTokensJob>();
+        services.AddScoped<SendEmailVerificationJob>();
+        services.AddScoped<CleanupTwoFactorCodesJob>();
+        services.AddScoped<Send2faCodeJob>();
         services.AddScoped<AnonymizeDeletedUsersJob>();
         services.AddScoped<SendReviewRemindersJob>();
         services.AddScoped<SendWelcomeEmailJob>();
@@ -109,7 +116,28 @@ public static class DependencyInjection
         // AI providers — an ordered list, tried in turn until one succeeds (see AIOrchestrator)
         var aiProviders = configuration.GetSection("AiProviders").Get<List<AiProviderSettings>>()
             ?? [];
-        services.Configure<List<AiProviderSettings>>(configuration.GetSection("AiProviders"));
+
+        // Drop keyless clones of a keyed endpoint: the extra Ollama keys (OLLAMA_API_KEY_2..4) are
+        // optional, so an unset one would otherwise leave an entry with no Authorization header that
+        // just 401s and adds a wasted step + latency to the rotation. A provider that is legitimately
+        // keyless on its own endpoint (e.g. a local Lemonade) has a unique BaseUrl and is kept.
+        aiProviders = aiProviders
+            .Where(p => !string.IsNullOrEmpty(p.ApiKey)
+                        || !aiProviders.Any(other => !ReferenceEquals(other, p)
+                                                     && other.BaseUrl == p.BaseUrl
+                                                     && !string.IsNullOrEmpty(other.ApiKey)))
+            .ToList();
+
+        // Bind the filtered list (not the raw section) so the orchestrator iterates exactly the
+        // providers we register HTTP clients for below.
+        services.Configure<List<AiProviderSettings>>(opts =>
+        {
+            opts.Clear();
+            opts.AddRange(aiProviders);
+        });
+
+        // Rotates the starting key per operation so load spreads across interchangeable keys.
+        services.AddSingleton<AiProviderRotation>();
 
         // AI HTTP clients with Polly: 2 retries on transient errors
         var retryPolicy = HttpPolicyExtensions
@@ -140,6 +168,10 @@ public static class DependencyInjection
             })
             .AddPolicyHandler(retryPolicy);
         services.AddScoped<ITtsService, PiperTtsService>();
+
+        // Feedback attachments live on a mounted volume, not in the database.
+        services.Configure<FeedbackStorageSettings>(configuration.GetSection("FeedbackStorage"));
+        services.AddScoped<IFeedbackAttachmentStorage, LocalFeedbackAttachmentStorage>();
 
         // Redis connection and cache service (optional — falls back to no-op when not configured)
         var redisConnectionString = configuration.GetConnectionString("Redis");

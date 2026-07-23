@@ -10,6 +10,13 @@ export interface Profile {
   englishLevel: EnglishLevel | null
   /** Max new (never-reviewed) words introduced into the review queue per day. */
   newWordsPerDay: number
+  emailVerified: boolean
+  /** Address awaiting confirmation from an in-flight change; null when none. */
+  pendingEmail: string | null
+  /** The user's 2FA opt-in flag. */
+  twoFactorEnabled: boolean
+  /** True for admins — 2FA is forced on and cannot be turned off. */
+  twoFactorMandatory: boolean
 }
 
 export function useProfile() {
@@ -56,5 +63,50 @@ export function useChangePasswordMutation() {
   return useMutation({
     mutationFn: (input: { currentPassword: string; newPassword: string }) =>
       apiClient.put('/api/profile/password', input).then((r) => r.data),
+  })
+}
+
+/** Starts an email change; the account keeps its current address until the link is confirmed. */
+export function useRequestEmailChangeMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { newEmail: string; currentPassword: string }) =>
+      apiClient.put('/api/profile/email', input).then((r) => r.data),
+    // Refetch so the "waiting on confirmation" hint appears.
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['user', 'profile'] }),
+  })
+}
+
+/** Step 1 of opting into 2FA: request the enrollment code (does not flip the flag yet). */
+export function useEnableTwoFactorMutation() {
+  return useMutation({
+    mutationFn: () => apiClient.post('/api/profile/2fa/enable').then((r) => r.data),
+  })
+}
+
+/** Re-sends the enrollment code while opting in. */
+export function useResendEnableTwoFactorMutation() {
+  return useMutation({
+    mutationFn: () => apiClient.post('/api/profile/2fa/resend').then((r) => r.data),
+  })
+}
+
+/** Step 2 of opting in: confirm the emailed code, which turns 2FA on. */
+export function useConfirmTwoFactorMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (code: string) =>
+      apiClient.post('/api/profile/2fa/confirm', { code }).then((r) => r.data),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['user', 'profile'] }),
+  })
+}
+
+/** Turns 2FA off (re-authenticated by password). Rejected for admins. */
+export function useDisableTwoFactorMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (currentPassword: string) =>
+      apiClient.delete('/api/profile/2fa', { data: { currentPassword } }).then((r) => r.data),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['user', 'profile'] }),
   })
 }

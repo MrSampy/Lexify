@@ -16,6 +16,24 @@ public sealed class User : BaseEntity
     public DateTimeOffset? LastActiveAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
+    /// <summary>
+    /// When the address in <see cref="Email"/> was proven to belong to the account holder. Null = never
+    /// confirmed. Kept separate from <see cref="Status"/> because the two are orthogonal: an admin must be
+    /// able to suspend an unconfirmed account, and confirming one must not silently un-suspend it.
+    /// </summary>
+    public DateTimeOffset? EmailVerifiedAt { get; private set; }
+
+    public bool IsEmailVerified => EmailVerifiedAt is not null;
+
+    /// <summary>
+    /// Whether the user has opted into two-factor (email code) at sign-in. Admins are forced regardless of
+    /// this flag — see <see cref="IsTwoFactorMandatory"/> — so the flag only governs non-admin accounts.
+    /// </summary>
+    public bool TwoFactorEnabled { get; private set; }
+
+    /// <summary>Admins must always pass a second factor; the opt-in flag cannot turn this off.</summary>
+    public bool IsTwoFactorMandatory => Role == Roles.Admin;
+
     private User() { }
 
     public User(string email, string passwordHash, string? displayName = null,
@@ -71,6 +89,46 @@ public sealed class User : BaseEntity
     {
         var trimmed = displayName?.Trim();
         DisplayName = string.IsNullOrEmpty(trimmed) ? null : trimmed;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkEmailVerified()
+    {
+        // Idempotent: a double-click on the confirmation link must not move the timestamp.
+        if (EmailVerifiedAt is not null) return;
+        EmailVerifiedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Moves the account to a new address. Verification is cleared deliberately — the caller is expected
+    /// to have proven the new address first (or to send a fresh confirmation), and an unproven address
+    /// must never inherit the old one's verified state.
+    /// </summary>
+    public void ChangeEmail(string newEmail)
+    {
+        if (string.IsNullOrWhiteSpace(newEmail)) throw new DomainException("Email cannot be empty.");
+        Email = newEmail.ToLowerInvariant().Trim();
+        EmailVerifiedAt = null;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void EnableTwoFactor()
+    {
+        // Idempotent, matching MarkEmailVerified: re-enabling an already-on account is a no-op.
+        if (TwoFactorEnabled) return;
+        TwoFactorEnabled = true;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Turns off the opt-in flag. The admin mandate is enforced by the caller (it is orthogonal to this
+    /// flag): an admin's <see cref="IsTwoFactorMandatory"/> keeps 2FA on at sign-in even with the flag off.
+    /// </summary>
+    public void DisableTwoFactor()
+    {
+        if (!TwoFactorEnabled) return;
+        TwoFactorEnabled = false;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

@@ -18,6 +18,7 @@ namespace Lexify.Infrastructure.AI;
 public sealed partial class AIOrchestrator(
     IHttpClientFactory httpClientFactory,
     IOptions<List<AiProviderSettings>> providersOptions,
+    AiProviderRotation rotation,
     IAiCallLogRepository logRepository,
     IUnitOfWork unitOfWork,
     ICurrentUserService currentUser,
@@ -26,13 +27,21 @@ public sealed partial class AIOrchestrator(
 {
     private List<AiProviderSettings> Providers => providersOptions.Value;
 
+    /// <summary>
+    /// The provider order to try for one operation: same-endpoint keys are round-robined (spreading load
+    /// so no single key hits its rate limit first), distinct endpoints keep their configured fallback
+    /// order. Called once per operation — each call advances the rotation by one.
+    /// </summary>
+    private IReadOnlyList<AiProviderSettings> GetAttemptOrder() =>
+        AiProviderOrdering.Order(Providers, rotation.Next());
+
     public async IAsyncEnumerable<string> StreamEnrichWordsAsync(
         IReadOnlyList<ParsedImportLine> lines,
         string targetLanguage,
         string nativeLanguage,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        foreach (var settings in Providers)
+        foreach (var settings in GetAttemptOrder())
         {
             var client = CreateClient(settings);
             var sw = Stopwatch.StartNew();
@@ -67,7 +76,7 @@ public sealed partial class AIOrchestrator(
         string? englishLevel = null,
         CancellationToken ct = default)
     {
-        foreach (var settings in Providers)
+        foreach (var settings in GetAttemptOrder())
         {
             var client = CreateClient(settings);
             var sw = Stopwatch.StartNew();
@@ -94,7 +103,7 @@ public sealed partial class AIOrchestrator(
         string? englishLevel = null,
         CancellationToken ct = default)
     {
-        foreach (var settings in Providers)
+        foreach (var settings in GetAttemptOrder())
         {
             var client = CreateClient(settings);
             var sw = Stopwatch.StartNew();
@@ -120,7 +129,7 @@ public sealed partial class AIOrchestrator(
         int count,
         CancellationToken ct = default)
     {
-        foreach (var settings in Providers)
+        foreach (var settings in GetAttemptOrder())
         {
             var client = CreateClient(settings);
             var sw = Stopwatch.StartNew();
@@ -146,7 +155,7 @@ public sealed partial class AIOrchestrator(
         string language,
         CancellationToken ct = default)
     {
-        foreach (var settings in Providers)
+        foreach (var settings in GetAttemptOrder())
         {
             var client = CreateClient(settings);
             var sw = Stopwatch.StartNew();
@@ -171,7 +180,7 @@ public sealed partial class AIOrchestrator(
         IReadOnlyList<ChatTurn> history,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        foreach (var settings in Providers)
+        foreach (var settings in GetAttemptOrder())
         {
             var client = CreateClient(settings);
             var sw = Stopwatch.StartNew();
@@ -206,7 +215,7 @@ public sealed partial class AIOrchestrator(
         string targetLanguage,
         CancellationToken ct = default)
     {
-        foreach (var settings in Providers)
+        foreach (var settings in GetAttemptOrder())
         {
             var client = CreateClient(settings);
             var sw = Stopwatch.StartNew();

@@ -12,6 +12,7 @@ public sealed class ResetPasswordCommandHandler(
     IUserRepository userRepository,
     IPasswordResetTokenRepository passwordResetTokenRepository,
     IRefreshTokenRepository refreshTokenRepository,
+    IEmailVerificationTokenRepository emailVerificationTokenRepository,
     IPasswordHasher passwordHasher)
     : IRequestHandler<ResetPasswordCommand, Result>
 {
@@ -37,6 +38,11 @@ public sealed class ResetPasswordCommandHandler(
 
         // Standard practice: a password reset revokes every existing session.
         await refreshTokenRepository.RevokeAllForUserAsync(user.Id, cancellationToken);
+
+        // A reset is the recovery path after a compromise — kill any pending email-change link too,
+        // so an attacker who started an address change can't still complete it afterwards.
+        await emailVerificationTokenRepository.InvalidateActiveForUserAsync(
+            user.Id, EmailVerificationToken.Purposes.EmailChange, cancellationToken);
 
         return Result.Ok();
     }

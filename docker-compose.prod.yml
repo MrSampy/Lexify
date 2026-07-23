@@ -83,6 +83,26 @@ services:
       - AiProviders__0__TimeoutSeconds=180
       - AiProviders__0__SupportsJsonSchema=false
 
+      # Extra Ollama Cloud keys for load rotation — optional; unset ones are dropped at startup.
+      - AiProviders__1__Name=Ollama2
+      - AiProviders__1__BaseUrl=https://ollama.com
+      - AiProviders__1__Model=${OLLAMA_MODEL:-gemma4:31b}
+      - AiProviders__1__ApiKey=${OLLAMA_API_KEY_2}
+      - AiProviders__1__TimeoutSeconds=180
+      - AiProviders__1__SupportsJsonSchema=false
+      - AiProviders__2__Name=Ollama3
+      - AiProviders__2__BaseUrl=https://ollama.com
+      - AiProviders__2__Model=${OLLAMA_MODEL:-gemma4:31b}
+      - AiProviders__2__ApiKey=${OLLAMA_API_KEY_3}
+      - AiProviders__2__TimeoutSeconds=180
+      - AiProviders__2__SupportsJsonSchema=false
+      - AiProviders__3__Name=Ollama4
+      - AiProviders__3__BaseUrl=https://ollama.com
+      - AiProviders__3__Model=${OLLAMA_MODEL:-gemma4:31b}
+      - AiProviders__3__ApiKey=${OLLAMA_API_KEY_4}
+      - AiProviders__3__TimeoutSeconds=180
+      - AiProviders__3__SupportsJsonSchema=false
+
       # Server-side neural TTS (Piper). Runtime on/off is the features.tts_enabled setting.
       - Piper__Enabled=${PIPER_ENABLED:-true}
       - Piper__BaseUrl=${PIPER_BASE_URL:-http://piper:5000}
@@ -90,8 +110,12 @@ services:
 
       # Read-only view of the postgres-backup volume, so the admin dashboard can show backup age
       - Backups__Path=/backups
+
+      # User-uploaded feedback attachments live on a named volume so they survive redeploys.
+      - FeedbackStorage__Directory=/app/feedback-uploads
     volumes:
       - tts_cache:/app/tts-cache
+      - feedback_uploads:/app/feedback-uploads
       - pgbackups:/backups:ro
     depends_on:
       postgres:
@@ -202,3 +226,4 @@ volumes:
   caddy_data:
   caddy_config:
   tts_cache:
+  feedback_uploads:

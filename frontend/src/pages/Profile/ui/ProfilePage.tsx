@@ -12,6 +12,8 @@ import {
   type EnglishLevel,
 } from '@/entities/user'
 import { LxSelect, Spinner } from '@/shared/ui'
+import { ChangeEmailForm } from '@/features/change-email'
+import { TwoFactorSection } from './TwoFactorSection'
 
 const THEMES = [
   { value: 'light', labelKey: 'profile.themeLight' },
@@ -218,6 +220,21 @@ export function ProfilePage() {
             ))}
           </div>
         </SectionCard>
+
+        {profile && (
+          <SectionCard title={t('profile.changeEmail')}>
+            <ChangeEmailForm currentEmail={profile.email} pendingEmail={profile.pendingEmail} />
+          </SectionCard>
+        )}
+
+        {profile && (
+          <SectionCard title={t('profile.twoFactor')}>
+            <TwoFactorSection
+              enabled={profile.twoFactorEnabled}
+              mandatory={profile.twoFactorMandatory}
+            />
+          </SectionCard>
+        )}
 
         <SectionCard title={t('profile.changePassword')}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
