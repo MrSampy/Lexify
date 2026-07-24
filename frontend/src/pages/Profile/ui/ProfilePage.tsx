@@ -1,72 +1,34 @@
-import { useState } from 'react'
+import { useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useTheme } from 'next-themes'
-import { toast } from 'sonner'
-import {
-  useProfile,
-  useUpdateDisplayNameMutation,
-  useChangePasswordMutation,
-  useUpdateEnglishLevelMutation,
-  useUpdateReviewSettingsMutation,
-  ENGLISH_LEVELS,
-  type EnglishLevel,
-} from '@/entities/user'
-import { LxSelect, Spinner } from '@/shared/ui'
-import { ChangeEmailForm } from '@/features/change-email'
-import { TwoFactorSection } from './TwoFactorSection'
+import { ChevronDown } from 'lucide-react'
+import { useProfile } from '@/entities/user'
+import { Spinner } from '@/shared/ui'
+import { useIsMobile } from '@/shared/lib'
+import { AccountTab } from './AccountTab'
+import { LearningTab } from './LearningTab'
+import { AppearanceTab } from './AppearanceTab'
 
-const THEMES = [
-  { value: 'light', labelKey: 'profile.themeLight' },
-  { value: 'dark', labelKey: 'profile.themeDark' },
-  { value: 'system', labelKey: 'profile.themeSystem' },
+const TABS = [
+  { id: 'account', labelKey: 'profile.tabAccount' },
+  { id: 'learning', labelKey: 'profile.tabLearning' },
+  { id: 'appearance', labelKey: 'profile.tabAppearance' },
 ] as const
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section
-      style={{
-        background: 'var(--bg-1)',
-        border: '1.5px solid var(--line-2)',
-        borderRadius: 'var(--r-md)',
-        padding: '20px 24px',
-      }}
-    >
-      <h2
-        style={{
-          margin: '0 0 14px',
-          fontFamily: 'var(--font-body)',
-          fontWeight: 700,
-          fontSize: 13,
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-          color: 'var(--fg-2)',
-        }}
-      >
-        {title}
-      </h2>
-      {children}
-    </section>
-  )
-}
+type TabId = (typeof TABS)[number]['id']
 
 export function ProfilePage() {
   const { t } = useTranslation()
   const { data: profile, isLoading } = useProfile()
-  const { theme, setTheme } = useTheme()
+  const isMobile = useIsMobile()
 
-  const updateDisplayName = useUpdateDisplayNameMutation()
-  const updateLevel = useUpdateEnglishLevelMutation()
-  const changePassword = useChangePasswordMutation()
-  const updateReviewSettings = useUpdateReviewSettingsMutation()
+  // The active section lives in the URL so "the notification setting" is a linkable place.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requested = searchParams.get('tab')
+  const active: TabId = TABS.some((tab) => tab.id === requested) ? (requested as TabId) : 'account'
+  const selectTab = (id: TabId) => setSearchParams({ tab: id }, { replace: true })
 
-  // null = untouched by the user → show the profile value; avoids setState-in-effect
-  const [displayNameDraft, setDisplayNameDraft] = useState<string | null>(null)
-  const displayName = displayNameDraft ?? profile?.displayName ?? ''
-  const [newWordsDraft, setNewWordsDraft] = useState<string | null>(null)
-  const newWordsPerDay = newWordsDraft ?? String(profile?.newWordsPerDay ?? 10)
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
   if (isLoading) {
     return (
@@ -76,58 +38,21 @@ export function ProfilePage() {
     )
   }
 
-  const handleSaveDisplayName = async () => {
-    try {
-      await updateDisplayName.mutateAsync(displayName.trim() === '' ? null : displayName.trim())
-      setDisplayNameDraft(null)
-      toast.success(t('profile.nameUpdated'))
-    } catch {
-      toast.error(t('profile.nameUpdateFailed'))
-    }
+  const renderTab = (id: TabId) => {
+    if (!profile) return null
+    if (id === 'account') return <AccountTab profile={profile} />
+    if (id === 'learning') return <LearningTab profile={profile} />
+    return <AppearanceTab />
   }
 
-  const handleLevelChange = async (value: string) => {
-    try {
-      await updateLevel.mutateAsync(value === '' ? null : (value as EnglishLevel))
-      toast.success(t('profile.levelUpdated'))
-    } catch {
-      toast.error(t('profile.levelUpdateFailed'))
-    }
-  }
-
-  const handleSaveReviewSettings = async () => {
-    const parsed = Number(newWordsPerDay)
-    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 100) {
-      toast.error(t('profile.newWordsInvalid'))
-      return
-    }
-    try {
-      await updateReviewSettings.mutateAsync(parsed)
-      setNewWordsDraft(null)
-      toast.success(t('profile.reviewSettingsUpdated'))
-    } catch {
-      toast.error(t('profile.reviewSettingsUpdateFailed'))
-    }
-  }
-
-  const handleChangePassword = async () => {
-    if (newPassword !== confirmPassword) {
-      toast.error(t('profile.mismatch'))
-      return
-    }
-    if (newPassword.length < 8) {
-      toast.error(t('profile.tooShort'))
-      return
-    }
-    try {
-      await changePassword.mutateAsync({ currentPassword, newPassword })
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
-      toast.success(t('profile.changed'))
-    } catch {
-      toast.error(t('profile.changeFailed'))
-    }
+  // Roving focus: a tablist is one tab stop, arrows move between the tabs inside it.
+  const handleTabKeyDown = (e: React.KeyboardEvent, index: number) => {
+    const delta = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+    if (delta === 0) return
+    e.preventDefault()
+    const next = TABS[(index + delta + TABS.length) % TABS.length]
+    selectTab(next.id)
+    tabRefs.current[next.id]?.focus()
   }
 
   return (
@@ -140,140 +65,116 @@ export function ProfilePage() {
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 560 }}>
-        <SectionCard title={t('profile.displayName')}>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <input
-              className="lx-input"
-              style={{ flex: 1 }}
-              value={displayName}
-              placeholder={t('profile.namePlaceholder')}
-              maxLength={64}
-              onChange={(e) => setDisplayNameDraft(e.target.value)}
-            />
-            <button
-              className="lx-btn-primary"
-              onClick={() => void handleSaveDisplayName()}
-              disabled={
-                updateDisplayName.isPending || (profile?.displayName ?? '') === displayName.trim()
-              }
+        {isMobile ? (
+          // Narrow screens: an exclusive accordion. A tab strip here would either wrap onto two rows
+          // or hide sections behind a horizontal scroll nobody notices.
+          TABS.map(({ id, labelKey }) => {
+            const open = active === id
+            return (
+              <div key={id} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <button
+                  aria-expanded={open}
+                  aria-controls={`profile-panel-${id}`}
+                  onClick={() => selectTab(id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    width: '100%',
+                    padding: '14px 18px',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 15,
+                    fontWeight: 800,
+                    textAlign: 'left',
+                    color: open ? 'var(--fg-1)' : 'var(--fg-2)',
+                    background: open ? 'var(--accent-ghost)' : 'var(--bg-1)',
+                    border: `1.5px solid ${open ? 'var(--accent-line)' : 'var(--line-2)'}`,
+                    borderRadius: 'var(--r-md)',
+                  }}
+                >
+                  {t(labelKey)}
+                  <ChevronDown
+                    size={18}
+                    style={{
+                      flexShrink: 0,
+                      transition: 'transform 0.15s',
+                      transform: open ? 'rotate(180deg)' : 'none',
+                    }}
+                  />
+                </button>
+                {open && (
+                  <div
+                    id={`profile-panel-${id}`}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+                  >
+                    {renderTab(id)}
+                  </div>
+                )}
+              </div>
+            )
+          })
+        ) : (
+          <>
+            <div
+              role="tablist"
+              aria-label={t('profile.title')}
+              style={{
+                display: 'flex',
+                gap: 4,
+                padding: 4,
+                background: 'var(--bg-1)',
+                border: '1.5px solid var(--line-2)',
+                borderRadius: 'var(--r-pill)',
+                alignSelf: 'flex-start',
+              }}
             >
-              {t('common.save')}
-            </button>
-          </div>
-        </SectionCard>
+              {TABS.map(({ id, labelKey }, index) => {
+                const selected = active === id
+                return (
+                  <button
+                    key={id}
+                    ref={(el) => {
+                      tabRefs.current[id] = el
+                    }}
+                    role="tab"
+                    id={`profile-tab-${id}`}
+                    aria-selected={selected}
+                    aria-controls={`profile-panel-${id}`}
+                    tabIndex={selected ? 0 : -1}
+                    onClick={() => selectTab(id)}
+                    onKeyDown={(e) => handleTabKeyDown(e, index)}
+                    style={{
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-body)',
+                      fontSize: 13,
+                      fontWeight: 800,
+                      letterSpacing: '0.02em',
+                      padding: '8px 18px',
+                      borderRadius: 'var(--r-pill)',
+                      background: selected ? 'var(--accent-color)' : 'transparent',
+                      color: selected ? '#fff' : 'var(--fg-3)',
+                      transition: 'all 0.12s',
+                    }}
+                  >
+                    {t(labelKey)}
+                  </button>
+                )
+              })}
+            </div>
 
-        <SectionCard title={t('profile.englishLevel')}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <LxSelect
-              value={profile?.englishLevel ?? ''}
-              disabled={updateLevel.isPending}
-              onValueChange={(v) => void handleLevelChange(v)}
-              triggerStyle={{ width: '100%', maxWidth: 160 }}
-              options={[
-                { value: '', label: t('common.notSet') },
-                ...ENGLISH_LEVELS.map((level) => ({ value: level, label: level })),
-              ]}
-            />
-            <span className="ds-sm" style={{ color: 'var(--fg-4)' }}>
-              {t('profile.cefrHint')}
-            </span>
-          </div>
-        </SectionCard>
-
-        <SectionCard title={t('profile.reviewSettings')}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <input
-              className="lx-input"
-              type="number"
-              min={0}
-              max={100}
-              style={{ width: 100 }}
-              value={newWordsPerDay}
-              onChange={(e) => setNewWordsDraft(e.target.value)}
-            />
-            <button
-              className="lx-btn-primary"
-              onClick={() => void handleSaveReviewSettings()}
-              disabled={
-                updateReviewSettings.isPending ||
-                String(profile?.newWordsPerDay ?? 10) === newWordsPerDay.trim()
-              }
+            <div
+              role="tabpanel"
+              id={`profile-panel-${active}`}
+              aria-labelledby={`profile-tab-${active}`}
+              style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
             >
-              {t('common.save')}
-            </button>
-            <span className="ds-sm" style={{ color: 'var(--fg-4)' }}>
-              {t('profile.newWordsHint')}
-            </span>
-          </div>
-        </SectionCard>
-
-        <SectionCard title={t('profile.theme')}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {THEMES.map(({ value, labelKey }) => (
-              <button
-                key={value}
-                className={theme === value ? 'lx-btn-primary' : 'lx-btn-secondary'}
-                onClick={() => setTheme(value)}
-              >
-                {t(labelKey)}
-              </button>
-            ))}
-          </div>
-        </SectionCard>
-
-        {profile && (
-          <SectionCard title={t('profile.changeEmail')}>
-            <ChangeEmailForm currentEmail={profile.email} pendingEmail={profile.pendingEmail} />
-          </SectionCard>
+              {renderTab(active)}
+            </div>
+          </>
         )}
-
-        {profile && (
-          <SectionCard title={t('profile.twoFactor')}>
-            <TwoFactorSection
-              enabled={profile.twoFactorEnabled}
-              mandatory={profile.twoFactorMandatory}
-            />
-          </SectionCard>
-        )}
-
-        <SectionCard title={t('profile.changePassword')}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <input
-              className="lx-input"
-              type="password"
-              placeholder={t('profile.currentPassword')}
-              autoComplete="current-password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-            />
-            <input
-              className="lx-input"
-              type="password"
-              placeholder={t('profile.newPassword')}
-              autoComplete="new-password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-            <input
-              className="lx-input"
-              type="password"
-              placeholder={t('profile.repeatPassword')}
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-            <button
-              className="lx-btn-primary"
-              style={{ alignSelf: 'flex-start' }}
-              onClick={() => void handleChangePassword()}
-              disabled={
-                changePassword.isPending || !currentPassword || !newPassword || !confirmPassword
-              }
-            >
-              {t('profile.changePassword')}
-            </button>
-          </div>
-        </SectionCard>
       </div>
     </div>
   )

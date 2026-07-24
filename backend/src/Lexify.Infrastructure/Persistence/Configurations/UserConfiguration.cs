@@ -47,6 +47,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasDefaultValue(User.DefaultNewWordsPerDay)
             .IsRequired();
 
+        builder.Property(u => u.EmailRemindersEnabled)
+            .HasColumnName("email_reminders_enabled")
+            .HasDefaultValue(true)
+            .IsRequired();
+
         builder.Property(u => u.EmailVerifiedAt).HasColumnName("email_verified_at");
         builder.Property(u => u.TwoFactorEnabled)
             .HasColumnName("two_factor_enabled")

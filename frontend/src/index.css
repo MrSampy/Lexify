@@ -450,9 +450,15 @@ body {
 /* --- Review card (3D flip) --- */
 .review-card-wrap {
   perspective: 900px;
+  /* Single source of truth for the card's height — dvh, not vh, so hiding the mobile URL bar
+     doesn't resize the card mid-session. Overridden for phones below. */
+  --review-card-h: min(480px, 65dvh);
 }
 .review-card-inner {
-  position: relative;
+  /* Both faces occupy the same 1×1 grid cell instead of the back being absolutely positioned:
+     the container then grows to max(front, back), so a long translation + notes + example can no
+     longer overflow the card and spill onto whatever sits below it. */
+  display: grid;
   transform-style: preserve-3d;
   transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -461,13 +467,18 @@ body {
 }
 .review-card-face,
 .review-card-back {
+  grid-area: 1 / 1;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 .review-card-back {
   transform: rotateY(180deg);
-  position: absolute;
-  inset: 0;
+}
+
+@media (max-width: 767px) {
+  .review-card-wrap {
+    --review-card-h: min(360px, 42dvh);
+  }
 }
 
 /* --- Word type badges --- */

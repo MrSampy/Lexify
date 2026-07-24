@@ -17,6 +17,8 @@ export interface Profile {
   twoFactorEnabled: boolean
   /** True for admins — 2FA is forced on and cannot be turned off. */
   twoFactorMandatory: boolean
+  /** False when the user opted out of the daily "words are due" email. */
+  emailRemindersEnabled: boolean
 }
 
 export function useProfile() {
@@ -56,6 +58,16 @@ export function useUpdateReviewSettingsMutation() {
       void queryClient.invalidateQueries({ queryKey: ['user', 'stats'] })
       void queryClient.invalidateQueries({ queryKey: ['review'] })
     },
+  })
+}
+
+/** Turns the daily reminder email on or off. */
+export function useUpdateNotificationSettingsMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (emailRemindersEnabled: boolean) =>
+      apiClient.put('/api/profile/notifications', { emailRemindersEnabled }).then((r) => r.data),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['user', 'profile'] }),
   })
 }
 

@@ -6,12 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { ROUTES, LANGUAGES } from '@/shared/config'
-import { Checkbox, LxSelect, Spinner, useConfirm, ChipListInput } from '@/shared/ui'
+import { Checkbox, LxSelect, Mascot, Spinner, useConfirm, ChipListInput } from '@/shared/ui'
 import { useBlock, useDeleteBlockMutation, useExportBlock } from '@/entities/block'
 import { useCreateWordMutation } from '@/entities/word'
 import { WordRow } from '@/entities/word'
 import { TagInput } from '@/features/manage-tags'
 import { BulkActionBar } from '@/features/bulk-word-actions'
+import { ShareBlockModal } from '@/features/share-block'
 
 const WORD_TYPES = ['word', 'phrase', 'idiom', 'expression']
 
@@ -31,6 +32,7 @@ export function BlockDetailPage() {
   const [wordsPage, setWordsPage] = useState(1)
   const [confidenceOnly, setConfidenceOnly] = useState(false)
   const [showAddWord, setShowAddWord] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [addSynonyms, setAddSynonyms] = useState<string[]>([])
   // Bulk selection; select-all covers the current page, so a page change resets it.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -193,6 +195,9 @@ export function BlockDetailPage() {
           >
             <button className="lx-btn-secondary">{t('blockDetail.cramBlock')}</button>
           </Link>
+          <button className="lx-btn-secondary" onClick={() => setShareOpen(true)}>
+            {t('blocks.share.button')}
+          </button>
           <button
             className="lx-btn-secondary"
             onClick={() => exportBlock.mutate(block.id)}
@@ -417,6 +422,10 @@ export function BlockDetailPage() {
         {displayedWords.length === 0 ? (
           <div
             style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 12,
               padding: '48px 18px',
               textAlign: 'center',
               color: 'var(--fg-3)',
@@ -424,6 +433,7 @@ export function BlockDetailPage() {
               fontSize: 13,
             }}
           >
+            {!confidenceOnly && <Mascot pose="writing" size={104} float />}
             {confidenceOnly ? t('blockDetail.noFlagged') : t('blockDetail.noWords')}
           </div>
         ) : (
@@ -480,6 +490,7 @@ export function BlockDetailPage() {
         </div>
       )}
       {confirmDialog}
+      <ShareBlockModal blockId={block.id} open={shareOpen} onClose={() => setShareOpen(false)} />
     </div>
   )
 }

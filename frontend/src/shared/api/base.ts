@@ -41,11 +41,19 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-// Auto-refresh on 401 and retry the original request once
+// Auto-refresh on 401 and retry the original request once.
+// Concurrent 401s are safe: `authHandlers.refresh` is single-flighted in entities/user's store,
+// so N simultaneous failures share one POST /api/auth/refresh instead of racing the server-side
+// token rotation (which revokes the old token and would strand every loser).
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config as typeof error.config & { _retry?: boolean }
+
+    // The refresh call itself must never trigger a refresh — that would recurse.
+    if (originalRequest?.url?.includes('/api/auth/refresh')) {
+      return Promise.reject(error)
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry && authHandlers) {
       originalRequest._retry = true

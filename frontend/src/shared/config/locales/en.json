@@ -1,6 +1,7 @@
 {
   "common": {
     "cancel": "Cancel",
+    "close": "Close",
     "delete": "Delete",
     "save": "Save",
     "done": "Done",
@@ -116,6 +117,7 @@
     "signingIn": "Signing in…",
     "email": "Email",
     "password": "Password",
+    "repeatPassword": "Repeat password",
     "yourName": "Your name",
     "emailInvalid": "Enter a valid email",
     "passwordMin": "Password must be at least 8 characters",
@@ -217,7 +219,35 @@
     "filterByTag": "filter by tag…",
     "clearFilter": "clear filter",
     "loadFailed": "Failed to load blocks. Please try again.",
-    "noBlocksYet": "No blocks yet. Create your first one!"
+    "noBlocksYet": "No blocks yet. Create your first one!",
+    "share": {
+      "title": "Share this block",
+      "description": "Anyone signed in who opens the link can view this block and copy it into their own account. Their copy starts fresh — your review progress stays yours.",
+      "off": "Sharing is off. Turn it on to get a link.",
+      "enable": "Create link",
+      "linkLabel": "Share link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyFailed": "Couldn't copy — select the link and copy it manually.",
+      "revoke": "Turn off sharing",
+      "revoked": "Sharing turned off",
+      "stats": "{{views}} views · {{copies}} copies",
+      "button": "Share"
+    }
+  },
+  "sharedBlock": {
+    "sharedBy": "Shared by {{name}}",
+    "shared": "Shared block",
+    "wordCount_one": "{{count}} word",
+    "wordCount_other": "{{count}} words",
+    "copyToMyBlocks": "Add to my blocks",
+    "copying": "Adding…",
+    "copied": "Added to your blocks",
+    "copyFailed": "Couldn't add this block. Please try again.",
+    "unavailable": "This link is no longer available.",
+    "unavailableHint": "The owner may have turned sharing off, or the link was mistyped.",
+    "goToBlocks": "Go to my blocks",
+    "previewNote": "Preview only — nothing is added until you choose to."
   },
   "blockDetail": {
     "backToBlocks": "← Back to blocks",
@@ -263,6 +293,7 @@
     "deleted": "Word deleted",
     "deleteFailed": "Failed to delete word",
     "also": "also:",
+    "addAlternative": "add alternative translation...",
     "synonyms": "synonyms:",
     "synonymsLabel": "Synonyms (optional)",
     "addSynonym": "add synonym...",
@@ -612,7 +643,27 @@
     "newWordsHint": "New words added to your daily review queue",
     "newWordsInvalid": "Enter a whole number between 0 and 100",
     "reviewSettingsUpdated": "Review settings updated",
-    "reviewSettingsUpdateFailed": "Failed to update review settings"
+    "reviewSettingsUpdateFailed": "Failed to update review settings",
+    "tabAccount": "Account",
+    "tabLearning": "Learning",
+    "tabAppearance": "Appearance",
+    "language": "Interface language",
+    "notifications": "Email notifications",
+    "emailReminders": "Daily review reminder",
+    "emailRemindersOn": "On — we email you when words are due",
+    "emailRemindersOff": "Off — we won't email you about due words",
+    "emailRemindersUpdated": "Notification settings updated",
+    "emailRemindersUpdateFailed": "Failed to update notification settings"
+  },
+  "unsubscribe": {
+    "title": "Turn off daily reminders?",
+    "body": "You'll stop receiving the daily email about words waiting for review. Everything else in your account stays exactly as it is.",
+    "confirm": "Unsubscribe",
+    "doneTitle": "You're unsubscribed",
+    "doneBody": "We won't email you daily reminders anymore. You can turn them back on any time in your profile.",
+    "openProfile": "Open profile",
+    "failedTitle": "This link doesn't work",
+    "failedBody": "The unsubscribe link is invalid or incomplete. You can always turn reminders off in your profile settings."
   },
   "genTest": {
     "yourLevel": "Your English level",

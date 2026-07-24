@@ -1,3 +1,4 @@
+using System.Reflection;
 using Lexify.Application.Abstractions;
 using Lexify.Application.Auth.Commands.Common;
 using Lexify.Application.Auth.Commands.ForgotPassword;
@@ -297,7 +298,8 @@ public class AuthCommandTests
             CancellationToken.None);
 
         Assert.False(result.IsSuccess);
-        Assert.Equal("Invalid or expired refresh token.", result.ErrorMessage);
+        // The message is the machine-readable marker the API layer keys the cookie-clearing decision on.
+        Assert.Equal(AuthErrorCodes.RefreshTokenDead, result.ErrorMessage);
     }
 
     [Fact]
@@ -316,7 +318,8 @@ public class AuthCommandTests
             CancellationToken.None);
 
         Assert.False(result.IsSuccess);
-        Assert.Equal("Invalid or expired refresh token.", result.ErrorMessage);
+        // The message is the machine-readable marker the API layer keys the cookie-clearing decision on.
+        Assert.Equal(AuthErrorCodes.RefreshTokenDead, result.ErrorMessage);
     }
 
     [Fact]
@@ -334,7 +337,8 @@ public class AuthCommandTests
             CancellationToken.None);
 
         Assert.False(result.IsSuccess);
-        Assert.Equal("Invalid or expired refresh token.", result.ErrorMessage);
+        // The message is the machine-readable marker the API layer keys the cookie-clearing decision on.
+        Assert.Equal(AuthErrorCodes.RefreshTokenDead, result.ErrorMessage);
     }
 
     [Fact]
@@ -359,6 +363,89 @@ public class AuthCommandTests
         Assert.True(result.IsSuccess);
         Assert.Equal("new_access_token", result.Value!.AccessToken);
         Assert.NotNull(result.Value.RefreshToken);
+    }
+
+    [Fact]
+    public async Task RefreshToken_JustRotatedToken_ReturnsSessionWithoutRotatingAgain()
+    {
+        // Two tabs refreshing at once: the loser presents the token the winner just rotated away.
+        // Inside the grace window that must still yield a session, or one unlucky race signs the user
+        // out of a healthy session.
+        var userId = Guid.NewGuid();
+        var user = new User("user@example.com", "hash");
+        var presented = new RefreshToken(userId, "old_hash", DateTimeOffset.UtcNow.AddDays(30));
+        var successor = presented.Rotate("new_hash", DateTimeOffset.UtcNow.AddDays(30));
+
+        _refreshTokenRepo.GetByHashAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(presented);
+        _refreshTokenRepo.GetByIdAsync(successor.Id, Arg.Any<CancellationToken>()).Returns(successor);
+        _userRepo.GetByIdAsync(userId, Arg.Any<CancellationToken>()).Returns(user);
+        _jwtService.GenerateAccessToken(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns("new_access_token");
+        _jwtService.GetExpiry().Returns(DateTimeOffset.UtcNow.AddHours(1));
+
+        var handler = new RefreshTokenCommandHandler(_userRepo, _refreshTokenRepo, _jwtService);
+        var result = await handler.Handle(
+            new RefreshTokenCommand("just_rotated"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("new_access_token", result.Value!.AccessToken);
+        // Null = "leave the cookie alone": the successor the winner wrote is the live one, and writing
+        // another value here could clobber it if the responses land out of order.
+        Assert.Null(result.Value.RefreshToken);
+        await _refreshTokenRepo.DidNotReceive()
+            .AddAsync(Arg.Any<RefreshToken>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RefreshToken_RotatedLongAgo_IsRefused()
+    {
+        // Same shape as the grace case, but the rotation is old: this is a replay of a token that has
+        // been superseded for a while, not a race, so it must not be honoured.
+        var userId = Guid.NewGuid();
+        var presented = new RefreshToken(userId, "old_hash", DateTimeOffset.UtcNow.AddDays(30));
+        var successor = presented.Rotate("new_hash", DateTimeOffset.UtcNow.AddDays(30));
+        // The entity deliberately offers no way to backdate a revocation, so reach for the backing
+        // field — same approach the test suite already uses to arrange private collection state.
+        typeof(RefreshToken)
+            .GetField($"<{nameof(RefreshToken.RevokedAt)}>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .SetValue(presented, DateTimeOffset.UtcNow.AddMinutes(-5));
+
+        _refreshTokenRepo.GetByHashAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(presented);
+        _refreshTokenRepo.GetByIdAsync(successor.Id, Arg.Any<CancellationToken>()).Returns(successor);
+
+        var handler = new RefreshTokenCommandHandler(_userRepo, _refreshTokenRepo, _jwtService);
+        var result = await handler.Handle(
+            new RefreshTokenCommand("stale_rotated"),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(AuthErrorCodes.RefreshTokenDead, result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task RefreshToken_JustRotatedButSuccessorRevoked_IsRefused()
+    {
+        // The whole chain was killed (logout, password change) right after a rotation. The grace window
+        // must not resurrect it.
+        var userId = Guid.NewGuid();
+        var presented = new RefreshToken(userId, "old_hash", DateTimeOffset.UtcNow.AddDays(30));
+        var successor = presented.Rotate("new_hash", DateTimeOffset.UtcNow.AddDays(30));
+        successor.Revoke();
+
+        _refreshTokenRepo.GetByHashAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(presented);
+        _refreshTokenRepo.GetByIdAsync(successor.Id, Arg.Any<CancellationToken>()).Returns(successor);
+
+        var handler = new RefreshTokenCommandHandler(_userRepo, _refreshTokenRepo, _jwtService);
+        var result = await handler.Handle(
+            new RefreshTokenCommand("just_rotated"),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(AuthErrorCodes.RefreshTokenDead, result.ErrorMessage);
     }
 
     // ---- ForgotPassword ----

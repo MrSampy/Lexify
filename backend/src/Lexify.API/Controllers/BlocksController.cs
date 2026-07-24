@@ -2,13 +2,16 @@ using Lexify.API.Requests.Blocks;
 using Lexify.Application.Abstractions;
 using Lexify.Application.Blocks.Commands.AddTagToBlock;
 using Lexify.Application.Blocks.Commands.CreateBlock;
+using Lexify.Application.Blocks.Commands.CreateBlockShare;
 using Lexify.Application.Blocks.Commands.DeleteBlock;
 using Lexify.Application.Blocks.Commands.ExportBlock;
 using Lexify.Application.Blocks.Commands.ImportBlockFromCsv;
 using Lexify.Application.Blocks.Commands.RemoveTagFromBlock;
+using Lexify.Application.Blocks.Commands.RevokeBlockShare;
 using Lexify.Application.Blocks.Commands.UpdateBlock;
 using Lexify.Application.Blocks.Queries.GetBlockById;
 using Lexify.Application.Blocks.Queries.GetBlocks;
+using Lexify.Application.Blocks.Queries.GetBlockShare;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -115,6 +118,30 @@ public sealed class BlocksController(ISender sender, ICurrentUserService current
     {
         return ToActionResult(await sender.Send(new RemoveTagFromBlockCommand(id, tagName), cancellationToken));
     }
+
+    /// <summary>Returns the block's active share link, or null when sharing is off.</summary>
+    [HttpGet("{id:guid}/share")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetShare(Guid id, CancellationToken cancellationToken) =>
+        ToActionResult(await sender.Send(new GetBlockShareQuery(id), cancellationToken));
+
+    /// <summary>Turns sharing on and returns the link. Calling it again returns the same link.</summary>
+    [HttpPost("{id:guid}/share")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateShare(Guid id, CancellationToken cancellationToken) =>
+        ToActionResult(await sender.Send(new CreateBlockShareCommand(id), cancellationToken));
+
+    /// <summary>Turns sharing off — the link stops working. Copies others already made are untouched.</summary>
+    [HttpDelete("{id:guid}/share")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RevokeShare(Guid id, CancellationToken cancellationToken) =>
+        ToActionResult(await sender.Send(new RevokeBlockShareCommand(id), cancellationToken));
 
     /// <summary>Exports a block and all its words as a CSV file.</summary>
     [HttpGet("{id:guid}/export")]

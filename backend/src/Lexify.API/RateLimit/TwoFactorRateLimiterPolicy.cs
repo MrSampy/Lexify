@@ -6,15 +6,17 @@ using StackExchange.Redis;
 namespace Lexify.API.RateLimit;
 
 /// <summary>
-/// A dedicated, tight budget for 2FA code verification, separate from the general "auth" window so a
-/// flood of guesses can't be spread across other auth calls. Combined with the per-code attempt ceiling
-/// this makes brute-forcing a 6-digit code infeasible.
+/// A dedicated budget for 2FA code verification (20 per 15 minutes per IP), separate from the general
+/// "auth" window so a flood of guesses can't be spread across other auth calls. The real ceiling on
+/// brute-forcing a 6-digit code is per-code, not per-IP — <see cref="Domain.Entities.LoginTwoFactorCode"/>
+/// allows 5 attempts, expires in 10 minutes and is single-use — so this window can stay roomy enough
+/// that a couple of typos plus a resend from a shared address never lock a real user out.
 /// </summary>
 public sealed class TwoFactorRateLimiterPolicy : IRateLimiterPolicy<string>
 {
     public const string PolicyName = "two-factor";
 
-    private const int Limit = 10;
+    private const int Limit = 20;
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(15);
 
     public RateLimitPartition<string> GetPartition(HttpContext httpContext)

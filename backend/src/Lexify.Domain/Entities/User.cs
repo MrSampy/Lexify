@@ -13,6 +13,18 @@ public sealed class User : BaseEntity
     public string? EnglishLevel { get; private set; }
     /// <summary>Max never-reviewed words introduced into the review queue per UTC day (0 = none).</summary>
     public int NewWordsPerDay { get; private set; } = DefaultNewWordsPerDay;
+
+    /// <summary>
+    /// Opt-out for the daily "words are due" email (<c>SendReviewRemindersJob</c>). Defaults to on so
+    /// existing accounts keep the behaviour they had; the user turns it off in their profile or via the
+    /// unsubscribe link in the mail itself.
+    /// </summary>
+    public bool EmailRemindersEnabled { get; private set; } = true;
+    /// <summary>
+    /// Last time the account made an authenticated request. There is deliberately no setter method:
+    /// it is stamped by a single-column write (<c>IUserRepository.TouchLastActiveAsync</c>) on ordinary
+    /// API traffic, so it never loads the aggregate and never moves <see cref="BaseEntity.UpdatedAt"/>.
+    /// </summary>
     public DateTimeOffset? LastActiveAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
@@ -80,11 +92,6 @@ public sealed class User : BaseEntity
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    public void TouchActivity()
-    {
-        LastActiveAt = DateTimeOffset.UtcNow;
-    }
-
     public void UpdateDisplayName(string? displayName)
     {
         var trimmed = displayName?.Trim();
@@ -148,6 +155,13 @@ public sealed class User : BaseEntity
         if (count < 0 || count > MaxNewWordsPerDay)
             throw new DomainException($"New words per day must be between 0 and {MaxNewWordsPerDay}.");
         NewWordsPerDay = count;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void SetEmailReminders(bool enabled)
+    {
+        if (EmailRemindersEnabled == enabled) return;
+        EmailRemindersEnabled = enabled;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

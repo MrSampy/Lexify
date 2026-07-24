@@ -6,6 +6,7 @@ using Lexify.Application.UserProfile.Commands.EnableTwoFactor;
 using Lexify.Application.UserProfile.Commands.RequestEmailChange;
 using Lexify.Application.UserProfile.Commands.UpdateDisplayName;
 using Lexify.Application.UserProfile.Commands.UpdateEnglishLevel;
+using Lexify.Application.UserProfile.Commands.UpdateNotificationSettings;
 using Lexify.Application.UserProfile.Commands.UpdateReviewSettings;
 using Lexify.Application.UserProfile.Queries.GetProfile;
 using Lexify.API.RateLimit;
@@ -53,6 +54,15 @@ public sealed class ProfileController(ISender sender, ICurrentUserService curren
         UpdateReviewSettingsRequest request, CancellationToken ct) =>
         ToActionResult(await sender.Send(
             new UpdateReviewSettingsCommand(currentUser.UserId, request.NewWordsPerDay), ct));
+
+    /// <summary>Turns the daily "words are due" reminder email on or off.</summary>
+    [HttpPut("notifications")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateNotificationSettings(
+        UpdateNotificationSettingsRequest request, CancellationToken ct) =>
+        ToActionResult(await sender.Send(
+            new UpdateNotificationSettingsCommand(currentUser.UserId, request.EmailRemindersEnabled), ct));
 
     /// <summary>Changes the current user's password; all other sessions are revoked.</summary>
     [HttpPut("password")]
@@ -121,6 +131,8 @@ public sealed class ProfileController(ISender sender, ICurrentUserService curren
 public sealed record UpdateEnglishLevelRequest(string? EnglishLevel);
 
 public sealed record UpdateReviewSettingsRequest(int NewWordsPerDay);
+
+public sealed record UpdateNotificationSettingsRequest(bool EmailRemindersEnabled);
 
 public sealed record UpdateDisplayNameRequest(string? DisplayName);
 

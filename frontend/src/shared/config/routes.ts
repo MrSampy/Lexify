@@ -5,9 +5,13 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   CHECK_EMAIL: '/check-email',
   VERIFY_EMAIL: '/verify-email',
+  UNSUBSCRIBE: '/unsubscribe',
   DASHBOARD: '/',
   BLOCKS: '/blocks',
   BLOCK_DETAIL: (id: string) => `/blocks/${id}`,
+  /** Public-facing shape of a share link — short on purpose, it gets pasted into chats. */
+  SHARED_BLOCK: (token: string) => `/s/${token}`,
+  SHARED_BLOCK_PATTERN: '/s/:token',
   WORD_IMPORT: (blockId: string) => `/blocks/${blockId}/import`,
   TESTS: '/tests',
   TEST_CREATE: '/tests/new',

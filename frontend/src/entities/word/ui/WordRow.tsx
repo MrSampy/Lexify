@@ -21,25 +21,33 @@ interface WordRowProps {
 export function WordRow({ word, blockId, languageId, selected, onSelectedChange }: WordRowProps) {
   const { t } = useTranslation()
   const [editField, setEditField] = useState<
-    'translation' | 'notes' | 'synonyms' | 'example' | null
+    'translation' | 'notes' | 'synonyms' | 'alternatives' | 'example' | null
   >(null)
   const [draftTranslation, setDraftTranslation] = useState(word.translation)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [draftNotes, setDraftNotes] = useState(word.notes ?? '')
   const [draftExample, setDraftExample] = useState(word.exampleSentence ?? '')
-  // Synonyms auto-save on every add/remove (like tags) rather than via an explicit ✓/✕ —
-  // so there is no "cancel" that could discard an addition and no save-reads-stale-draft race.
+  // Synonyms and alternative translations auto-save on every add/remove (like tags) rather than via
+  // an explicit ✓/✕ — so there is no "cancel" that could discard an addition and no
+  // save-reads-stale-draft race.
   const [synonyms, setSynonyms] = useState<string[]>(word.synonyms ?? [])
+  const [alternatives, setAlternatives] = useState<string[]>(word.alternativeTranslations ?? [])
   const updateWord = useUpdateWordMutation(blockId)
   const deleteWord = useDeleteWordMutation(blockId)
   const { confirm, confirmDialog } = useConfirm()
 
-  // Re-sync local synonyms when the word refetches (e.g. after our own mutation invalidates it).
+  // Re-sync local chip lists when the word refetches (e.g. after our own mutation invalidates it).
   // Render-time adjustment instead of an effect — see react.dev/learn/you-might-not-need-an-effect.
   const [prevWordSynonyms, setPrevWordSynonyms] = useState(word.synonyms)
   if (prevWordSynonyms !== word.synonyms) {
     setPrevWordSynonyms(word.synonyms)
     setSynonyms(word.synonyms ?? [])
+  }
+
+  const [prevWordAlternatives, setPrevWordAlternatives] = useState(word.alternativeTranslations)
+  if (prevWordAlternatives !== word.alternativeTranslations) {
+    setPrevWordAlternatives(word.alternativeTranslations)
+    setAlternatives(word.alternativeTranslations ?? [])
   }
 
   const handleSave = async () => {
@@ -51,7 +59,7 @@ export function WordRow({ word, blockId, languageId, selected, onSelectedChange 
         exampleSentence: draftExample || undefined,
         confidenceFlag: word.confidenceFlag,
         confidenceNote: word.confidenceNote ?? undefined,
-        alternativeTranslations: word.alternativeTranslations ?? undefined,
+        alternativeTranslations: alternatives,
         synonyms,
       },
     })
@@ -76,7 +84,7 @@ export function WordRow({ word, blockId, languageId, selected, onSelectedChange 
         exampleSentence: word.exampleSentence ?? undefined,
         confidenceFlag: !word.confidenceFlag,
         confidenceNote: word.confidenceNote ?? undefined,
-        alternativeTranslations: word.alternativeTranslations ?? undefined,
+        alternativeTranslations: alternatives,
         synonyms,
       },
     })
@@ -94,8 +102,24 @@ export function WordRow({ word, blockId, languageId, selected, onSelectedChange 
         exampleSentence: word.exampleSentence ?? undefined,
         confidenceFlag: word.confidenceFlag,
         confidenceNote: word.confidenceNote ?? undefined,
-        alternativeTranslations: word.alternativeTranslations ?? undefined,
+        alternativeTranslations: alternatives,
         synonyms: next,
+      },
+    })
+  }
+
+  const persistAlternatives = (next: string[]) => {
+    setAlternatives(next)
+    updateWord.mutate({
+      wordId: word.id,
+      input: {
+        translation: word.translation,
+        notes: word.notes ?? undefined,
+        exampleSentence: word.exampleSentence ?? undefined,
+        confidenceFlag: word.confidenceFlag,
+        confidenceNote: word.confidenceNote ?? undefined,
+        alternativeTranslations: next,
+        synonyms,
       },
     })
   }
@@ -209,10 +233,37 @@ export function WordRow({ word, blockId, languageId, selected, onSelectedChange 
             {word.translation}
           </Button>
         )}
-        {word.alternativeTranslations && word.alternativeTranslations.length > 0 && (
-          <div style={{ fontSize: 12, color: 'var(--fg-4)', marginTop: 2 }}>
-            {t('words.also')} {word.alternativeTranslations.join(', ')}
+        {/* Alternative translations — same auto-saving chip editor as synonyms below */}
+        {editField === 'alternatives' ? (
+          <div style={{ marginTop: 6 }}>
+            <ChipListInput
+              value={alternatives}
+              onChange={persistAlternatives}
+              placeholder={t('words.addAlternative')}
+            />
+            <button
+              onClick={() => setEditField(null)}
+              className="lx-btn-secondary"
+              style={{ marginTop: 6, padding: '4px 12px', fontSize: 12 }}
+            >
+              {t('common.done')}
+            </button>
           </div>
+        ) : (
+          <button
+            onClick={() => setEditField('alternatives')}
+            className="cursor-pointer border-none bg-transparent p-0 text-left text-xs transition-colors duration-100 [font-family:var(--font-body)]"
+            style={{
+              display: 'block',
+              width: 'fit-content',
+              marginTop: 2,
+              color: 'var(--fg-4)',
+            }}
+          >
+            {alternatives.length > 0
+              ? `${t('words.also')} ${alternatives.join(', ')}`
+              : t('words.addAlternative')}
+          </button>
         )}
         {/* Synonyms — chips auto-save on add/remove; "Done" only closes the editor */}
         {editField === 'synonyms' ? (
