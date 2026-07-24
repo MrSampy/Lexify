@@ -47,12 +47,20 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
+  // Where AuthGuard bounced the user from, if anywhere — following a share link while signed out
+  // should end up at that link, not at the dashboard.
+  const returnTo = (location.state as { from?: { pathname?: string; search?: string } } | null)
+    ?.from
+
   const completeSignIn = (auth: AuthResponse) => {
     // Drop any queries cached for a previously logged-in user before this
     // identity's screens mount, so no stale data flashes or leaks through.
     queryClient.clear()
     setAuth(auth)
-    navigate(ROUTES.DASHBOARD)
+    navigate(
+      returnTo?.pathname ? `${returnTo.pathname}${returnTo.search ?? ''}` : ROUTES.DASHBOARD,
+      { replace: true },
+    )
   }
 
   const onSubmit = async (values: FormValues) => {

@@ -152,7 +152,14 @@ public sealed class AuthController(ISender sender) : BaseApiController
     }
 
     /// <summary>Exchange the refresh-token cookie for a new token pair (cookie is rotated).</summary>
+    /// <remarks>
+    /// Deliberately exempt from the auth rate limiter. That policy partitions by IP, and a whole office
+    /// or mobile carrier behind one NAT address shares its 30-per-15-minutes budget — once exhausted,
+    /// every silent refresh 429s and everyone gets bounced to the sign-in screen. Possession of a valid
+    /// refresh cookie is itself the gate here; nothing is guessable by an unauthenticated caller.
+    /// </remarks>
     [HttpPost("refresh")]
+    [DisableRateLimiting]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
@@ -166,7 +173,11 @@ public sealed class AuthController(ISender sender) : BaseApiController
             Request.Headers.UserAgent.ToString());
 
         var result = await sender.Send(command, cancellationToken);
-        if (!result.IsSuccess)
+
+        // Only clear the cookie when the token behind it is provably finished. Clearing on *any*
+        // failure is what used to end healthy sessions: one request losing the rotation race, or a
+        // single 429, wiped the cookie for every tab at once.
+        if (result.ErrorMessage == AuthErrorCodes.RefreshTokenDead)
             DeleteRefreshCookie();
 
         return ToActionResult(result, ToAuthResult);
@@ -210,7 +221,12 @@ public sealed class AuthController(ISender sender) : BaseApiController
 
     private IActionResult ToAuthResult(AuthResponse auth)
     {
-        Response.Cookies.Append(RefreshTokenCookie, auth.RefreshToken, RefreshCookieOptions());
+        // No raw token means the session was served inside the rotation grace window: the cookie the
+        // browser holds is already the live successor, so writing one here would only risk clobbering
+        // it with a stale value if the responses come back out of order.
+        if (!string.IsNullOrEmpty(auth.RefreshToken))
+            Response.Cookies.Append(RefreshTokenCookie, auth.RefreshToken, RefreshCookieOptions());
+
         return Ok(new { auth.AccessToken, auth.ExpiresAt });
     }
 

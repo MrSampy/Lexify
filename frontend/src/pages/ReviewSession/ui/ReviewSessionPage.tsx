@@ -306,12 +306,14 @@ export function ReviewSessionPage() {
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      {/* Header */}
+      {/* Header — wraps on narrow screens instead of squeezing the badges into each other */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 8,
           marginBottom: 8,
         }}
       >
@@ -355,6 +357,8 @@ export function ReviewSessionPage() {
           <button
             onClick={toggleAutoSpeak}
             aria-pressed={autoSpeak}
+            aria-label={t('review.autoSpeak')}
+            title={t('review.autoSpeak')}
             style={{
               border: '1.5px solid var(--line-2)',
               background: autoSpeak ? 'var(--accent-ghost)' : 'var(--bg-1)',
@@ -366,7 +370,8 @@ export function ReviewSessionPage() {
               cursor: 'pointer',
             }}
           >
-            🔊 {t('review.autoSpeak')}
+            {/* Label collapses to the icon alone on phones — the header has no room for it there */}
+            🔊 <span className="hidden md:inline">{t('review.autoSpeak')}</span>
           </button>
           <span style={{ color: 'var(--accent-color)', fontSize: 13, fontWeight: 700 }}>
             {t('review.remaining', { count: remaining })}
@@ -394,15 +399,23 @@ export function ReviewSessionPage() {
         </div>
       )}
 
-      {/* Flashcard — clamp()-based sizing keeps it usable on phone screens */}
-      <div className="review-card-wrap" style={{ marginBottom: 24, minHeight: 'min(480px, 65vh)' }}>
+      {/* Flashcard — clamp()-based sizing keeps it usable on phone screens; the height itself
+          comes from --review-card-h (index.css), which shrinks and switches to dvh on mobile. */}
+      <div
+        className="review-card-wrap"
+        style={{ marginBottom: 16, minHeight: 'var(--review-card-h)' }}
+      >
         <div
           className={`review-card-inner${flipped ? ' flipped' : ''}`}
-          style={{ minHeight: 'min(480px, 65vh)' }}
+          style={{ minHeight: 'var(--review-card-h)' }}
         >
-          {/* Front */}
+          {/* Front — the whole face is the flip target: tapping the card is the natural phone
+              gesture. Deliberately not a role="button": the focusable "show translation" button
+              below and the global Space/Enter shortcut already cover keyboard users, so adding a
+              second tab stop for the same action would only add noise. */}
           <div
             className="review-card-face"
+            onClick={() => setFlipped(true)}
             style={{
               background: 'var(--bg-2)',
               border: '1px solid var(--line-2)',
@@ -412,7 +425,8 @@ export function ReviewSessionPage() {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              minHeight: 'min(480px, 65vh)',
+              minHeight: 'var(--review-card-h)',
+              cursor: 'pointer',
             }}
           >
             <div
@@ -429,13 +443,16 @@ export function ReviewSessionPage() {
             >
               {currentWord.term}
             </div>
-            <SpeakButton
-              text={currentWord.term}
-              wordId={currentWord.id}
-              languageId={currentWord.languageId}
-              size={22}
-              style={{ marginTop: 14 }}
-            />
+            {/* Pronouncing the term must not also flip the card */}
+            <span onClick={(e) => e.stopPropagation()} style={{ display: 'contents' }}>
+              <SpeakButton
+                text={currentWord.term}
+                wordId={currentWord.id}
+                languageId={currentWord.languageId}
+                size={22}
+                style={{ marginTop: 14 }}
+              />
+            </span>
             <button
               className="lx-btn-secondary"
               style={{ marginTop: 30 }}
@@ -458,7 +475,7 @@ export function ReviewSessionPage() {
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: 'var(--glow-accent)',
-              minHeight: 'min(480px, 65vh)',
+              minHeight: 'var(--review-card-h)',
             }}
           >
             <div style={{ color: 'var(--fg-4)', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
@@ -504,86 +521,99 @@ export function ReviewSessionPage() {
         </div>
       </div>
 
-      {/* Quality rater */}
-      {flipped && (
-        <div>
-          <div
-            style={{
-              color: 'var(--fg-3)',
-              textAlign: 'center',
-              marginBottom: 4,
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            {t('review.howWell')}
-          </div>
-          <div
-            style={{
-              color: 'var(--fg-4)',
-              textAlign: 'center',
-              marginBottom: 12,
-              fontSize: 11,
-            }}
-          >
-            {t('review.keyboardHint')}
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {RATERS.map((rater) => (
-              <button
-                key={rater.quality}
-                onClick={() => handleRate(rater.quality)}
-                disabled={rateWord.isPending || isAdvancing}
+      {/* Quality rater — always mounted, only faded out until the card is flipped. Revealing it
+          therefore costs no layout shift, and (together with the shorter mobile card height) it
+          stays on screen, so rating no longer means scrolling after every flip. */}
+      <div
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          opacity: flipped ? 1 : 0,
+          pointerEvents: flipped ? 'auto' : 'none',
+          transition: 'opacity 0.2s',
+        }}
+        aria-hidden={!flipped}
+      >
+        <div
+          style={{
+            color: 'var(--fg-3)',
+            textAlign: 'center',
+            marginBottom: 4,
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          {t('review.howWell')}
+        </div>
+        {/* Keyboard hint and the per-button hotkey digits are desktop-only — there is no keyboard
+            to hint at on a phone. */}
+        <div
+          className="hidden md:block"
+          style={{
+            color: 'var(--fg-4)',
+            textAlign: 'center',
+            marginBottom: 12,
+            fontSize: 11,
+          }}
+        >
+          {t('review.keyboardHint')}
+        </div>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          {RATERS.map((rater) => (
+            <button
+              key={rater.quality}
+              onClick={() => handleRate(rater.quality)}
+              disabled={!flipped || rateWord.isPending || isAdvancing}
+              tabIndex={flipped ? 0 : -1}
+              style={{
+                minHeight: 56,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+                padding: '12px 8px',
+                background: 'var(--bg-2)',
+                border: '1px solid var(--line-2)',
+                borderRadius: 'var(--r-md)',
+                cursor: 'pointer',
+                transition: 'transform 0.12s, border-color 0.12s',
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget
+                el.style.transform = 'translateY(-2px)'
+                el.style.borderColor = rater.color
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget
+                el.style.transform = 'none'
+                el.style.borderColor = 'var(--line-2)'
+              }}
+            >
+              <span
                 style={{
-                  flex: 1,
-                  minWidth: 90,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '14px 8px',
-                  background: 'var(--bg-2)',
-                  border: '1px solid var(--line-2)',
-                  borderRadius: 'var(--r-md)',
-                  cursor: 'pointer',
-                  transition: 'transform 0.12s, border-color 0.12s',
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget
-                  el.style.transform = 'translateY(-2px)'
-                  el.style.borderColor = rater.color
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget
-                  el.style.transform = 'none'
-                  el.style.borderColor = 'var(--line-2)'
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                  fontSize: 18,
+                  color: rater.color,
                 }}
               >
-                <span
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 700,
-                    fontSize: 18,
-                    color: rater.color,
-                  }}
-                >
-                  {t(rater.labelKey)}
-                </span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-body)',
-                    fontSize: 10,
-                    color: 'var(--fg-4)',
-                    fontWeight: 600,
-                  }}
-                >
-                  {rater.hotkey}
-                </span>
-              </button>
-            ))}
-          </div>
+                {t(rater.labelKey)}
+              </span>
+              <span
+                className="hidden md:inline"
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 10,
+                  color: 'var(--fg-4)',
+                  fontWeight: 600,
+                }}
+              >
+                {rater.hotkey}
+              </span>
+            </button>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   )
 }

@@ -28,6 +28,7 @@ export {
   useUpdateDisplayNameMutation,
   useChangePasswordMutation,
   useUpdateReviewSettingsMutation,
+  useUpdateNotificationSettingsMutation,
   useRequestEmailChangeMutation,
   useEnableTwoFactorMutation,
   useResendEnableTwoFactorMutation,

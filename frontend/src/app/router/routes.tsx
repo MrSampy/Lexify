@@ -6,8 +6,10 @@ import { ForgotPasswordPage } from '@/pages/ForgotPassword/ui/ForgotPasswordPage
 import { ResetPasswordPage } from '@/pages/ResetPassword/ui/ResetPasswordPage'
 import { CheckEmailPage } from '@/pages/CheckEmail/ui/CheckEmailPage'
 import { VerifyEmailPage } from '@/pages/VerifyEmail/ui/VerifyEmailPage'
+import { UnsubscribePage } from '@/pages/Unsubscribe/ui/UnsubscribePage'
 import { BlockListPage } from '@/pages/BlockList/ui/BlockListPage'
 import { BlockDetailPage } from '@/pages/BlockDetail/ui/BlockDetailPage'
+import { SharedBlockPage } from '@/pages/SharedBlock/ui/SharedBlockPage'
 import { WordImportPage } from '@/pages/WordImport/ui/WordImportPage'
 import { TestListPage } from '@/pages/TestList/ui/TestListPage'
 import { TestCreatePage } from '@/pages/TestCreate/ui/TestCreatePage'
@@ -43,6 +45,8 @@ const router = createBrowserRouter([
   // Outside AuthGuard: confirming an address is what gets you *to* a usable session.
   { path: ROUTES.CHECK_EMAIL, element: <CheckEmailPage /> },
   { path: ROUTES.VERIFY_EMAIL, element: <VerifyEmailPage /> },
+  // Also outside AuthGuard: the link is opened from an inbox, usually on a signed-out device.
+  { path: ROUTES.UNSUBSCRIBE, element: <UnsubscribePage /> },
   {
     element: <AuthGuard />,
     children: [
@@ -52,6 +56,9 @@ const router = createBrowserRouter([
           { path: ROUTES.DASHBOARD, element: <DashboardPage /> },
           { path: ROUTES.BLOCKS, element: <BlockListPage /> },
           { path: '/blocks/:id', element: <BlockDetailPage /> },
+          // Inside the guard: opening someone's share link requires an account, and the guard
+          // remembers the link so signing in lands back here rather than on the dashboard.
+          { path: ROUTES.SHARED_BLOCK_PATTERN, element: <SharedBlockPage /> },
           { path: '/blocks/:id/import', element: <WordImportPage /> },
           { path: ROUTES.TESTS, element: <TestListPage /> },
           { path: ROUTES.TEST_CREATE, element: <TestCreatePage /> },

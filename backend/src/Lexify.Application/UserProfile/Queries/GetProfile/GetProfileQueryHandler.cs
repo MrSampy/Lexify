@@ -23,6 +23,7 @@ public sealed class GetProfileQueryHandler(
         return Result.Ok(new ProfileDto(
             user.Email, user.DisplayName, user.EnglishLevel, user.NewWordsPerDay,
             user.IsEmailVerified, pending?.NewEmail,
-            user.TwoFactorEnabled, user.IsTwoFactorMandatory));
+            user.TwoFactorEnabled, user.IsTwoFactorMandatory,
+            user.EmailRemindersEnabled));
     }
 }

@@ -9,6 +9,7 @@ namespace Lexify.Infrastructure.Jobs;
 public sealed partial class SendReviewRemindersJob(
     IUserRepository userRepository,
     IEmailService emailService,
+    IUnsubscribeTokenService unsubscribeTokens,
     IConfiguration configuration,
     ILogger<SendReviewRemindersJob> logger)
 {
@@ -24,12 +25,14 @@ public sealed partial class SendReviewRemindersJob(
         }
 
         int sent = 0;
-        foreach (var (email, count) in users)
+        foreach (var (userId, email, count) in users)
         {
             try
             {
                 var username = email.Split('@')[0];
-                var html = EmailTemplates.ReviewReminder(username, count, frontendUrl);
+                var unsubscribeUrl =
+                    $"{frontendUrl}/unsubscribe?token={Uri.EscapeDataString(unsubscribeTokens.Create(userId))}";
+                var html = EmailTemplates.ReviewReminder(username, count, frontendUrl, unsubscribeUrl);
                 await emailService.SendAsync(email, "Lexify — час повторити слова!", html, ct);
                 sent++;
             }

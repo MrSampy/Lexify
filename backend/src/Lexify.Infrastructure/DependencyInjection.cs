@@ -56,7 +56,10 @@ public static class DependencyInjection
                     ValidAudience = jwtSettings.Audience,
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
-                    ClockSkew = TimeSpan.Zero
+                    // A small skew, not zero: with a 15-minute access token, a phone whose clock runs a
+                    // little fast has its token rejected early, and every such rejection is a round trip
+                    // through refresh (or, before the refresh fixes, a sign-out).
+                    ClockSkew = TimeSpan.FromSeconds(30)
                 };
             });
 
@@ -67,6 +70,7 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasherService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IAuditService, AuditService>();
+        services.AddSingleton<IUnsubscribeTokenService, UnsubscribeTokenService>();
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
@@ -75,6 +79,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
         services.AddScoped<ILoginTwoFactorCodeRepository, LoginTwoFactorCodeRepository>();
         services.AddScoped<IWordBlockRepository, WordBlockRepository>();
+        services.AddScoped<IBlockShareRepository, BlockShareRepository>();
         services.AddScoped<IWordRepository, WordRepository>();
         services.AddScoped<IAiCallLogRepository, AiCallLogRepository>();
         services.AddScoped<IReviewLogRepository, ReviewLogRepository>();

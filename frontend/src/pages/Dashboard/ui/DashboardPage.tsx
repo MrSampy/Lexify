@@ -142,7 +142,7 @@ export function DashboardPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <Mascot pose={due > 0 ? 'pointing' : 'greeting'} size={84} float />
+          <Mascot pose={due > 0 ? 'pointing' : 'reading'} size={84} animate float />
           {streak > 0 && (
             <span
               title={t('dashboard.statStreak')}

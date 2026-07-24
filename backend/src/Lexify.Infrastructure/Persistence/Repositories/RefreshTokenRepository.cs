@@ -9,6 +9,9 @@ public sealed class RefreshTokenRepository(AppDbContext context) : IRefreshToken
     public Task<RefreshToken?> GetByHashAsync(string tokenHash, CancellationToken ct = default) =>
         context.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
 
+    public Task<RefreshToken?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+        context.RefreshTokens.FirstOrDefaultAsync(t => t.Id == id, ct);
+
     public async Task AddAsync(RefreshToken token, CancellationToken ct = default) =>
         await context.RefreshTokens.AddAsync(token, ct);
 

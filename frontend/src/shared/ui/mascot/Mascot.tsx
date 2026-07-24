@@ -8,9 +8,21 @@ import lost from './poses/lost.png'
 import builder from './poses/builder.png'
 import scientist from './poses/scientist.png'
 import pointing from './poses/pointing.png'
+import talking from './poses/talking.png'
+import trophy from './poses/trophy.png'
+import thinking from './poses/thinking.png'
+import reading from './poses/reading.png'
+import writing from './poses/writing.png'
+import searching from './poses/searching.png'
+import neutral from './poses/neutral.png'
+import farewell from './poses/farewell.png'
 import celebrateVid from './poses/celebrate.webm'
 import sleepVid from './poses/sleep.webm'
 import divingVid from './poses/diving.webm'
+import talkingVid from './poses/talking.webm'
+import thinkingVid from './poses/thinking.webm'
+import readingVid from './poses/reading.webm'
+import trophyVid from './poses/trophy.webm'
 import './mascot.css'
 
 // Lexi the axolotl — see Info/lexify-mascot.md for the pose/screen map and the
@@ -25,6 +37,14 @@ const POSES = {
   builder,
   scientist,
   pointing,
+  talking,
+  trophy,
+  thinking,
+  reading,
+  writing,
+  searching,
+  neutral,
+  farewell,
 } as const
 
 export type MascotPose = keyof typeof POSES
@@ -35,6 +55,10 @@ const ANIMATED: Partial<Record<MascotPose, { src: string; loop: boolean }>> = {
   celebrate: { src: celebrateVid, loop: false },
   sleep: { src: sleepVid, loop: true },
   diving: { src: divingVid, loop: true },
+  talking: { src: talkingVid, loop: true },
+  thinking: { src: thinkingVid, loop: true },
+  reading: { src: readingVid, loop: true },
+  trophy: { src: trophyVid, loop: false },
 }
 
 function usePrefersReducedMotion() {

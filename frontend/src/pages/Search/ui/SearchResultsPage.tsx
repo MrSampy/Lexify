@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
-import { LxSelect, Spinner } from '@/shared/ui'
+import { LxSelect, Mascot, Spinner } from '@/shared/ui'
 import { LANGUAGES, ROUTES } from '@/shared/config'
 import { debounce } from '@/shared/lib/debounce'
 import { useSearchWords } from '@/entities/word/api/searchApi'
@@ -124,9 +124,21 @@ export function SearchResultsPage() {
       )}
 
       {!isLoading && !isError && data?.length === 0 && q.trim().length >= 2 && (
-        <p className="ds-sm" style={{ color: 'var(--fg-3)' }}>
-          {t('search.nothing', { query: q })}
-        </p>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 12,
+            padding: '48px 0',
+            textAlign: 'center',
+          }}
+        >
+          <Mascot pose="searching" size={120} float />
+          <p className="ds-sm" style={{ margin: 0, color: 'var(--fg-3)' }}>
+            {t('search.nothing', { query: q })}
+          </p>
+        </div>
       )}
 
       {/* Grouped results */}

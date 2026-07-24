@@ -23,4 +23,12 @@ public static class AuthErrorCodes
     /// "wrong code" error. A wrong/used/locked code deliberately stays a generic failure.
     /// </summary>
     public const string TwoFactorChallengeExpired = "two_factor_challenge_expired";
+
+    /// <summary>
+    /// The presented refresh token can never work again (unknown, expired, revoked, or replayed well
+    /// after its rotation). This is the *only* refresh failure that may clear the refresh cookie — any
+    /// other reason a refresh doesn't succeed is transient, and evicting the cookie for it would turn a
+    /// momentary hiccup into a forced re-login.
+    /// </summary>
+    public const string RefreshTokenDead = "refresh_token_dead";
 }

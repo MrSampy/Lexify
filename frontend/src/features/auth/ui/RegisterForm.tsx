@@ -7,12 +7,19 @@ import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/shared/config'
 import { authApi, type RegistrationStatus } from '../api/authApi'
 
-const schema = z.object({
-  email: z.string().email('auth.emailInvalid'),
-  password: z.string().min(8, 'auth.passwordMin'),
-  displayName: z.string().min(2, 'auth.nameMin').max(50),
-  inviteCode: z.string().optional(),
-})
+const schema = z
+  .object({
+    email: z.string().email('auth.emailInvalid'),
+    password: z.string().min(8, 'auth.passwordMin'),
+    confirmPassword: z.string(),
+    displayName: z.string().min(2, 'auth.nameMin').max(50),
+    inviteCode: z.string().optional(),
+  })
+  // Reported on the second field so the error sits under the input the user has to fix.
+  .refine((v) => v.password === v.confirmPassword, {
+    message: 'auth.passwordsMismatch',
+    path: ['confirmPassword'],
+  })
 
 type FormValues = z.infer<typeof schema>
 
@@ -130,6 +137,23 @@ export function RegisterForm() {
         {errors.password && (
           <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
             {t(errors.password.message ?? '')}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <input
+          id="confirmPassword"
+          type="password"
+          placeholder={t('auth.repeatPassword')}
+          aria-label={t('auth.repeatPassword')}
+          autoComplete="new-password"
+          className="lx-input"
+          {...register('confirmPassword')}
+        />
+        {errors.confirmPassword && (
+          <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
+            {t(errors.confirmPassword.message ?? '')}
           </p>
         )}
       </div>

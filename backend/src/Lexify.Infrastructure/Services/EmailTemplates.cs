@@ -2,7 +2,7 @@ namespace Lexify.Infrastructure.Services;
 
 public static class EmailTemplates
 {
-    public static string ReviewReminder(string username, int count, string appUrl) =>
+    public static string ReviewReminder(string username, int count, string appUrl, string unsubscribeUrl) =>
         $"""
         <!DOCTYPE html>
         <html lang="uk">
@@ -17,7 +17,10 @@ public static class EmailTemplates
             Почати повторення →
           </a>
           <hr style="margin-top:32px;border:none;border-top:1px solid #e5e7eb">
-          <p style="font-size:12px;color:#6b7280">Lexify · Ти отримуєш цей лист, бо у тебе є слова до повторення</p>
+          <p style="font-size:12px;color:#6b7280">
+            Lexify · Ти отримуєш цей лист, бо у тебе є слова до повторення.<br>
+            <a href="{unsubscribeUrl}" style="color:#6b7280">Відписатися від щоденних нагадувань</a>
+          </p>
         </body>
         </html>
         """;

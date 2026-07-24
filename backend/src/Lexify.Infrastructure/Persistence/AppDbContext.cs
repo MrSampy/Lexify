@@ -15,6 +15,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<WordBlock> WordBlocks => Set<WordBlock>();
     public DbSet<BlockTag> BlockTags => Set<BlockTag>();
+    public DbSet<BlockShare> BlockShares => Set<BlockShare>();
     public DbSet<Word> Words => Set<Word>();
     public DbSet<Test> Tests => Set<Test>();
     public DbSet<TestBlock> TestBlocks => Set<TestBlock>();

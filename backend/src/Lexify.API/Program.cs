@@ -43,6 +43,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+// Backs the per-user throttle in LastActiveMiddleware — deliberately in-process, see the comment there.
+builder.Services.AddMemoryCache();
+
 // ── Health checks ─────────────────────────────────────────────────────────────
 var connString = builder.Configuration.GetConnectionString("DefaultConnection");
 var redisString = builder.Configuration.GetConnectionString("Redis");
@@ -70,8 +73,8 @@ builder.Services.AddSwaggerGen(options =>
         var controller = api.ActionDescriptor.RouteValues["controller"]?.ToLowerInvariant();
         return docName switch
         {
-            "auth"     => controller == "auth",
-            "content"  => controller is "blocks" or "words" or "search" or "tags" or "stats" or "feedback",
+            "auth"     => controller is "auth" or "notifications",
+            "content"  => controller is "blocks" or "sharedblocks" or "words" or "search" or "tags" or "stats" or "feedback",
             "learning" => controller is "review" or "tests" or "attempts",
             "admin"    => controller == "admin",
             _          => false
@@ -201,6 +204,8 @@ app.UseCors();
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseAuthentication();
 app.UseMiddleware<CurrentUserMiddleware>();
+// After authentication too — it reads the JWT "sub" claim, which is empty before UseAuthentication.
+app.UseMiddleware<LastActiveMiddleware>();
 // After authentication so admins (identified by their role claim) bypass maintenance mode.
 app.UseMiddleware<MaintenanceModeMiddleware>();
 app.UseAuthorization();
