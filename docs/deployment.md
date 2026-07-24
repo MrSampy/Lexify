@@ -82,6 +82,31 @@ PasswordAuthentication no
 systemctl restart ssh
 ```
 
+### 2.1a. Смена порта SSH (опционально)
+
+Не защищает от целевой атаки — nmap найдёт порт за минуту, — но убирает ~99% ботового шума из
+логов, после чего в `lastb` становятся видны настоящие попытки. При key-only входе основной риск
+всё равно не перебор, а 0-day в OpenSSH, от которого порт не спасает; так что это про читаемость
+логов, а не про защиту.
+
+```bash
+sudo sed -i 's/^#\?Port .*/Port <новый-порт>/' /etc/ssh/sshd_config
+sudo ufw allow <новый-порт>/tcp        # ДО перезапуска sshd
+sudo sshd -t && sudo systemctl restart ssh
+```
+
+Проверьте вход из **нового окна**, не закрывая текущую сессию, и только потом
+`sudo ufw delete allow 22/tcp`.
+
+Порт нужно поменять ещё в четырёх местах, иначе что-нибудь тихо сломается:
+
+| Где | Что |
+|---|---|
+| GitHub → Environments → production | секрет `DEPLOY_PORT`; без него workflow подставит 22 и деплой упадёт |
+| `~/.ssh/config` локально | `Host lexify` c `Port`, чтобы не писать `-p` каждый раз |
+| **fail2ban** | в джейле `sshd` по умолчанию `port = ssh` → 22 из `/etc/services`. Бан будет вешаться на 22-й порт, а стучатся в новый — защита фактически отключается. Добавьте в `/etc/fail2ban/jail.local` секцию `[sshd]` с `port = <новый-порт>` и перезапустите сервис |
+| ufw | старое правило `22/tcp` снять, новое проверить через `ufw status numbered` |
+
 ### 2.2. Обновления, файрвол, fail2ban
 
 ```bash
@@ -90,7 +115,7 @@ apt install -y ufw fail2ban curl git
 
 ufw default deny incoming
 ufw default allow outgoing
-ufw allow 22/tcp
+ufw allow 22/tcp    # см. «Смена порта SSH» ниже, если порт уже перенесён
 ufw allow 80/tcp
 ufw allow 443/tcp
 ufw enable
