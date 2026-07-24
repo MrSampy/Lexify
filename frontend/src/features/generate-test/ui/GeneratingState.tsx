@@ -18,7 +18,7 @@ export function GeneratingState() {
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-5">
-      <Mascot pose="diving" size={150} animate />
+      <Mascot pose="thinking" size={150} animate />
 
       <div className="ds-h3 flex items-baseline text-[var(--accent-color)]">
         {t('testCreate.generating')}

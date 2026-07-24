@@ -246,7 +246,7 @@ export function ChatSession({
 
         {isStreaming && (
           <div aria-live="polite" style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-            <Mascot pose="diving" size={40} />
+            <Mascot pose="thinking" size={40} animate />
             <div
               style={{
                 maxWidth: '78%',
@@ -395,7 +395,7 @@ function MessageBubble({ message, languageId }: { message: ChatMessage; language
         flexDirection: isAssistant ? 'row' : 'row-reverse',
       }}
     >
-      {isAssistant && <Mascot pose="greeting" size={40} />}
+      {isAssistant && <Mascot pose="talking" size={40} />}
       <div
         style={{
           maxWidth: '78%',

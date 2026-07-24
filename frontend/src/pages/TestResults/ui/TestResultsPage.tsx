@@ -70,7 +70,11 @@ export function TestResultsPage() {
       {/* Score header */}
       <div className="mb-7 flex flex-col items-center text-center">
         <div className="mb-4 flex items-end gap-2">
-          {scorePercent >= 60 && <Mascot pose="celebrate" size={110} animate />}
+          {scorePercent >= 90 ? (
+            <Mascot pose="trophy" size={110} animate />
+          ) : (
+            scorePercent >= 60 && <Mascot pose="celebrate" size={110} animate />
+          )}
           <ScoreRing
             percent={scorePercent}
             correct={data.correctAnswers}
